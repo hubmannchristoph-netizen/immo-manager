@@ -613,7 +613,13 @@ class Wizard {
 			$data[ $key ] = '' !== $val ? $val : null;
 		}
 
-		$data['_immo_gallery'] = get_post_meta( $post_id, '_immo_gallery', true ) ?: array();
+		$gallery = get_post_meta( $post_id, '_immo_gallery', true );
+		$gallery = is_array( $gallery ) ? $gallery : array();
+		$thumb_id = get_post_thumbnail_id( $post_id );
+		if ( $thumb_id && ! in_array( $thumb_id, $gallery ) ) {
+			array_unshift( $gallery, $thumb_id );
+		}
+		$data['_immo_gallery'] = $gallery;
 		$data['_immo_documents'] = get_post_meta( $post_id, '_immo_documents', true ) ?: array();
 
 		return $data;

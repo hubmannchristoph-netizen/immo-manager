@@ -78,7 +78,7 @@ if ( ! empty( $gallery ) ) {
 				<div class="immo-slider-track">
 					<?php foreach ( $all_imgs as $i => $img ) : ?>
 						<div class="immo-slide <?php echo 0 === $i ? 'active' : ''; ?>" aria-hidden="<?php echo 0 === $i ? 'false' : 'true'; ?>">
-							<img src="<?php echo esc_url( $img['url_medium'] ); ?>"
+							<img src="<?php echo esc_url( $img['url_large'] ); ?>"
 								data-full="<?php echo esc_url( $img['url'] ); ?>"
 								alt="<?php echo esc_attr( $img['alt'] ?: $project['title'] ); ?>"
 								loading="<?php echo 0 === $i ? 'eager' : 'lazy'; ?>"

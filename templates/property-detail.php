@@ -78,7 +78,7 @@ $key_facts = array_filter( array(
 							<div class="immo-slider-track">
 								<?php foreach ( $all_images as $i => $img ) : ?>
 									<div class="immo-slide <?php echo 0 === $i ? 'active' : ''; ?>" aria-hidden="<?php echo 0 === $i ? 'false' : 'true'; ?>">
-										<img src="<?php echo esc_url( $img['url_medium'] ); ?>"
+										<img src="<?php echo esc_url( $img['url_large'] ); ?>"
 											data-full="<?php echo esc_url( $img['url'] ); ?>"
 											alt="<?php echo esc_attr( $img['alt'] ?: ( $property['title'] ?? '' ) ); ?>"
 											loading="<?php echo 0 === $i ? 'eager' : 'lazy'; ?>"
@@ -109,7 +109,7 @@ $key_facts = array_filter( array(
 					<div class="immo-grid-gallery">
 						<?php foreach ( array_slice( $all_images, 0, 5 ) as $i => $img ) : ?>
 							<div class="immo-grid-item immo-grid-item-<?php echo $i; ?>">
-								<img src="<?php echo esc_url( $img['url_medium'] ); ?>"
+								<img src="<?php echo esc_url( $img['url_large'] ); ?>"
 									data-full="<?php echo esc_url( $img['url'] ); ?>"
 									alt="<?php echo esc_attr( $img['alt'] ?: ( $property['title'] ?? '' ) ); ?>"
 									class="immo-grid-img">

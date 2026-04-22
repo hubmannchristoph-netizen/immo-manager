@@ -508,6 +508,10 @@ class Metaboxes {
 	public function render_gallery( \WP_Post $post ): void {
 		$gallery = get_post_meta( $post->ID, '_immo_gallery', true );
 		$gallery = is_array( $gallery ) ? $gallery : array();
+		$thumb_id = get_post_thumbnail_id( $post->ID );
+		if ( $thumb_id && ! in_array( $thumb_id, $gallery ) ) {
+			array_unshift( $gallery, $thumb_id );
+		}
 		wp_nonce_field( 'immo_gallery_nonce', 'immo_gallery_nonce' );
 		?>
 		<div id="immo-gallery-container">

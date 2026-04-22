@@ -985,12 +985,14 @@ class RestApi {
 			return null;
 		}
 		$full      = wp_get_attachment_image_url( $attachment_id, 'full' );
+		$large     = wp_get_attachment_image_url( $attachment_id, 'large' );
 		$medium    = wp_get_attachment_image_url( $attachment_id, 'medium_large' );
 		$thumbnail = wp_get_attachment_image_url( $attachment_id, 'medium' );
 		$alt       = get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
 
 		return array(
 			'url'           => $full ?: '',
+			'url_large'     => $large ?: $full ?: '',
 			'url_medium'    => $medium ?: $full ?: '',
 			'url_thumbnail' => $thumbnail ?: $medium ?: $full ?: '',
 			'alt'           => (string) $alt,

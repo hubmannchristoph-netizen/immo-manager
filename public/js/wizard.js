@@ -754,12 +754,13 @@
 	};
 
 	WizardManager.prototype.addExistingPreview = function (id, preview, ids, idsInput) {
+		var self = this;
 		if (!id) { return; }
 		var item = document.createElement('div');
 		item.className = 'immo-preview-item';
 		item.innerHTML = '<div class="immo-spinner"></div>';
 		preview.appendChild(item);
-		fetch(cfg.apiBase.replace('/immo-manager/v1', '') + '/wp/v2/media/' + id + '?_fields=id,source_url')
+		fetch(self.apiBase.replace('/immo-manager/v1', '') + '/wp/v2/media/' + id + '?_fields=id,source_url')
 			.then(function (r) { return r.json(); })
 			.then(function (data) {
 				if (data.source_url) {
@@ -883,11 +884,12 @@
 	};
 
 	WizardManager.prototype.addExistingDocPreview = function (id, preview, ids, idsInput) {
+		var self = this;
 		if (!id) { return; }
 		var item = document.createElement('div');
 		item.className = 'immo-preview-item';
 		preview.appendChild(item);
-		fetch(cfg.apiBase.replace('/immo-manager/v1', '') + '/wp/v2/media/' + id + '?_fields=id,source_url,title')
+		fetch(self.apiBase.replace('/immo-manager/v1', '') + '/wp/v2/media/' + id + '?_fields=id,source_url,title')
 			.then(function (r) { return r.json(); })
 			.then(function (data) {
 				if (data.source_url) {
