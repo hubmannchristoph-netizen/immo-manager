@@ -390,7 +390,7 @@
 	}
 
 	/* ─────────────────────────────────────────────
-	 * GLOBAL SEARCH LIGHTBOX
+	 * GLOBAL SEARCH LIGHTBOX & AUTOCOMPLETE
 	 * ───────────────────────────────────────────── */
 	window.immoOpenSearch = function() {
 		console.log('Suche-Lightbox getriggert.');
@@ -401,6 +401,145 @@
 			alert('Bitte nutzen Sie das Suchformular auf der Immobilien-Seite.');
 		}
 	};
+
+	function initSearchAutocomplete() {
+		var inputs = document.querySelectorAll('.immo-search-autocomplete');
+		if (!inputs.length) return;
+
+		var apiBase = cfg.apiBase || '/wp-json/immo-manager/v1';
+
+		inputs.forEach(function(input) {
+			var resultsContainer = input.nextElementSibling;
+			if (!resultsContainer || !resultsContainer.classList.contains('immo-search-autocomplete-results')) return;
+
+			var timeout = null;
+
+			input.addEventListener('input', function() {
+				var query = input.value.trim();
+				
+				if (query.length < 2) {
+					resultsContainer.innerHTML = '';
+					resultsContainer.classList.remove('active');
+					return;
+				}
+
+				clearTimeout(timeout);
+				timeout = setTimeout(function() {
+					fetch(apiBase + '/properties?search=' + encodeURIComponent(query) + '&per_page=5')
+						.then(function(response) { return response.json(); })
+						.then(function(data) {
+							resultsContainer.innerHTML = '';
+							if (data && data.properties && data.properties.length > 0) {
+								data.properties.forEach(function(prop) {
+									var item = document.createElement('a');
+									item.href = prop.permalink || '#';
+									item.className = 'immo-search-result-item';
+									
+									var imgHtml = '';
+									if (prop.featured_image && prop.featured_image.url_thumbnail) {
+										imgHtml = '<img src="' + escHtml(prop.featured_image.url_thumbnail) + '" alt="">';
+									}
+
+									var priceHtml = '';
+									if (prop.meta && prop.meta.price_formatted) priceHtml = 'Kauf: ' + prop.meta.price_formatted;
+									else if (prop.meta && prop.meta.rent_formatted) priceHtml = 'Miete: ' + prop.meta.rent_formatted;
+
+									item.innerHTML = imgHtml + '<div class="immo-search-result-info"><h4>' + escHtml(prop.title) + '</h4><span>' + escHtml((prop.meta && prop.meta.address) || (prop.meta && prop.meta.city) || '') + ' - ' + escHtml(priceHtml) + '</span></div>';
+									
+									resultsContainer.appendChild(item);
+								});
+								resultsContainer.classList.add('active');
+							} else {
+								resultsContainer.innerHTML = '<div class="immo-search-result-item"><div class="immo-search-result-info"><span>Keine Ergebnisse gefunden.</span></div></div>';
+								resultsContainer.classList.add('active');
+							}
+						})
+						.catch(function(err) {
+							console.error('Autocomplete Error:', err);
+						});
+				}, 300);
+			});
+
+			// Hide when clicking outside
+			document.addEventListener('click', function(e) {
+				if (!input.contains(e.target) && !resultsContainer.contains(e.target)) {
+					resultsContainer.classList.remove('active');
+				}
+			});
+			
+			// Show again when focused
+			input.addEventListener('focus', function() {
+				if (resultsContainer.innerHTML.trim() !== '') {
+					resultsContainer.classList.add('active');
+				}
+			});
+		});
+	}
+
+	/* ─────────────────────────────────────────────
+	 * WIDGET MAP INIT
+	 * ───────────────────────────────────────────── */
+	window.immoInitMap = function(mapId) {
+		if (!cfg.mapEnabled || typeof window.L === 'undefined') { return; }
+		var el = document.getElementById(mapId);
+		if (!el) return;
+		
+		var pointsStr = el.dataset.points;
+		if (!pointsStr) return;
+		
+		try {
+			var points = JSON.parse(pointsStr);
+			if (!points.length) return;
+			
+			var map = window.L.map(el, { zoomControl: true, scrollWheelZoom: false });
+			window.L.tileLayer(cfg.mapTileUrl || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				attribution: cfg.mapAttrib || '&copy; OpenStreetMap',
+				maxZoom: 19,
+			}).addTo(map);
+
+			var bounds = [];
+			points.forEach(function(p) {
+				if (p.lat && p.lng) {
+					var marker = window.L.marker([p.lat, p.lng]).addTo(map);
+					var popupContent = '<strong><a href="' + escHtml(p.link) + '">' + escHtml(p.title) + '</a></strong><br>' + escHtml(p.price);
+					if (p.image) {
+						popupContent = '<img src="' + escHtml(p.image) + '" style="width:100%;max-width:150px;border-radius:4px;margin-bottom:5px;"><br>' + popupContent;
+					}
+					marker.bindPopup(popupContent);
+					bounds.push([p.lat, p.lng]);
+				}
+			});
+
+			if (bounds.length > 0) {
+				map.fitBounds(bounds, { padding: [20, 20], maxZoom: 15 });
+			}
+		} catch (e) {
+			console.error('Fehler beim Initialisieren der Karte:', e);
+		}
+	};
+
+	/* ─────────────────────────────────────────────
+	 * WIDGET LIST SLIDER
+	 * ───────────────────────────────────────────── */
+	function initListSliders() {
+		document.querySelectorAll('.immo-list-slider').forEach(function(slider) {
+			// Einfacher Scroll-Slider für Elementor "Slider" Layout
+			slider.style.display = 'flex';
+			slider.style.overflowX = 'auto';
+			slider.style.scrollSnapType = 'x mandatory';
+			slider.style.gap = '20px';
+			slider.style.paddingBottom = '20px';
+			slider.style.scrollbarWidth = 'none'; // Firefox
+			
+			var cards = slider.querySelectorAll('.immo-property-card');
+			cards.forEach(function(card) {
+				card.style.flex = '0 0 auto';
+				card.style.width = '80%';
+				card.style.maxWidth = '300px';
+				card.style.scrollSnapAlign = 'start';
+			});
+		});
+	}
 
 	/* ─────────────────────────────────────────────
 	 * Utility
@@ -422,6 +561,8 @@
 		initInquiryLightbox();
 		initMaps();
 		initStickyOffsets();
+		initSearchAutocomplete();
+		initListSliders();
 	});
 
 })();

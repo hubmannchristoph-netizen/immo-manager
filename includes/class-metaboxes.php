@@ -667,6 +667,76 @@ class Metaboxes {
 		<?php
 	}
 
+	/**
+	 * Metabox: Video / Virtuelle Tour (Property UND Project).
+	 *
+	 * @param \WP_Post $post Post.
+	 *
+	 * @return void
+	 */
+	public function render_video( \WP_Post $post ): void {
+		$fields = PostTypes::POST_TYPE_PROJECT === $post->post_type ? MetaFields::project_fields() : MetaFields::property_fields();
+		$meta   = $this->get_meta( $post->ID, $fields );
+		?>
+		<table class="form-table immo-form">
+			<tr>
+				<th><label for="_immo_video_url"><?php esc_html_e( 'Video / Tour URL', 'immo-manager' ); ?></label></th>
+				<td>
+					<input type="url" id="_immo_video_url" name="immo_meta[_immo_video_url]" value="<?php echo esc_attr( (string) $meta['_immo_video_url'] ); ?>" class="regular-text" placeholder="https://youtube.com/... oder https://my.matterport.com/..." />
+					<p class="description"><?php esc_html_e( 'Link zu YouTube, Vimeo, Matterport etc.', 'immo-manager' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th><label><?php esc_html_e( 'Oder Video-Datei hochladen', 'immo-manager' ); ?></label></th>
+				<td>
+					<?php
+					$video_id = (int) $meta['_immo_video_id'];
+					$video_url = $video_id ? wp_get_attachment_url( $video_id ) : '';
+					?>
+					<div class="immo-video-upload-wrapper">
+						<input type="hidden" id="_immo_video_id" name="immo_meta[_immo_video_id]" value="<?php echo esc_attr( $video_id ); ?>" />
+						<div class="immo-video-preview-container" style="margin-bottom: 10px; <?php echo $video_url ? '' : 'display:none;'; ?>">
+							<video src="<?php echo esc_url( $video_url ); ?>" controls style="max-width: 300px; border-radius: 4px;"></video>
+						</div>
+						<button type="button" class="button immo-video-upload-btn"><?php esc_html_e( 'Video auswählen', 'immo-manager' ); ?></button>
+						<button type="button" class="button immo-video-remove-btn" <?php echo $video_id ? '' : 'style="display:none;"'; ?>><?php esc_html_e( 'Entfernen', 'immo-manager' ); ?></button>
+					</div>
+					<script>
+					jQuery(document).ready(function($){
+						var videoFrame;
+						$('.immo-video-upload-btn').on('click', function(e) {
+							e.preventDefault();
+							if (videoFrame) { videoFrame.open(); return; }
+							videoFrame = wp.media({
+								title: '<?php esc_js( __( 'Video auswählen', 'immo-manager' ) ); ?>',
+								button: { text: '<?php esc_js( __( 'Verwenden', 'immo-manager' ) ); ?>' },
+								multiple: false,
+								library: { type: 'video' }
+							});
+							videoFrame.on('select', function() {
+								var attachment = videoFrame.state().get('selection').first().toJSON();
+								$('#_immo_video_id').val(attachment.id);
+								$('.immo-video-preview-container video').attr('src', attachment.url);
+								$('.immo-video-preview-container').show();
+								$('.immo-video-remove-btn').show();
+							});
+							videoFrame.open();
+						});
+						$('.immo-video-remove-btn').on('click', function(e) {
+							e.preventDefault();
+							$('#_immo_video_id').val('0');
+							$('.immo-video-preview-container').hide().find('video').attr('src', '');
+							$(this).hide();
+						});
+					});
+					</script>
+				</td>
+			</tr>
+		</table>
+		<?php
+	}
+
+
 	// =========================================================================
 	// Save Handlers
 	// =========================================================================

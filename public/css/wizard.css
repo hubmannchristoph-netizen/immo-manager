@@ -473,3 +473,26 @@
 	.immo-wizard-field.immo-field-sm { max-width: 100%; }
 	.immo-feature-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ==========================================================================
+   Floating Toast Success Message
+   ========================================================================== */
+.immo-toast-success {
+	position: fixed;
+	top: 20px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: #00a0d2;
+	color: #fff;
+	padding: 14px 24px;
+	border-radius: 8px;
+	box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+	z-index: 999999;
+	font-weight: 600;
+	font-size: 1rem;
+	animation: immo-toast-in 0.3s ease-out forwards;
+}
+@keyframes immo-toast-in {
+	from { top: -50px; opacity: 0; }
+	to { top: 20px; opacity: 1; }
+}

@@ -104,7 +104,8 @@ class SearchWidget extends Widget_Base {
 		<form action="<?php echo esc_url( $results_url ); ?>" method="get" class="immo-search-inline-form">
 			<div class="immo-search-fields">
 				<div class="immo-search-field">
-					<input type="text" name="immo_search" placeholder="<?php esc_attr_e( 'Ort, PLZ oder Stichwort…', 'immo-manager' ); ?>">
+					<input type="text" name="immo_search" class="immo-search-autocomplete" autocomplete="off" placeholder="<?php esc_attr_e( 'Ort, PLZ oder Stichwort…', 'immo-manager' ); ?>">
+					<div class="immo-search-autocomplete-results"></div>
 				</div>
 				<div class="immo-search-field">
 					<select name="_immo_mode">

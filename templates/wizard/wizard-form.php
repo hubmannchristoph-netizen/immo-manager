@@ -243,6 +243,7 @@ $step_slugs = array( 1 => 'type', 2 => 'location', 3 => 'details', 4 => 'price',
 	data-ajax-url="<?php echo esc_url( $ajax_url ); ?>"
 	data-api-base="<?php echo esc_url( $api_base ); ?>"
 	data-nonce="<?php echo esc_attr( $nonce ); ?>"
+	data-rest-nonce="<?php echo esc_attr( $rest_nonce ); ?>"
 	data-media-nonce="<?php echo esc_attr( $media_nonce ); ?>"
 	data-redirect="<?php echo esc_attr( $redirect ); ?>"
 	data-post-id="<?php echo esc_attr( (string) ( $post_id ?? 0 ) ); ?>"

@@ -15,6 +15,7 @@
 		this.el          = el;
 		this.ajaxUrl     = el.dataset.ajaxUrl || '';
 		this.nonce       = el.dataset.nonce || '';
+		this.restNonce   = el.dataset.restNonce || '';
 		this.postId      = parseInt(el.dataset.postId, 10) || 0;
 		this.redirect    = el.dataset.redirect || '';
 		this.totalSteps  = parseInt(el.dataset.totalSteps, 10) || 6;
@@ -183,7 +184,15 @@
 		var btnNext = this.el.querySelector('.immo-wizard-next');
 		if (btnNext) { btnNext.hidden = step === this.totalSteps; btnNext.style.display = (step === this.totalSteps) ? 'none' : ''; }
 		var btnSub = this.el.querySelector('.immo-wizard-submit');
-		if (btnSub) { btnSub.hidden = step !== this.totalSteps; btnSub.style.display = (step !== this.totalSteps) ? 'none' : ''; }
+		if (btnSub) { 
+			if (this.postId > 0) {
+				btnSub.hidden = false; 
+				btnSub.style.display = '';
+			} else {
+				btnSub.hidden = step !== this.totalSteps; 
+				btnSub.style.display = (step !== this.totalSteps) ? 'none' : ''; 
+			}
+		}
 
 		// Last step → build summary.
 		if (step === this.totalSteps) { this.buildSummary(); }
@@ -555,21 +564,21 @@
 	};
 
 	WizardManager.prototype.showSuccess = function (msg, link, edit_link) {
-		var overlay = this.el.querySelector('.immo-wizard-success');
-		if (!overlay) { return; }
-		overlay.querySelector('.immo-wizard-success-message').textContent = msg || '';
-		var linkEl = overlay.querySelector('.immo-wizard-success-link');
-		if (linkEl) { linkEl.href = link || '#'; }
+		var toast = document.createElement('div');
+		toast.className = 'immo-toast-success';
+		toast.innerHTML = '🎉 ' + (msg || 'Erfolgreich gespeichert!');
+		document.body.appendChild(toast);
+		setTimeout(function() { if(toast) toast.remove(); }, 3500);
 
-		// If it's a new project, redirect to the edit screen to add units.
 		var entity = this.getVal('entity_type') || 'property';
 		if (entity === 'project' && !this.postId && edit_link) {
 			setTimeout(function () { window.location.href = edit_link; }, 1500);
 			return;
 		}
 
-		if (this.redirect && link) { setTimeout(function () { window.location.href = link; }, 1500); }
-		overlay.hidden = false;
+		if (this.redirect && link && !this.postId) { 
+			setTimeout(function () { window.location.href = link; }, 1500); 
+		}
 	};
 
 	WizardManager.prototype.loadDistricts = function (state, select) {
@@ -762,7 +771,9 @@
 		item.className = 'immo-preview-item';
 		item.innerHTML = '<div class="immo-spinner"></div>';
 		preview.appendChild(item);
-		fetch(self.apiBase.replace(/immo-manager\/v1\/?/, 'wp/v2/media/') + id + '?_fields=id,source_url')
+		fetch(self.apiBase.replace(/immo-manager\/v1\/?/, 'wp/v2/media/') + id + '?_fields=id,source_url', {
+			headers: { 'X-WP-Nonce': self.restNonce }
+		})
 			.then(function (r) { return r.json(); })
 			.then(function (data) {
 				if (data.source_url) {
@@ -902,7 +913,9 @@
 		item.className = 'immo-preview-item';
 		item.innerHTML = '<div class="immo-spinner"></div>';
 		preview.appendChild(item);
-		fetch(self.apiBase.replace(/immo-manager\/v1\/?/, 'wp/v2/media/') + id + '?_fields=id,source_url,title')
+		fetch(self.apiBase.replace(/immo-manager\/v1\/?/, 'wp/v2/media/') + id + '?_fields=id,source_url,title', {
+			headers: { 'X-WP-Nonce': self.restNonce }
+		})
 			.then(function (r) { return r.json(); })
 			.then(function (data) {
 				if (data.source_url) {
