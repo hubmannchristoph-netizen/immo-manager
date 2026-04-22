@@ -347,6 +347,16 @@
 				observer.observe(accordion, { attributes: true, attributeFilter: ['hidden'] });
 			}
 		});
+
+		// Elementor Widget Maps initialisieren
+		document.querySelectorAll('.immo-map[data-points]').forEach(function (el) {
+			if (el.id && window.immoInitMap) {
+				// Prevent double initialization if leaflet already initialized it
+				if (!el._leaflet_id) {
+					window.immoInitMap(el.id);
+				}
+			}
+		});
 	}
 
 	/* ─────────────────────────────────────────────
@@ -393,14 +403,42 @@
 	 * GLOBAL SEARCH LIGHTBOX & AUTOCOMPLETE
 	 * ───────────────────────────────────────────── */
 	window.immoOpenSearch = function() {
-		console.log('Suche-Lightbox getriggert.');
-		var filterBtn = document.querySelector('.immo-filter-toggle');
-		if (filterBtn) { 
-			filterBtn.click(); 
+		var lb = document.getElementById('immo-global-search-lightbox');
+		if (lb) {
+			lb.hidden = false;
+			var input = lb.querySelector('.immo-search-autocomplete');
+			if (input) {
+				setTimeout(function() { input.focus(); }, 50);
+			}
 		} else {
-			alert('Bitte nutzen Sie das Suchformular auf der Immobilien-Seite.');
+			// Fallback, wenn Lightbox nicht gerendert wurde
+			var filterBtn = document.querySelector('.immo-filter-toggle');
+			if (filterBtn) { 
+				filterBtn.click(); 
+			}
 		}
 	};
+
+	function initGlobalSearchLightbox() {
+		var lb = document.getElementById('immo-global-search-lightbox');
+		if (!lb) return;
+		
+		var closeBtn = lb.querySelector('.immo-lightbox-close');
+		var overlay = lb.querySelector('.immo-lightbox-overlay');
+		
+		function closeSearchLb() {
+			lb.hidden = true;
+		}
+		
+		if (closeBtn) closeBtn.addEventListener('click', closeSearchLb);
+		if (overlay) overlay.addEventListener('click', closeSearchLb);
+		
+		document.addEventListener('keydown', function(e) {
+			if (e.key === 'Escape' && !lb.hidden) {
+				closeSearchLb();
+			}
+		});
+	}
 
 	function initSearchAutocomplete() {
 		var inputs = document.querySelectorAll('.immo-search-autocomplete');
@@ -425,12 +463,12 @@
 
 				clearTimeout(timeout);
 				timeout = setTimeout(function() {
-					fetch(apiBase + '/properties?search=' + encodeURIComponent(query) + '&per_page=5')
+					fetch(apiBase + '/search?q=' + encodeURIComponent(query) + '&per_page=5')
 						.then(function(response) { return response.json(); })
 						.then(function(data) {
 							resultsContainer.innerHTML = '';
-							if (data && data.properties && data.properties.length > 0) {
-								data.properties.forEach(function(prop) {
+							if (data && data.results && data.results.length > 0) {
+								data.results.forEach(function(prop) {
 									var item = document.createElement('a');
 									item.href = prop.permalink || '#';
 									item.className = 'immo-search-result-item';
@@ -441,10 +479,14 @@
 									}
 
 									var priceHtml = '';
-									if (prop.meta && prop.meta.price_formatted) priceHtml = 'Kauf: ' + prop.meta.price_formatted;
-									else if (prop.meta && prop.meta.rent_formatted) priceHtml = 'Miete: ' + prop.meta.rent_formatted;
+									if (prop.type_label === 'Bauprojekt') {
+										priceHtml = 'Bauprojekt';
+									} else {
+										if (prop.meta && prop.meta.price_formatted) priceHtml = 'Kauf: ' + prop.meta.price_formatted;
+										else if (prop.meta && prop.meta.rent_formatted) priceHtml = 'Miete: ' + prop.meta.rent_formatted;
+									}
 
-									item.innerHTML = imgHtml + '<div class="immo-search-result-info"><h4>' + escHtml(prop.title) + '</h4><span>' + escHtml((prop.meta && prop.meta.address) || (prop.meta && prop.meta.city) || '') + ' - ' + escHtml(priceHtml) + '</span></div>';
+									item.innerHTML = imgHtml + '<div class="immo-search-result-info"><h4>' + escHtml(prop.title) + '</h4><span>' + escHtml((prop.meta && prop.meta.address) || (prop.meta && prop.meta.city) || prop.type_label || '') + ' - ' + escHtml(priceHtml) + '</span></div>';
 									
 									resultsContainer.appendChild(item);
 								});
@@ -523,21 +565,158 @@
 	 * ───────────────────────────────────────────── */
 	function initListSliders() {
 		document.querySelectorAll('.immo-list-slider').forEach(function(slider) {
-			// Einfacher Scroll-Slider für Elementor "Slider" Layout
-			slider.style.display = 'flex';
-			slider.style.overflowX = 'auto';
-			slider.style.scrollSnapType = 'x mandatory';
-			slider.style.gap = '20px';
-			slider.style.paddingBottom = '20px';
-			slider.style.scrollbarWidth = 'none'; // Firefox
-			
-			var cards = slider.querySelectorAll('.immo-property-card');
-			cards.forEach(function(card) {
-				card.style.flex = '0 0 auto';
-				card.style.width = '80%';
-				card.style.maxWidth = '300px';
-				card.style.scrollSnapAlign = 'start';
+			if (slider.dataset.sliderInit) return;
+			slider.dataset.sliderInit = 'true';
+
+			// Drag to scroll Funktionalität für Desktop
+			var isDown = false;
+			var startX;
+			var scrollLeft;
+
+			slider.addEventListener('mousedown', function(e) {
+				isDown = true;
+				slider.style.cursor = 'grabbing';
+				slider.style.scrollSnapType = 'none';
+				startX = e.pageX - slider.offsetLeft;
+				scrollLeft = slider.scrollLeft;
 			});
+			
+			slider.addEventListener('mouseleave', function() {
+				isDown = false;
+				slider.style.cursor = 'grab';
+				slider.style.scrollSnapType = 'x mandatory';
+			});
+			
+			slider.addEventListener('mouseup', function() {
+				isDown = false;
+				slider.style.cursor = 'grab';
+				slider.style.scrollSnapType = 'x mandatory';
+			});
+			
+			slider.addEventListener('mousemove', function(e) {
+				if (!isDown) return;
+				e.preventDefault();
+				var x = e.pageX - slider.offsetLeft;
+				var walk = (x - startX) * 2;
+				slider.scrollLeft = scrollLeft - walk;
+			});
+
+			slider.style.cursor = 'grab';
+
+			// Pfeile & Punkte (Pagination)
+			var parent = slider.closest('.immo-properties-widget');
+			if (!parent) return;
+
+			var hasArrows = slider.dataset.arrows === 'true';
+			var hasDots = slider.dataset.dots === 'true';
+			var items = Array.from(slider.children);
+			if (items.length <= 1) return;
+
+			function getItemWidth() {
+				var gap = parseFloat(window.getComputedStyle(slider).gap) || 0;
+				return items[0].offsetWidth + gap;
+			}
+
+			function getScrollSteps() {
+				var itemWidth = getItemWidth();
+				var maxScroll = slider.scrollWidth - slider.clientWidth;
+				if (maxScroll <= 0) return 0;
+				return Math.max(1, Math.ceil(maxScroll / itemWidth) + 1);
+			}
+
+			var dotsContainer = null;
+
+			function updateDots() {
+				if (!hasDots || !dotsContainer) return;
+				var maxScroll = slider.scrollWidth - slider.clientWidth;
+				if (maxScroll <= 0) return;
+				
+				var scrollRatio = slider.scrollLeft / maxScroll;
+				var steps = getScrollSteps();
+				var activeIndex = Math.round(scrollRatio * (steps - 1));
+				if (isNaN(activeIndex)) activeIndex = 0;
+				
+				var dots = dotsContainer.querySelectorAll('.immo-slider-dot');
+				dots.forEach(function(d, i) {
+					if (i === activeIndex) d.classList.add('active');
+					else d.classList.remove('active');
+				});
+			}
+
+			if (hasArrows) {
+				var prevBtn = document.createElement('button');
+				prevBtn.className = 'immo-slider-arrow immo-slider-prev';
+				prevBtn.innerHTML = '‹';
+				prevBtn.setAttribute('aria-label', 'Zurück');
+
+				var nextBtn = document.createElement('button');
+				nextBtn.className = 'immo-slider-arrow immo-slider-next';
+				nextBtn.innerHTML = '›';
+				nextBtn.setAttribute('aria-label', 'Weiter');
+
+				parent.appendChild(prevBtn);
+				parent.appendChild(nextBtn);
+
+				prevBtn.addEventListener('click', function() {
+					var itemWidth = getItemWidth();
+					if (slider.scrollLeft <= 5) {
+						slider.scrollTo({ left: slider.scrollWidth, behavior: 'smooth' }); // Loop to end
+					} else {
+						slider.scrollBy({ left: -itemWidth, behavior: 'smooth' });
+					}
+				});
+				nextBtn.addEventListener('click', function() {
+					var itemWidth = getItemWidth();
+					var maxScroll = slider.scrollWidth - slider.clientWidth;
+					if (slider.scrollLeft >= maxScroll - 5) {
+						slider.scrollTo({ left: 0, behavior: 'smooth' }); // Loop to start
+					} else {
+						slider.scrollBy({ left: itemWidth, behavior: 'smooth' });
+					}
+				});
+			}
+
+			if (hasDots) {
+				dotsContainer = document.createElement('div');
+				dotsContainer.className = 'immo-slider-dots';
+				
+				var renderDots = function() {
+					var steps = getScrollSteps();
+					dotsContainer.innerHTML = '';
+					if (steps <= 1) return;
+					
+					for (var i = 0; i < steps; i++) {
+						(function(index) {
+							var dot = document.createElement('button');
+							dot.className = 'immo-slider-dot';
+							if (index === 0) dot.classList.add('active');
+							dot.setAttribute('aria-label', 'Gehe zu Element ' + (index + 1));
+							dot.addEventListener('click', function() {
+								var maxScroll = slider.scrollWidth - slider.clientWidth;
+								var targetLeft = maxScroll * (index / (steps - 1));
+								slider.scrollTo({ left: targetLeft, behavior: 'smooth' });
+							});
+							dotsContainer.appendChild(dot);
+						})(i);
+					}
+					updateDots();
+				};
+				
+				renderDots();
+				parent.appendChild(dotsContainer);
+				
+				slider.addEventListener('scroll', function() {
+					requestAnimationFrame(updateDots);
+				}, { passive: true });
+
+				window.addEventListener('resize', function() {
+					var currentSteps = dotsContainer.children.length;
+					var newSteps = getScrollSteps();
+					if (currentSteps !== newSteps) {
+						renderDots();
+					}
+				});
+			}
 		});
 	}
 
@@ -562,7 +741,20 @@
 		initMaps();
 		initStickyOffsets();
 		initSearchAutocomplete();
+		initGlobalSearchLightbox();
 		initListSliders();
 	});
+
+	// Elementor Editor Preview Hooks
+	if (window.jQuery) {
+		window.jQuery(window).on('elementor/frontend/init', function () {
+			if (window.elementorFrontend && window.elementorFrontend.hooks) {
+				window.elementorFrontend.hooks.addAction('frontend/element_ready/immo-properties.default', function ($scope) {
+					initListSliders();
+					initMaps();
+				});
+			}
+		});
+	}
 
 })();

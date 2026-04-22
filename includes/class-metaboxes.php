@@ -61,6 +61,7 @@ class Metaboxes {
 		add_meta_box( 'immo_project_video',     __( 'Video / Virtuelle Tour', 'immo-manager' ),    array( $this, 'render_video' ),             PostTypes::POST_TYPE_PROJECT,  'normal', 'high' );
 		add_meta_box( 'immo_project_features',  __( 'Gemeinschafts-Ausstattung', 'immo-manager' ), array( $this, 'render_features' ),          PostTypes::POST_TYPE_PROJECT,  'normal', 'default' );
 		add_meta_box( 'immo_project_units',     __( 'Wohneinheiten', 'immo-manager' ),             array( $this, 'render_project_units' ),     PostTypes::POST_TYPE_PROJECT,  'normal', 'default' );
+		add_meta_box( 'immo_project_display',   __( 'Darstellung & Layout', 'immo-manager' ),      array( $this, 'render_property_display' ),  PostTypes::POST_TYPE_PROJECT,  'side',   'default' );
 		add_meta_box( 'immo_project_contact',   __( 'Kontakt / Agent', 'immo-manager' ),           array( $this, 'render_contact' ),           PostTypes::POST_TYPE_PROJECT,  'side',   'default' );
 	}
 
@@ -341,7 +342,8 @@ class Metaboxes {
 	 * @return void
 	 */
 	public function render_property_display( \WP_Post $post ): void {
-		$meta = $this->get_meta( $post->ID, MetaFields::property_fields() );
+		$fields = PostTypes::POST_TYPE_PROJECT === $post->post_type ? MetaFields::project_fields() : MetaFields::property_fields();
+		$meta   = $this->get_meta( $post->ID, $fields );
 		?>
 		<p>
 			<label for="_immo_layout_type"><strong><?php esc_html_e( 'Layout-Typ', 'immo-manager' ); ?></strong></label><br>

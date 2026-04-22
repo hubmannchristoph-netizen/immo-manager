@@ -24,6 +24,7 @@ class Templates {
 	public function __construct() {
 		add_filter( 'template_include', array( $this, 'override_template' ), 99 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_action( 'wp_footer', array( $this, 'render_search_lightbox' ) );
 	}
 
 	/**
@@ -109,5 +110,41 @@ class Templates {
 			// Da wir hier eigene Templates nutzen, laden wir sie manuell.
 			Plugin::instance()->get_shortcodes()->enqueue_assets();
 		}
+	}
+
+	/**
+	 * Globale Search Lightbox im Footer rendern.
+	 *
+	 * @return void
+	 */
+	public function render_search_lightbox(): void {
+		?>
+		<div class="immo-lightbox" id="immo-global-search-lightbox" hidden>
+			<div class="immo-lightbox-overlay"></div>
+			<div class="immo-lightbox-content immo-search-lightbox-content">
+				<button type="button" class="immo-lightbox-close" aria-label="<?php esc_attr_e( 'Schließen', 'immo-manager' ); ?>">&times;</button>
+				<h3><?php esc_html_e( 'Immobilien suchen', 'immo-manager' ); ?></h3>
+				
+				<form action="<?php echo esc_url( get_post_type_archive_link( PostTypes::POST_TYPE_PROPERTY ) ); ?>" method="get" class="immo-global-search-form">
+					<div class="immo-form-field">
+						<label><?php esc_html_e( 'Ort, PLZ oder Stichwort', 'immo-manager' ); ?></label>
+						<input type="text" name="immo_search" class="immo-search-autocomplete" autocomplete="off" placeholder="<?php esc_attr_e( 'Suchen...', 'immo-manager' ); ?>">
+						<div class="immo-search-autocomplete-results"></div>
+					</div>
+					<div class="immo-form-field">
+						<label><?php esc_html_e( 'Vermarktungsart', 'immo-manager' ); ?></label>
+						<select name="mode">
+							<option value=""><?php esc_html_e( 'Alle', 'immo-manager' ); ?></option>
+							<option value="sale"><?php esc_html_e( 'Kauf', 'immo-manager' ); ?></option>
+							<option value="rent"><?php esc_html_e( 'Miete', 'immo-manager' ); ?></option>
+						</select>
+					</div>
+					<button type="submit" class="immo-btn immo-btn-primary" style="width: 100%; margin-top: 10px;">
+						<?php esc_html_e( 'Suchen', 'immo-manager' ); ?>
+					</button>
+				</form>
+			</div>
+		</div>
+		<?php
 	}
 }

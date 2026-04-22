@@ -108,6 +108,13 @@ class RestApi {
 			'permission_callback' => '__return_true',
 		) );
 
+		// Globale Suche (Immobilien & Bauprojekte).
+		register_rest_route( self::NAMESPACE, '/search', array(
+			'methods'             => \WP_REST_Server::READABLE,
+			'callback'            => array( $this, 'global_search' ),
+			'permission_callback' => '__return_true',
+		) );
+
 		// Anfragen einreichen (öffentlich, Rate-limited).
 		register_rest_route( self::NAMESPACE, '/inquiries', array(
 			'methods'             => \WP_REST_Server::CREATABLE,
@@ -203,6 +210,54 @@ class RestApi {
 	// =========================================================================
 	// Callbacks – Projekte
 	// =========================================================================
+
+
+	// =========================================================================
+	// Callbacks – Globale Suche
+	// =========================================================================
+
+	/**
+	 * GET /search
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function global_search( \WP_REST_Request $request ): \WP_REST_Response {
+		$search   = sanitize_text_field( $request->get_param( 'q' ) ?? '' );
+		$per_page = min( 50, max( 1, (int) ( $request->get_param( 'per_page' ) ?? 5 ) ) );
+
+		if ( empty( $search ) ) {
+			return rest_ensure_response( array( 'results' => array(), 'total' => 0 ) );
+		}
+
+		$args = array(
+			'post_type'      => array( PostTypes::POST_TYPE_PROPERTY, PostTypes::POST_TYPE_PROJECT ),
+			'post_status'    => 'publish',
+			'posts_per_page' => $per_page,
+			's'              => $search,
+			'orderby'        => 'relevance',
+		);
+
+		$q = new \WP_Query( $args );
+		$results = array();
+
+		foreach ( $q->posts as $post ) {
+			if ( PostTypes::POST_TYPE_PROPERTY === $post->post_type ) {
+				$formatted = $this->format_property( $post );
+				$formatted['type_label'] = __( 'Immobilie', 'immo-manager' );
+			} else {
+				$formatted = $this->format_project( $post );
+				$formatted['type_label'] = __( 'Bauprojekt', 'immo-manager' );
+			}
+			$results[] = $formatted;
+		}
+
+		return rest_ensure_response( array(
+			'results' => $results,
+			'total'   => $q->found_posts,
+		) );
+	}
 
 	/**
 	 * GET /projects
@@ -565,7 +620,11 @@ class RestApi {
 		// Filter: Modus (sale/rent/both).
 		$mode = sanitize_key( (string) ( $request->get_param( 'mode' ) ?? '' ) );
 		if ( $mode && in_array( $mode, array( 'sale', 'rent', 'both' ), true ) ) {
-			$args['meta_query'][] = array( 'key' => '_immo_mode', 'value' => $mode, 'compare' => '=' );
+			if ( 'both' === $mode ) {
+				$args['meta_query'][] = array( 'key' => '_immo_mode', 'value' => 'both', 'compare' => '=' );
+			} else {
+				$args['meta_query'][] = array( 'key' => '_immo_mode', 'value' => array( $mode, 'both' ), 'compare' => 'IN' );
+			}
 		}
 
 		// Filter: Immobilientyp.

@@ -158,6 +158,36 @@ class PropertiesWidget extends Widget_Base {
 			)
 		);
 
+		$this->add_control(
+			'slider_arrows',
+			array(
+				'label'        => __( 'Pfeile anzeigen (Slider)', 'immo-manager' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'label_on'     => __( 'Ja', 'immo-manager' ),
+				'label_off'    => __( 'Nein', 'immo-manager' ),
+				'return_value' => 'yes',
+				'default'      => 'yes',
+				'condition'    => array(
+					'layout' => 'slider',
+				),
+			)
+		);
+
+		$this->add_control(
+			'slider_dots',
+			array(
+				'label'        => __( 'Punkte anzeigen (Slider)', 'immo-manager' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'label_on'     => __( 'Ja', 'immo-manager' ),
+				'label_off'    => __( 'Nein', 'immo-manager' ),
+				'return_value' => 'yes',
+				'default'      => 'yes',
+				'condition'    => array(
+					'layout' => 'slider',
+				),
+			)
+		);
+
 		$this->end_controls_section();
 	}
 
@@ -192,23 +222,27 @@ class PropertiesWidget extends Widget_Base {
 		if ( 'map' === $layout ) {
 			$this->render_map( $properties );
 		} else {
-			$this->render_list( $properties, $layout, $cols );
+			$this->render_list( $properties, $layout, $settings );
 		}
 	}
 
 	/**
 	 * Liste/Grid/Slider rendern.
 	 */
-	private function render_list( $properties, $layout, $cols ) {
-		$wrapper_class = 'immo-list-grid';
+	private function render_list( $properties, $layout, $settings ) {
+		$cols = $settings['columns'] ?? '3';
+		$wrapper_class = 'immo-properties-grid layout-grid';
+		$attrs = '';
 		if ( 'slider' === $layout ) {
 			$wrapper_class = 'immo-list-slider';
+			$attrs .= ' data-arrows="' . esc_attr( isset($settings['slider_arrows']) && $settings['slider_arrows'] === 'yes' ? 'true' : 'false' ) . '"';
+			$attrs .= ' data-dots="' . esc_attr( isset($settings['slider_dots']) && $settings['slider_dots'] === 'yes' ? 'true' : 'false' ) . '"';
 		} elseif ( 'list' === $layout ) {
-			$wrapper_class = 'immo-list-rows';
+			$wrapper_class = 'immo-properties-grid layout-list';
 		}
 
-		echo '<div class="immo-elementor-widget immo-properties-widget">';
-		printf( '<div class="%s columns-%s">', esc_attr( $wrapper_class ), esc_attr( $cols ) );
+		echo '<div class="immo-elementor-widget immo-properties-widget" style="position:relative;">';
+		printf( '<div class="%s columns-%s" %s>', esc_attr( $wrapper_class ), esc_attr( $cols ), $attrs );
 
 		foreach ( $properties as $property ) {
 			// Wir nutzen das bestehende Part-Template.
@@ -238,6 +272,9 @@ class PropertiesWidget extends Widget_Base {
 				);
 			}
 		}
+
+		wp_enqueue_style( 'leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', array(), '1.9.4' );
+		wp_enqueue_script( 'leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', array(), '1.9.4', true );
 
 		echo '<div class="immo-elementor-widget immo-map-widget">';
 		printf(

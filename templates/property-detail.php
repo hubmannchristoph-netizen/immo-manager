@@ -187,7 +187,7 @@ $key_facts = array_filter( array(
 				<?php if ( $meta['contact_name'] ) : ?>
 					<div class="immo-sticky-agent" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
 						<?php if ( ! empty( $meta['contact_image'] ) ) : ?>
-							<img src="<?php echo esc_url( $meta['contact_image']['url_thumbnail'] ); ?>" alt="<?php echo esc_attr( $meta['contact_name'] ); ?>" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--immo-primary); box-shadow: var(--immo-shadow-sm);">
+							<img src="<?php echo esc_url( $meta['contact_image']['url_thumbnail'] ); ?>" alt="<?php echo esc_attr( $meta['contact_name'] ); ?>" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--immo-accent); box-shadow: var(--immo-shadow-sm);">
 						<?php endif; ?>
 						<div>
 							<strong><?php echo esc_html( $meta['contact_name'] ); ?></strong>
@@ -288,9 +288,9 @@ $key_facts = array_filter( array(
 							<?php foreach ( $meta['documents'] as $doc ) : ?>
 								<li style="margin-bottom: 12px; border: 1px solid var(--immo-border); border-radius: var(--immo-radius-sm); padding: 10px;">
 									<a href="<?php echo esc_url( $doc['url'] ); ?>" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--immo-text);">
-										<span style="font-size: 1.5em; color: var(--immo-primary);">📄</span>
+										<span style="font-size: 1.5em; color: var(--immo-accent);">📄</span>
 										<span style="font-weight: 500; font-size: 0.95em; word-break: break-all; flex: 1;"><?php echo esc_html( $doc['title'] ); ?></span>
-										<span style="font-size: 0.85em; color: var(--immo-primary);"><?php esc_html_e( 'Ansehen', 'immo-manager' ); ?> &rarr;</span>
+										<span style="font-size: 0.85em; color: var(--immo-accent);"><?php esc_html_e( 'Ansehen', 'immo-manager' ); ?> &rarr;</span>
 									</a>
 								</li>
 							<?php endforeach; ?>
@@ -389,7 +389,7 @@ $key_facts = array_filter( array(
 							<div class="immo-proj-desc" style="overflow: hidden; transition: max-height 0.35s ease-out; max-height: 3em;">
 								<?php echo wp_kses_post( wp_strip_all_tags( $proj['description'] ) ); ?>
 							</div>
-							<button type="button" class="immo-proj-desc-toggle" style="background: none; border: none; padding: 0; color: var(--immo-primary); cursor: pointer; font-size: 0.9em; margin-top: 4px; font-weight: 600; display: none;"><?php esc_html_e( 'Mehr lesen', 'immo-manager' ); ?> ↓</button>
+							<button type="button" class="immo-proj-desc-toggle" style="background: none; border: none; padding: 0; color: var(--immo-accent); cursor: pointer; font-size: 0.9em; margin-top: 4px; font-weight: 600; display: none;"><?php esc_html_e( 'Mehr lesen', 'immo-manager' ); ?> ↓</button>
 						</div>
 					<?php endif; ?>
 
@@ -410,12 +410,12 @@ $key_facts = array_filter( array(
 					<h3><?php esc_html_e( 'Ihr Ansprechpartner', 'immo-manager' ); ?></h3>
 					<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
 						<?php if ( ! empty( $meta['contact_image'] ) ) : ?>
-							<img src="<?php echo esc_url( $meta['contact_image']['url_thumbnail'] ); ?>" alt="<?php echo esc_attr( $meta['contact_name'] ); ?>" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--immo-primary); box-shadow: var(--immo-shadow-sm);">
+							<img src="<?php echo esc_url( $meta['contact_image']['url_thumbnail'] ); ?>" alt="<?php echo esc_attr( $meta['contact_name'] ); ?>" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--immo-accent); box-shadow: var(--immo-shadow-sm);">
 						<?php endif; ?>
 						<div>
 							<?php if ( $meta['contact_name'] ) : ?><p style="margin: 0;"><strong><?php echo esc_html( $meta['contact_name'] ); ?></strong></p><?php endif; ?>
 							<?php if ( $meta['contact_phone'] ) : ?><p style="margin: 0;"><a href="tel:<?php echo esc_attr( $meta['contact_phone'] ); ?>" class="immo-contact-phone">📞 <?php echo esc_html( $meta['contact_phone'] ); ?></a></p><?php endif; ?>
-							<?php if ( $meta['contact_email'] ) : ?><p style="margin: 0; word-break:break-all"><a href="mailto:<?php echo esc_attr( $meta['contact_email'] ); ?>" style="color:var(--immo-primary)">✉️ <?php echo esc_html( $meta['contact_email'] ); ?></a></p><?php endif; ?>
+							<?php if ( $meta['contact_email'] ) : ?><p style="margin: 0; word-break:break-all"><a href="mailto:<?php echo esc_attr( $meta['contact_email'] ); ?>" style="color:var(--immo-accent)">✉️ <?php echo esc_html( $meta['contact_email'] ); ?></a></p><?php endif; ?>
 						</div>
 					</div>
 					<?php if ( (bool) \ImmoManager\Settings::get( 'enable_inquiries', 1 ) ) : ?>
@@ -453,7 +453,7 @@ $key_facts = array_filter( array(
 		<?php if ( $meta['contact_name'] || $meta['contact_email'] || $meta['contact_phone'] ) : ?>
 			<div class="immo-inquiry-agent" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; padding: 15px; background: #f9fafb; border-radius: 8px;">
 				<?php if ( ! empty( $meta['contact_image'] ) ) : ?>
-					<img src="<?php echo esc_url( $meta['contact_image']['url_thumbnail'] ); ?>" alt="<?php echo esc_attr( $meta['contact_name'] ); ?>" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--immo-primary); box-shadow: var(--immo-shadow-sm);">
+					<img src="<?php echo esc_url( $meta['contact_image']['url_thumbnail'] ); ?>" alt="<?php echo esc_attr( $meta['contact_name'] ); ?>" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--immo-accent); box-shadow: var(--immo-shadow-sm);">
 				<?php endif; ?>
 				<div class="immo-inquiry-agent-info">
 					<?php if ( $meta['contact_name'] ) : ?><strong style="display: block; font-size: 1.1em; color: #111827;"><?php echo esc_html( $meta['contact_name'] ); ?></strong><?php endif; ?>

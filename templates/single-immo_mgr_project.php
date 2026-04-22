@@ -60,51 +60,79 @@ if ( $project['featured_image'] ) {
 if ( ! empty( $gallery ) ) {
 	$all_imgs = array_merge( $all_imgs, $gallery );
 }
+// Layout-Konfiguration (mit Fallback auf globale Einstellungen).
+$detail_layout = ( ! empty( $meta['layout_type'] ) ) ? $meta['layout_type'] : \ImmoManager\Settings::get( 'default_detail_layout', 'standard' );
+$gallery_type  = ( ! empty( $meta['gallery_type'] ) ) ? $meta['gallery_type'] : \ImmoManager\Settings::get( 'default_gallery_type', 'slider' );
+$hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoManager\Settings::get( 'default_hero_type', 'full' );
 ?>
 
 <div class="immo-single-wrapper">
-<div class="immo-detail" data-api-base="<?php echo esc_url( $api_base ); ?>" data-nonce="<?php echo esc_attr( $nonce ); ?>">
+<div class="immo-detail immo-layout-<?php echo esc_attr( $detail_layout ); ?> immo-hero-<?php echo esc_attr( $hero_type ); ?>" data-api-base="<?php echo esc_url( $api_base ); ?>" data-nonce="<?php echo esc_attr( $nonce ); ?>">
 
 	<!-- HERO: Slider + Sticky Sidebar -->
 	<div class="immo-detail-hero-layout">
 
-		<!-- Bild-Slider -->
+		<!-- Bild-Bereich -->
 		<?php if ( ! empty( $all_imgs ) ) : ?>
-		<div class="immo-slider">
-			<span class="immo-slider-badge status-available">
-				<?php echo esc_html( $proj_status_labels[ $meta['project_status'] ?? '' ] ?? '' ); ?>
-			</span>
-			<div class="immo-slider-main">
-				<div class="immo-slider-track">
-					<?php foreach ( $all_imgs as $i => $img ) : ?>
-						<div class="immo-slide <?php echo 0 === $i ? 'active' : ''; ?>" aria-hidden="<?php echo 0 === $i ? 'false' : 'true'; ?>">
-							<img src="<?php echo esc_url( $img['url_large'] ); ?>"
-								data-full="<?php echo esc_url( $img['url'] ); ?>"
-								alt="<?php echo esc_attr( $img['alt'] ?: $project['title'] ); ?>"
-								loading="<?php echo 0 === $i ? 'eager' : 'lazy'; ?>"
-								class="immo-slide-img">
+			<div class="immo-gallery-container immo-gallery-type-<?php echo esc_attr( $gallery_type ); ?>">
+				
+				<?php if ( 'slider' === $gallery_type ) : ?>
+					<!-- SLIDER-ANSICHT -->
+					<div class="immo-slider">
+						<span class="immo-slider-badge status-available">
+							<?php echo esc_html( $proj_status_labels[ $meta['project_status'] ?? '' ] ?? '' ); ?>
+						</span>
+						<div class="immo-slider-main">
+							<div class="immo-slider-track">
+								<?php foreach ( $all_imgs as $i => $img ) : ?>
+									<div class="immo-slide <?php echo 0 === $i ? 'active' : ''; ?>" aria-hidden="<?php echo 0 === $i ? 'false' : 'true'; ?>">
+										<img src="<?php echo esc_url( $img['url_large'] ); ?>"
+											data-full="<?php echo esc_url( $img['url'] ); ?>"
+											alt="<?php echo esc_attr( $img['alt'] ?: $project['title'] ); ?>"
+											loading="<?php echo 0 === $i ? 'eager' : 'lazy'; ?>"
+											class="immo-slide-img">
+									</div>
+								<?php endforeach; ?>
+							</div>
+							<?php if ( count( $all_imgs ) > 1 ) : ?>
+								<button class="immo-slider-nav immo-slider-prev" aria-label="<?php esc_attr_e( 'Vorheriges', 'immo-manager' ); ?>">&#8249;</button>
+								<button class="immo-slider-nav immo-slider-next" aria-label="<?php esc_attr_e( 'Nächstes', 'immo-manager' ); ?>">&#8250;</button>
+								<div class="immo-slider-counter">
+									<span class="immo-slider-current">1</span> / <span><?php echo count( $all_imgs ); ?></span>
+								</div>
+							<?php endif; ?>
+							<button class="immo-slider-expand" aria-label="<?php esc_attr_e( 'Vollbild', 'immo-manager' ); ?>">⤢</button>
 						</div>
-					<?php endforeach; ?>
-				</div>
-				<?php if ( count( $all_imgs ) > 1 ) : ?>
-					<button class="immo-slider-nav immo-slider-prev" aria-label="<?php esc_attr_e( 'Vorheriges', 'immo-manager' ); ?>">&#8249;</button>
-					<button class="immo-slider-nav immo-slider-next" aria-label="<?php esc_attr_e( 'Nächstes', 'immo-manager' ); ?>">&#8250;</button>
-					<div class="immo-slider-counter">
-						<span class="immo-slider-current">1</span> / <span><?php echo count( $all_imgs ); ?></span>
+						<?php if ( count( $all_imgs ) > 1 ) : ?>
+							<div class="immo-slider-thumbs">
+								<?php foreach ( $all_imgs as $i => $img ) : ?>
+									<button class="immo-slider-thumb <?php echo 0 === $i ? 'active' : ''; ?>" data-index="<?php echo esc_attr( (string) $i ); ?>">
+										<img src="<?php echo esc_url( $img['url_thumbnail'] ); ?>" alt="" loading="lazy" width="80" height="56">
+									</button>
+								<?php endforeach; ?>
+							</div>
+						<?php endif; ?>
+					</div>
+				<?php else : ?>
+					<!-- GRID-ANSICHT -->
+					<div class="immo-grid-gallery">
+						<?php foreach ( array_slice( $all_imgs, 0, 5 ) as $i => $img ) : ?>
+							<div class="immo-grid-item immo-grid-item-<?php echo $i; ?>">
+								<img src="<?php echo esc_url( $img['url_large'] ); ?>"
+									data-full="<?php echo esc_url( $img['url'] ); ?>"
+									alt="<?php echo esc_attr( $img['alt'] ?: ( $project['title'] ?? '' ) ); ?>"
+									class="immo-grid-img">
+								<?php if ( 4 === $i && count( $all_imgs ) > 5 ) : ?>
+									<div class="immo-grid-overlay">
+										<span>+<?php echo count( $all_imgs ) - 5; ?></span>
+									</div>
+								<?php endif; ?>
+							</div>
+						<?php endforeach; ?>
 					</div>
 				<?php endif; ?>
-				<button class="immo-slider-expand" aria-label="<?php esc_attr_e( 'Vollbild', 'immo-manager' ); ?>">⤢</button>
+
 			</div>
-			<?php if ( count( $all_imgs ) > 1 ) : ?>
-				<div class="immo-slider-thumbs">
-					<?php foreach ( $all_imgs as $i => $img ) : ?>
-						<button class="immo-slider-thumb <?php echo 0 === $i ? 'active' : ''; ?>" data-index="<?php echo esc_attr( (string) $i ); ?>">
-							<img src="<?php echo esc_url( $img['url_thumbnail'] ); ?>" alt="" loading="lazy" width="80" height="56">
-						</button>
-					<?php endforeach; ?>
-				</div>
-			<?php endif; ?>
-		</div>
 		<?php else : ?>
 			<!-- Platzhalter für fehlende Bilder -->
 			<div class="immo-slider immo-slider-placeholder">
@@ -167,7 +195,7 @@ if ( ! empty( $gallery ) ) {
 				<?php if ( $meta['contact_name'] ) : ?>
 					<div class="immo-sticky-agent" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
 						<?php if ( ! empty( $meta['contact_image'] ) ) : ?>
-							<img src="<?php echo esc_url( $meta['contact_image']['url_thumbnail'] ); ?>" alt="<?php echo esc_attr( $meta['contact_name'] ); ?>" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--immo-primary); box-shadow: var(--immo-shadow-sm);">
+							<img src="<?php echo esc_url( $meta['contact_image']['url_thumbnail'] ); ?>" alt="<?php echo esc_attr( $meta['contact_name'] ); ?>" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--immo-accent); box-shadow: var(--immo-shadow-sm);">
 						<?php endif; ?>
 						<div>
 							<strong><?php echo esc_html( $meta['contact_name'] ); ?></strong>
@@ -282,9 +310,9 @@ if ( ! empty( $gallery ) ) {
 							<?php foreach ( $meta['documents'] as $doc ) : ?>
 								<li style="margin-bottom: 12px; border: 1px solid var(--immo-border); border-radius: var(--immo-radius-sm); padding: 10px;">
 									<a href="<?php echo esc_url( $doc['url'] ); ?>" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--immo-text);">
-										<span style="font-size: 1.5em; color: var(--immo-primary);">📄</span>
+										<span style="font-size: 1.5em; color: var(--immo-accent);">📄</span>
 										<span style="font-weight: 500; font-size: 0.95em; word-break: break-all; flex: 1;"><?php echo esc_html( $doc['title'] ); ?></span>
-										<span style="font-size: 0.85em; color: var(--immo-primary);"><?php esc_html_e( 'Ansehen', 'immo-manager' ); ?> &rarr;</span>
+										<span style="font-size: 0.85em; color: var(--immo-accent);"><?php esc_html_e( 'Ansehen', 'immo-manager' ); ?> &rarr;</span>
 									</a>
 								</li>
 							<?php endforeach; ?>
@@ -358,12 +386,12 @@ if ( ! empty( $gallery ) ) {
 					<h3><?php esc_html_e( 'Kontakt', 'immo-manager' ); ?></h3>
 					<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
 						<?php if ( ! empty( $meta['contact_image'] ) ) : ?>
-							<img src="<?php echo esc_url( $meta['contact_image']['url_thumbnail'] ); ?>" alt="<?php echo esc_attr( $meta['contact_name'] ); ?>" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--immo-primary); box-shadow: var(--immo-shadow-sm);">
+							<img src="<?php echo esc_url( $meta['contact_image']['url_thumbnail'] ); ?>" alt="<?php echo esc_attr( $meta['contact_name'] ); ?>" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--immo-accent); box-shadow: var(--immo-shadow-sm);">
 						<?php endif; ?>
 						<div>
 							<?php if ( $meta['contact_name'] ) : ?><p style="margin: 0;"><strong><?php echo esc_html( $meta['contact_name'] ); ?></strong></p><?php endif; ?>
 							<?php if ( $meta['contact_phone'] ) : ?><p style="margin: 0;"><a href="tel:<?php echo esc_attr( $meta['contact_phone'] ); ?>" class="immo-contact-phone">📞 <?php echo esc_html( $meta['contact_phone'] ); ?></a></p><?php endif; ?>
-							<?php if ( $meta['contact_email'] ) : ?><p style="margin: 0; word-break:break-all"><a href="mailto:<?php echo esc_attr( $meta['contact_email'] ); ?>" style="color:var(--immo-primary);">✉️ <?php echo esc_html( $meta['contact_email'] ); ?></a></p><?php endif; ?>
+							<?php if ( $meta['contact_email'] ) : ?><p style="margin: 0; word-break:break-all"><a href="mailto:<?php echo esc_attr( $meta['contact_email'] ); ?>" style="color:var(--immo-accent);">✉️ <?php echo esc_html( $meta['contact_email'] ); ?></a></p><?php endif; ?>
 						</div>
 					</div>
 				</div>
@@ -383,7 +411,7 @@ if ( ! empty( $gallery ) ) {
 		<?php if ( $meta['contact_name'] || $meta['contact_email'] || $meta['contact_phone'] ) : ?>
 			<div class="immo-inquiry-agent" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; padding: 15px; background: #f9fafb; border-radius: 8px;">
 				<?php if ( ! empty( $meta['contact_image'] ) ) : ?>
-					<img src="<?php echo esc_url( $meta['contact_image']['url_thumbnail'] ); ?>" alt="<?php echo esc_attr( $meta['contact_name'] ); ?>" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--immo-primary); box-shadow: var(--immo-shadow-sm);">
+					<img src="<?php echo esc_url( $meta['contact_image']['url_thumbnail'] ); ?>" alt="<?php echo esc_attr( $meta['contact_name'] ); ?>" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--immo-accent); box-shadow: var(--immo-shadow-sm);">
 				<?php endif; ?>
 				<div class="immo-inquiry-agent-info">
 					<?php if ( $meta['contact_name'] ) : ?><strong style="display: block; font-size: 1.1em; color: #111827;"><?php echo esc_html( $meta['contact_name'] ); ?></strong><?php endif; ?>
@@ -442,7 +470,7 @@ if ( ! empty( $gallery ) ) {
 			<span id="immo-qi-energy"></span>
 		</div>
 		
-		<strong id="immo-qi-price" style="color: var(--immo-primary); font-size: 1.4em; display: block; margin-bottom: 1.5rem;"></strong>
+		<strong id="immo-qi-price" style="color: var(--immo-accent); font-size: 1.4em; display: block; margin-bottom: 1.5rem;"></strong>
 
 		<a id="immo-qi-link" href="#" class="immo-btn immo-btn-primary" style="width: 100%; box-sizing: border-box; padding: 0.6rem 1rem; font-size: 0.95em;">
 			<?php esc_html_e( 'Zum vollständigen Exposé', 'immo-manager' ); ?> →

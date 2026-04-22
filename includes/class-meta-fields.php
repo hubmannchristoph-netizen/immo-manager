@@ -127,6 +127,11 @@ class MetaFields {
 			'_immo_contact_email'         => array( 'type' => 'string',  'default' => '' ),
 			'_immo_contact_phone'         => array( 'type' => 'string',  'default' => '' ),
 			'_immo_contact_image_id'      => array( 'type' => 'integer', 'default' => 0 ),
+
+			// Layout-Overrides (leer = Globaler Standard).
+			'_immo_layout_type'       => array( 'type' => 'string',  'enum' => array( '', 'standard', 'compact' ), 'default' => '' ),
+			'_immo_gallery_type'      => array( 'type' => 'string',  'enum' => array( '', 'slider', 'grid' ), 'default' => '' ),
+			'_immo_hero_type'         => array( 'type' => 'string',  'enum' => array( '', 'full', 'contained' ), 'default' => '' ),
 		);
 	}
 

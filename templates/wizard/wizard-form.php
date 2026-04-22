@@ -190,7 +190,7 @@ $step_slugs = array( 1 => 'type', 2 => 'location', 3 => 'details', 4 => 'price',
 	font-size: 1.1em;
 	margin-top: 0;
 	margin-bottom: 1rem;
-	border-bottom: 2px solid var(--immo-primary, #0073aa);
+	border-bottom: 2px solid var(--immo-accent, #0073aa);
 	padding-bottom: 0.5rem;
 	color: #1f2937;
 }
