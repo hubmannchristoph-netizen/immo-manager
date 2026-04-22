@@ -1,0 +1,331 @@
+# Copyright (C) 2026 Christoph
+# This file is distributed under the GPL v2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Immo Manager 1.0.0\n"
+"Report-Msgid-Bugs-To: https://example.com\n"
+"POT-Creation-Date: 2026-04-18 00:00+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Domain: immo-manager\n"
+
+#. Plugin Name of the plugin
+msgid "Immo Manager"
+msgstr ""
+
+#. Description of the plugin
+msgid "Professionelle Immobilienverwaltung für Österreich – Verkauf, Vermietung und Bauprojekte mit Wohneinheiten."
+msgstr ""
+
+# ====================
+# Post Types
+# ====================
+
+msgctxt "post type general name"
+msgid "Immobilien"
+msgstr ""
+
+msgctxt "post type singular name"
+msgid "Immobilie"
+msgstr ""
+
+msgctxt "post type general name"
+msgid "Bauprojekte"
+msgstr ""
+
+msgctxt "post type singular name"
+msgid "Bauprojekt"
+msgstr ""
+
+msgctxt "admin menu"
+msgid "Immobilien"
+msgstr ""
+
+msgctxt "admin menu"
+msgid "Bauprojekte"
+msgstr ""
+
+msgctxt "add new on admin bar"
+msgid "Immobilie"
+msgstr ""
+
+msgctxt "add new on admin bar"
+msgid "Bauprojekt"
+msgstr ""
+
+msgctxt "property"
+msgid "Neu hinzufügen"
+msgstr ""
+
+msgctxt "project"
+msgid "Neu hinzufügen"
+msgstr ""
+
+msgid "Neue Immobilie hinzufügen"
+msgstr ""
+
+msgid "Neues Bauprojekt hinzufügen"
+msgstr ""
+
+msgid "Neue Immobilie"
+msgstr ""
+
+msgid "Neues Bauprojekt"
+msgstr ""
+
+msgid "Immobilie bearbeiten"
+msgstr ""
+
+msgid "Bauprojekt bearbeiten"
+msgstr ""
+
+msgid "Immobilie ansehen"
+msgstr ""
+
+msgid "Bauprojekt ansehen"
+msgstr ""
+
+msgid "Immobilien ansehen"
+msgstr ""
+
+msgid "Bauprojekte ansehen"
+msgstr ""
+
+msgid "Alle Immobilien"
+msgstr ""
+
+msgid "Alle Bauprojekte"
+msgstr ""
+
+msgid "Immobilien suchen"
+msgstr ""
+
+msgid "Bauprojekte suchen"
+msgstr ""
+
+msgid "Keine Immobilien gefunden."
+msgstr ""
+
+msgid "Keine Bauprojekte gefunden."
+msgstr ""
+
+msgid "Keine Immobilien im Papierkorb."
+msgstr ""
+
+msgid "Keine Bauprojekte im Papierkorb."
+msgstr ""
+
+msgid "Titelbild der Immobilie"
+msgstr ""
+
+msgid "Titelbild des Projekts"
+msgstr ""
+
+msgid "Titelbild festlegen"
+msgstr ""
+
+msgid "Titelbild entfernen"
+msgstr ""
+
+msgid "Als Titelbild verwenden"
+msgstr ""
+
+msgid "Immobilien-Archiv"
+msgstr ""
+
+msgid "Bauprojekt-Archiv"
+msgstr ""
+
+msgid "In Immobilie einfügen"
+msgstr ""
+
+msgid "Zu dieser Immobilie hochgeladen"
+msgstr ""
+
+msgid "Immobilienliste filtern"
+msgstr ""
+
+msgid "Navigation Immobilienliste"
+msgstr ""
+
+msgid "Immobilienliste"
+msgstr ""
+
+msgid "Immobilien für Verkauf und Vermietung"
+msgstr ""
+
+msgid "Bauprojekte mit mehreren Wohneinheiten"
+msgstr ""
+
+# ====================
+# Taxonomies
+# ====================
+
+msgctxt "taxonomy general name"
+msgid "Immobilientypen"
+msgstr ""
+
+msgctxt "taxonomy singular name"
+msgid "Immobilientyp"
+msgstr ""
+
+msgctxt "taxonomy general name"
+msgid "Regionen"
+msgstr ""
+
+msgctxt "taxonomy singular name"
+msgid "Region"
+msgstr ""
+
+msgctxt "taxonomy general name"
+msgid "Agenten"
+msgstr ""
+
+msgctxt "taxonomy singular name"
+msgid "Agent"
+msgstr ""
+
+msgid "Typen suchen"
+msgstr ""
+
+msgid "Regionen suchen"
+msgstr ""
+
+msgid "Agenten suchen"
+msgstr ""
+
+msgid "Alle Typen"
+msgstr ""
+
+msgid "Alle Regionen"
+msgstr ""
+
+msgid "Alle Agenten"
+msgstr ""
+
+msgid "Übergeordnete Region"
+msgstr ""
+
+msgid "Übergeordnete Region:"
+msgstr ""
+
+msgid "Typ bearbeiten"
+msgstr ""
+
+msgid "Region bearbeiten"
+msgstr ""
+
+msgid "Agent bearbeiten"
+msgstr ""
+
+msgid "Typ aktualisieren"
+msgstr ""
+
+msgid "Region aktualisieren"
+msgstr ""
+
+msgid "Agent aktualisieren"
+msgstr ""
+
+msgid "Neuen Typ hinzufügen"
+msgstr ""
+
+msgid "Neue Region hinzufügen"
+msgstr ""
+
+msgid "Neuen Agent hinzufügen"
+msgstr ""
+
+msgid "Name des neuen Typs"
+msgstr ""
+
+msgid "Name der neuen Region"
+msgstr ""
+
+msgid "Name des neuen Agenten"
+msgstr ""
+
+msgid "Typen"
+msgstr ""
+
+msgid "Regionen"
+msgstr ""
+
+msgid "Agenten"
+msgstr ""
+
+msgid "Keine Typen gefunden."
+msgstr ""
+
+msgid "Keine Regionen gefunden."
+msgstr ""
+
+msgid "Keine Agenten gefunden."
+msgstr ""
+
+msgid "← Zurück zu den Typen"
+msgstr ""
+
+# ====================
+# System Errors
+# ====================
+
+#. translators: 1: Erforderliche PHP-Version, 2: Aktuelle PHP-Version
+msgid "Immo Manager benötigt PHP %1$s oder neuer. Du verwendest aktuell PHP %2$s."
+msgstr ""
+
+#. translators: 1: Erforderliche WP-Version, 2: Aktuelle WP-Version
+msgid "Immo Manager benötigt WordPress %1$s oder neuer. Du verwendest aktuell WordPress %2$s."
+msgstr ""
+
+# ====================
+# Maps (OpenStreetMap)
+# ====================
+
+msgid "Karten (OpenStreetMap)"
+msgstr ""
+
+msgid "Das Plugin nutzt <strong>OpenStreetMap</strong> via <a href=\"https://leafletjs.com/\" target=\"_blank\" rel=\"noopener\">Leaflet.js</a> für die Kartendarstellung – kostenfrei und ohne API-Key."
+msgstr ""
+
+msgid "Karten anzeigen"
+msgstr ""
+
+msgid "Kartendarstellung im Frontend aktivieren"
+msgstr ""
+
+msgid "Tile-Server-URL"
+msgstr ""
+
+msgid "URL zum Tile-Server. Platzhalter: {s} (Subdomain), {z} (Zoom), {x}/{y} (Kachel). Standard: OpenStreetMap."
+msgstr ""
+
+msgid "Attribution (Quellenangabe)"
+msgstr ""
+
+msgid "Muss laut OSM-Lizenz sichtbar sein. HTML erlaubt (z. B. Links)."
+msgstr ""
+
+msgid "Standard-Latitude"
+msgstr ""
+
+msgid "Breitengrad für die Standardansicht. Österreich-Zentrum ≈ 47.5162."
+msgstr ""
+
+msgid "Standard-Longitude"
+msgstr ""
+
+msgid "Längengrad für die Standardansicht. Österreich-Zentrum ≈ 14.5501."
+msgstr ""
+
+msgid "Standard-Zoom"
+msgstr ""
+
+msgid "Zoom-Level (1 = Weltkarte, 19 = Häuserebene). Empfohlen für Österreich: 7."
+msgstr ""

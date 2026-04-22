@@ -1,0 +1,123 @@
+/**
+ * Immo Manager – Metabox Styles
+ */
+
+/* ==========================================================================
+   Generic form helpers
+   ========================================================================== */
+.immo-form th { width: 200px; }
+.immo-form td input[type="text"],
+.immo-form td input[type="email"],
+.immo-form td input[type="number"],
+.immo-form td input[type="date"],
+.immo-form td select { vertical-align: middle; }
+
+/* ==========================================================================
+   Features (checkbox grid)
+   ========================================================================== */
+.immo-features .immo-feature-group {
+	border: 1px solid #e0e0e0;
+	border-radius: 4px;
+	padding: 12px 16px;
+	margin-bottom: 12px;
+	background: #fafafa;
+}
+.immo-features .immo-feature-group > legend {
+	font-weight: 600;
+	color: #1e88e5;
+	padding: 0 6px;
+}
+.immo-feature-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 6px 12px;
+}
+.immo-feature {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 4px 6px;
+	border-radius: 3px;
+	cursor: pointer;
+	user-select: none;
+}
+.immo-feature:hover { background: #fff; }
+.immo-feature .icon { font-size: 1.1em; }
+.immo-feature input[type="checkbox"] { margin: 0; }
+
+/* ==========================================================================
+   Units table
+   ========================================================================== */
+.immo-units-manager .notice.inline { margin: 5px 0 15px 0; }
+
+.immo-units-table .col-nr { width: 80px; }
+.immo-units-table .col-floor { width: 70px; }
+.immo-units-table .col-area,
+.immo-units-table .col-rooms { width: 90px; }
+.immo-units-table .col-price,
+.immo-units-table .col-rent { width: 110px; }
+.immo-units-table .col-status { width: 110px; }
+.immo-units-table .col-actions { width: 180px; text-align: right; }
+
+.immo-status-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 10px;
+	font-size: 0.85em;
+	background: #e0e0e0;
+	color: #333;
+}
+.immo-status-badge.status-available { background: #c8e6c9; color: #1b5e20; }
+.immo-status-badge.status-reserved  { background: #fff3c4; color: #7a5d00; }
+.immo-status-badge.status-sold      { background: #ffcdd2; color: #8b0000; }
+.immo-status-badge.status-rented    { background: #bbdefb; color: #0d47a1; }
+
+/* ==========================================================================
+   Unit editor (inline modal)
+   ========================================================================== */
+.immo-unit-editor {
+	margin-top: 16px;
+	padding: 16px 20px;
+	background: #fff;
+	border: 1px solid #1e88e5;
+	border-radius: 6px;
+	box-shadow: 0 4px 12px rgba(30, 136, 229, 0.1);
+}
+.immo-unit-editor-title { margin: 0 0 12px 0; }
+
+.immo-unit-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 12px 16px;
+}
+.immo-unit-grid label {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 0.95em;
+}
+.immo-unit-grid label > span {
+	font-weight: 600;
+	color: #444;
+}
+.immo-unit-grid label > input,
+.immo-unit-grid label > select,
+.immo-unit-grid label > textarea { width: 100%; box-sizing: border-box; }
+.immo-unit-grid .immo-unit-full {
+	grid-column: 1 / -1;
+}
+
+.immo-unit-actions { margin-top: 14px; display: flex; align-items: center; gap: 8px; }
+.immo-unit-actions .spinner { float: none; margin: 0; }
+.immo-unit-actions .spinner.is-active { visibility: visible; }
+.immo-unit-message { font-size: 0.9em; color: #388e3c; }
+.immo-unit-message.error { color: #b71c1c; }
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 782px) {
+	.immo-form th { width: auto; }
+	.immo-feature-grid { grid-template-columns: 1fr; }
+	.immo-units-table .col-actions { width: 120px; }
+}

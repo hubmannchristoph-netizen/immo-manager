@@ -1,0 +1,303 @@
+/**
+ * Immo Manager – Admin Styles
+ */
+
+/* ==========================================================================
+   Variables
+   ========================================================================== */
+.immo-manager-admin {
+	--immo-primary: #1e88e5;
+	--immo-secondary: #43a047;
+	--immo-accent: #ff9800;
+	--immo-border: #ccd0d4;
+	--immo-bg: #ffffff;
+	--immo-muted: #666666;
+}
+
+/* ==========================================================================
+   Welcome Panel
+   ========================================================================== */
+.immo-manager-admin .immo-welcome-panel {
+	background: var(--immo-bg);
+	border: 1px solid var(--immo-border);
+	border-left: 4px solid var(--immo-primary);
+	border-radius: 4px;
+	padding: 20px 24px;
+	margin: 20px 0;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.immo-manager-admin .immo-welcome-panel h2 {
+	margin-top: 0;
+	color: var(--immo-primary);
+}
+
+/* ==========================================================================
+   Stats Grid
+   ========================================================================== */
+.immo-manager-admin .immo-stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 16px;
+	margin: 20px 0;
+}
+
+.immo-manager-admin .immo-stat-card {
+	background: var(--immo-bg);
+	border: 1px solid var(--immo-border);
+	border-radius: 6px;
+	padding: 24px 16px;
+	text-align: center;
+	transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.immo-manager-admin .immo-stat-card:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+	transform: translateY(-2px);
+}
+
+.immo-manager-admin .immo-stat-card--highlight {
+	border-color: var(--immo-accent);
+	background: #fff8e1;
+}
+
+.immo-manager-admin .immo-stat-card--highlight .number {
+	color: #e65100;
+}
+
+.immo-manager-admin .immo-stat-card .number {
+	font-size: 2.2em;
+	font-weight: 700;
+	color: var(--immo-primary);
+	line-height: 1.1;
+	margin: 0 0 8px 0;
+}
+
+.immo-manager-admin .immo-stat-card .label {
+	color: var(--immo-muted);
+	font-size: 0.95em;
+}
+
+/* ==========================================================================
+   Quick Links
+   ========================================================================== */
+.immo-manager-admin .immo-quick-links {
+	background: var(--immo-bg);
+	border: 1px solid var(--immo-border);
+	border-radius: 6px;
+	padding: 20px;
+	margin: 20px 0;
+}
+
+.immo-manager-admin .immo-quick-links h3 {
+	margin-top: 0;
+}
+
+.immo-manager-admin .immo-quick-links .button {
+	margin-right: 8px;
+	margin-bottom: 4px;
+}
+
+/* Quick-Edit Links in Listen (Columns) */
+.immo-quick-edit-links {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
+.immo-quick-edit-links .button-small {
+	padding: 0 8px;
+	height: 24px;
+	line-height: 22px;
+	font-size: 11px;
+}
+.immo-btn-wizard {
+	background: #f0f0f1;
+	border-color: #6750A4 !important;
+	color: #6750A4 !important;
+}
+.immo-btn-wizard:hover {
+	background: #6750A4 !important;
+	color: #fff !important;
+}
+
+
+/* ==========================================================================
+   Info Panel
+   ========================================================================== */
+.immo-manager-admin .immo-info-panel {
+	background: #fff8e1;
+	border: 1px solid #ffe082;
+	border-left: 4px solid var(--immo-accent);
+	border-radius: 4px;
+	padding: 16px 24px;
+	margin: 20px 0;
+}
+
+.immo-manager-admin .immo-info-panel h3 {
+	margin-top: 0;
+	color: #795d00;
+}
+
+.immo-manager-admin .immo-info-panel ul {
+	margin: 8px 0 0 20px;
+	list-style: disc;
+}
+
+.immo-manager-admin .immo-info-panel li {
+	margin-bottom: 6px;
+}
+
+/* ==========================================================================
+   Dashboard Widget (WP Dashboard)
+   ========================================================================== */
+.immo-dashboard-widget .immo-stats {
+	list-style: none;
+	padding: 0;
+	margin: 0 0 12px 0;
+}
+
+.immo-dashboard-widget .immo-stats li {
+	display: flex;
+	justify-content: space-between;
+	padding: 8px 0;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.immo-dashboard-widget .immo-stats li:last-child {
+	border-bottom: none;
+}
+
+.immo-dashboard-widget .immo-stats .label {
+	color: var(--immo-muted, #666);
+}
+
+.immo-dashboard-widget .immo-stats strong {
+	color: var(--immo-primary, #1e88e5);
+	font-size: 1.05em;
+}
+
+.immo-dashboard-widget .immo-note {
+	color: #666;
+	font-style: italic;
+	font-size: 0.9em;
+	margin: 12px 0 8px 0;
+}
+
+/* ==========================================================================
+   Settings Form
+   ========================================================================== */
+.immo-manager-admin .form-table th {
+	width: 260px;
+}
+
+.immo-manager-admin .form-table td .description {
+	margin-top: 6px;
+	font-style: italic;
+	color: var(--immo-muted);
+}
+
+.immo-manager-admin h2 {
+	padding-bottom: 8px;
+	border-bottom: 1px solid var(--immo-border);
+	margin-top: 32px;
+}
+
+.immo-manager-admin h2:first-of-type {
+	margin-top: 16px;
+}
+
+/* WP Color Picker fit */
+.immo-manager-admin .wp-color-result {
+	margin-top: 0;
+	vertical-align: middle;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+	.immo-manager-admin .form-table th {
+		width: auto;
+	}
+
+	.immo-manager-admin .immo-stats-grid {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+@media screen and (max-width: 480px) {
+	.immo-manager-admin .immo-stats-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* ==========================================================================
+   Demo-Section
+   ========================================================================== */
+.immo-demo-section {
+	background: var(--immo-bg);
+	border: 1px solid var(--immo-border);
+	border-left: 4px solid var(--immo-secondary);
+	border-radius: 4px;
+	padding: 20px 24px;
+	margin: 20px 0;
+}
+
+.immo-demo-section h3 { margin-top: 0; }
+.immo-demo-section .button { margin-right: 8px; }
+.immo-demo-status { margin-left: 8px; font-weight: 600; }
+.immo-demo-spinner { margin-top: 8px; font-style: italic; color: var(--immo-muted); }
+
+/* ==========================================================================
+   Design-Stil Picker (Settings-Seite)
+   ========================================================================== */
+.immo-design-style-picker {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 12px;
+	max-width: 900px;
+	margin-bottom: 12px;
+}
+.immo-design-style-option {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 16px;
+	border: 2px solid #e0e0e0;
+	border-radius: 12px;
+	cursor: pointer;
+	background: #fff;
+	transition: all 0.2s ease;
+}
+.immo-design-style-option:hover {
+	border-color: var(--immo-primary, #6750A4);
+	background: #faf7ff;
+	transform: translateY(-2px);
+}
+.immo-design-style-option.selected {
+	border-color: var(--immo-primary, #6750A4);
+	background: linear-gradient(135deg, #faf7ff 0%, #fff 100%);
+	box-shadow: 0 4px 12px rgba(103, 80, 164, 0.15);
+}
+.immo-design-style-option input {
+	position: absolute;
+	opacity: 0;
+}
+.immo-style-icon {
+	font-size: 2rem;
+	line-height: 1;
+	flex-shrink: 0;
+}
+.immo-style-info {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.immo-style-label {
+	font-weight: 700;
+	font-size: 1rem;
+	color: #1c1b1f;
+}
+.immo-style-desc {
+	font-size: 0.85rem;
+	color: #605d66;
+	line-height: 1.4;
+}
