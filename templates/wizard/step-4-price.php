@@ -12,7 +12,7 @@ $p = $prefill;
 </div>
 
 <!-- Verkauf -->
-<div class="immo-wizard-section immo-price-section-sale">
+<div class="immo-wizard-section immo-price-section-sale immo-property-only">
 	<h3>🏷️ <?php esc_html_e( 'Kaufpreis', 'immo-manager' ); ?></h3>
 	<div class="immo-wizard-fields">
 		<div class="immo-field immo-field--half">
@@ -31,7 +31,7 @@ $p = $prefill;
 </div>
 
 <!-- Vermietung -->
-<div class="immo-wizard-section immo-price-section-rent">
+<div class="immo-wizard-section immo-price-section-rent immo-property-only">
 	<h3>🔑 <?php esc_html_e( 'Mietkonditionen', 'immo-manager' ); ?></h3>
 	<div class="immo-wizard-fields">
 		<div class="immo-field immo-field--third">
@@ -54,7 +54,7 @@ $p = $prefill;
 </div>
 
 <!-- Status (Immobilie) -->
-<div class="immo-wizard-section immo-property-status-section">
+<div class="immo-wizard-section immo-property-status-section immo-property-only">
 	<h3><?php esc_html_e( 'Status der Immobilie', 'immo-manager' ); ?></h3>
 	<div class="immo-status-options">
 		<?php
@@ -75,7 +75,7 @@ $p = $prefill;
 </div>
 
 <!-- Status (Bauprojekt) -->
-<div class="immo-wizard-section immo-project-status-section" hidden>
+<div class="immo-wizard-section immo-project-status-section" style="display:none;">
 	<h3><?php esc_html_e( 'Projekt-Status', 'immo-manager' ); ?></h3>
 	<div class="immo-status-options">
 		<?php
@@ -98,7 +98,7 @@ $p = $prefill;
 	</div>
 </div>
 
-<div class="immo-wizard-section">
+<div class="immo-wizard-section immo-property-only">
 	<div class="immo-field immo-field--half">
 		<label for="wiz_available_from"><?php esc_html_e( 'Verfügbar ab (optional)', 'immo-manager' ); ?></label>
 		<input type="date" id="wiz_available_from" name="_immo_available_from" class="immo-wizard-input immo-input"

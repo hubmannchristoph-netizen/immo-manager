@@ -695,7 +695,7 @@ class AdminPages {
 			wp_enqueue_script(
 				'immo-manager-metaboxes',
 				IMMO_MANAGER_PLUGIN_URL . 'public/js/metaboxes.js',
-				array( 'jquery' ),
+				array( 'jquery', 'jquery-ui-sortable' ),
 				IMMO_MANAGER_VERSION,
 				true
 			);

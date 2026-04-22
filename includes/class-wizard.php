@@ -227,6 +227,7 @@ class Wizard {
 
 		ob_start();
 		$nonce      = wp_create_nonce( self::NONCE_ACTION );
+		$media_nonce = is_user_logged_in() ? wp_create_nonce( 'media-form' ) : '';
 		$ajax_url   = admin_url( 'admin-ajax.php' );
 		$api_base   = rest_url( RestApi::NAMESPACE );
 		$redirect   = esc_url( $atts['redirect'] );

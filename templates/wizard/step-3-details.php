@@ -11,7 +11,7 @@ $p = $prefill;
 	<p class="immo-wizard-step-sub"><?php esc_html_e( 'Fläche, Zimmer, Baujahr und Energiedaten.', 'immo-manager' ); ?></p>
 </div>
 
-<div class="immo-wizard-section">
+<div class="immo-wizard-section immo-property-only">
 	<h3><?php esc_html_e( 'Fläche', 'immo-manager' ); ?></h3>
 	<div class="immo-wizard-fields">
 		<?php
@@ -32,7 +32,7 @@ $p = $prefill;
 	</div>
 </div>
 
-<div class="immo-wizard-section">
+<div class="immo-wizard-section immo-property-only">
 	<h3><?php esc_html_e( 'Räume', 'immo-manager' ); ?></h3>
 	<div class="immo-wizard-fields">
 		<?php
@@ -55,7 +55,7 @@ $p = $prefill;
 	</div>
 </div>
 
-<div class="immo-wizard-section">
+<div class="immo-wizard-section immo-property-only">
 	<h3><?php esc_html_e( 'Baujahr & Energie', 'immo-manager' ); ?></h3>
 	<div class="immo-wizard-fields">
 		<div class="immo-field immo-field--quarter">

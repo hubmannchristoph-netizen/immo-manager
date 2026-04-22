@@ -51,12 +51,12 @@ class Templates {
 
 		// Archiv: /projekte/
 		if ( is_post_type_archive( PostTypes::POST_TYPE_PROJECT ) ) {
-			return $this->locate( 'archive-immo_project.php', $template );
+			return $this->locate( 'archive-immo_mgr_project.php', $template );
 		}
 
 		// Einzelseite: /projekte/mein-projekt/
 		if ( is_singular( PostTypes::POST_TYPE_PROJECT ) ) {
-			return $this->locate( 'single-immo_project.php', $template );
+			return $this->locate( 'single-immo_mgr_project.php', $template );
 		}
 
 		return $template;

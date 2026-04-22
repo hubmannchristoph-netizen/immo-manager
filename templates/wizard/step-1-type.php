@@ -34,7 +34,7 @@ $types = array(
 	<div class="immo-field-error" data-field="_immo_property_type" hidden></div>
 </div>
 
-<div class="immo-wizard-section immo-mode-section">
+<div class="immo-wizard-section immo-mode-section immo-property-only">
 	<h3><?php esc_html_e( 'Angebotsmodus', 'immo-manager' ); ?></h3>
 	<div class="immo-mode-options">
 		<?php

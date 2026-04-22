@@ -533,24 +533,11 @@
 
 		// Step 1: Type & Mode sections
 		toggleField('_immo_property_type', !isProject);
-		toggleField('_immo_mode', !isProject);
 
-		// Step 3: Detail fields
-		toggleField('_immo_area', !isProject);
-		toggleField('_immo_usable_area', !isProject);
-		toggleField('_immo_rooms', !isProject);
-		toggleField('_immo_bedrooms', !isProject);
-		toggleField('_immo_bathrooms', !isProject);
-		toggleField('_immo_floor', !isProject);
-
-		// Step 4: Price fields
-		toggleField('_immo_price', !isProject);
-		toggleField('_immo_rent', !isProject);
-		toggleField('_immo_operating_costs', !isProject);
-		toggleField('_immo_deposit', !isProject);
-		toggleField('_immo_commission', !isProject);
-		toggleField('_immo_available_from', !isProject);
-		toggleField('_immo_status', !isProject);
+		// Hide complete property-only sections (including labels and titles)
+		self.el.querySelectorAll('.immo-property-only').forEach(function(el) {
+			el.style.display = isProject ? 'none' : '';
+		});
 
 		// Project fields
 		toggleField('_immo_project_status', isProject);
@@ -630,13 +617,102 @@
 			e.preventDefault(); dropZone.classList.remove('drag-over');
 			self.uploadFiles(e.dataTransfer.files, preview, ids, idsInput);
 		});
+
+		// WP Media Library Integration for Images
+		var mediaBtn = dropZone.querySelector('.immo-media-btn');
+		if (mediaBtn) {
+			var mediaFrame;
+			mediaBtn.addEventListener('click', function(e) {
+				e.stopPropagation();
+				if (mediaFrame) { mediaFrame.open(); return; }
+				mediaFrame = wp.media({
+					title: 'Bilder aus Mediathek wählen',
+					button: { text: 'In Galerie einfügen' },
+					multiple: true,
+					library: { type: 'image' }
+				});
+				mediaFrame.on('select', function() {
+					var selection = mediaFrame.state().get('selection');
+					selection.map(function(attachment) {
+						attachment = attachment.toJSON();
+						var id = attachment.id;
+						if (ids.indexOf(String(id)) === -1) {
+							ids.push(String(id));
+							idsInput.value = ids.join(',');
+							var url = attachment.sizes && attachment.sizes.thumbnail ? attachment.sizes.thumbnail.url : attachment.url;
+							
+							var item = document.createElement('div');
+							item.className = 'immo-preview-item';
+							item.dataset.id = id;
+							item.draggable = true;
+							item.innerHTML = '<img src="' + url + '" alt=""><button type="button" class="immo-preview-remove" data-id="' + id + '">✕</button>';
+							item.querySelector('.immo-preview-remove').addEventListener('click', function () {
+								ids.splice(ids.indexOf(String(id)), 1);
+								idsInput.value = ids.join(',');
+								item.remove();
+								self.saveToStorage();
+							});
+							preview.appendChild(item);
+						}
+					});
+					self.saveToStorage();
+				});
+				mediaFrame.open();
+			});
+		}
+
+		// Initialize sortable for existing items
+		self.initSortable(preview, ids, idsInput);
+	};
+
+	WizardManager.prototype.initSortable = function (container, ids, idsInput) {
+		var self = this;
+		var dragEl = null;
+
+		if (container.dataset.sortableInitialized) { return; }
+		container.dataset.sortableInitialized = 'true';
+
+		container.addEventListener('dragstart', function(e) {
+			dragEl = e.target.closest('.immo-preview-item');
+			if (!dragEl) return;
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/plain', dragEl.dataset.id || '');
+			setTimeout(function() { dragEl.style.opacity = '0.5'; }, 0);
+		});
+
+		container.addEventListener('dragover', function(e) {
+			e.preventDefault();
+			e.dataTransfer.dropEffect = 'move';
+			var target = e.target.closest('.immo-preview-item');
+			if (target && target !== dragEl) {
+				var rect = target.getBoundingClientRect();
+				var next = (e.clientX - rect.left) / rect.width > 0.5;
+				container.insertBefore(dragEl, next ? target.nextSibling : target);
+			}
+		});
+
+		container.addEventListener('dragend', function(e) {
+			if (dragEl) dragEl.style.opacity = '1';
+			dragEl = null;
+			
+			// Update IDs
+			ids.length = 0;
+			container.querySelectorAll('.immo-preview-item').forEach(function(item) {
+				if (item.dataset.id) { ids.push(item.dataset.id); }
+			});
+			idsInput.value = ids.join(',');
+			self.saveToStorage();
+		});
 	};
 
 	WizardManager.prototype.uploadFiles = function (files, preview, ids, idsInput) {
 		var self = this;
-		Array.from(files).forEach(function (file) {
-			if (!file.type.startsWith('image/')) { return; }
-			// Lade-Platzhalter.
+		var fileArray = Array.from(files).filter(function(file) { return file.type.startsWith('image/'); });
+
+		function processNext() {
+			if (fileArray.length === 0) return;
+			var file = fileArray.shift();
+
 			var placeholder = document.createElement('div');
 			placeholder.className = 'immo-preview-item immo-preview-uploading';
 			placeholder.innerHTML = '<div class="immo-spinner"></div>';
@@ -644,7 +720,8 @@
 
 			var fd = new FormData();
 			fd.append('action', 'upload-attachment');
-			fd.append('_wpnonce', self.el.dataset.nonce);
+			fd.append('_wpnonce', self.el.dataset.mediaNonce || self.el.dataset.nonce);
+			if (self.postId > 0) { fd.append('post_id', self.postId); }
 			fd.append('async-upload', file, file.name);
 
 			fetch(self.ajaxUrl, { method: 'POST', body: fd })
@@ -654,18 +731,26 @@
 						var id = data.data.id;
 						ids.push(String(id));
 						idsInput.value = ids.join(',');
+						
+						placeholder.classList.remove('immo-preview-uploading');
+						placeholder.dataset.id = id;
+						placeholder.draggable = true;
 						placeholder.innerHTML = '<img src="' + (data.data.url || '') + '" alt=""><button type="button" class="immo-preview-remove" data-id="' + id + '">✕</button>';
 						placeholder.querySelector('.immo-preview-remove').addEventListener('click', function () {
 							ids.splice(ids.indexOf(String(id)), 1);
 							idsInput.value = ids.join(',');
 							placeholder.remove();
+							self.saveToStorage();
 						});
+						self.saveToStorage();
 					} else {
 						placeholder.remove();
 					}
 				})
-				.catch(function () { placeholder.remove(); });
-		});
+				.catch(function () { placeholder.remove(); })
+				.finally(processNext);
+		}
+		processNext();
 	};
 
 	WizardManager.prototype.addExistingPreview = function (id, preview, ids, idsInput) {
@@ -678,6 +763,8 @@
 			.then(function (r) { return r.json(); })
 			.then(function (data) {
 				if (data.source_url) {
+					item.dataset.id = id;
+					item.draggable = true;
 					item.innerHTML = '<img src="' + data.source_url + '" alt=""><button type="button" class="immo-preview-remove" data-id="' + id + '">✕</button>';
 					item.querySelector('.immo-preview-remove').addEventListener('click', function () {
 						var idx = ids.indexOf(String(id));
@@ -714,11 +801,58 @@
 		var dBtn = dropZone.querySelector('.immo-doc-upload-btn');
 		if (dBtn) dBtn.addEventListener('click', function (e) { e.stopPropagation(); fileInput.click(); });
 		fileInput.addEventListener('change', function () { self.uploadDocs(fileInput.files, preview, ids, idsInput); });
+
+		// WP Media Library Integration for Documents
+		var docMediaBtn = dropZone.querySelector('.immo-doc-media-btn');
+		if (docMediaBtn) {
+			var docMediaFrame;
+			docMediaBtn.addEventListener('click', function(e) {
+				e.stopPropagation();
+				if (docMediaFrame) { docMediaFrame.open(); return; }
+				docMediaFrame = wp.media({
+					title: 'Dokumente aus Mediathek wählen',
+					button: { text: 'Einfügen' },
+					multiple: true,
+					library: { type: 'application' }
+				});
+				docMediaFrame.on('select', function() {
+					var selection = docMediaFrame.state().get('selection');
+					selection.map(function(attachment) {
+						attachment = attachment.toJSON();
+						var id = attachment.id;
+						if (ids.indexOf(String(id)) === -1) {
+							ids.push(String(id));
+							idsInput.value = ids.join(',');
+							var name = attachment.filename || attachment.title || 'Dokument';
+							
+							var item = document.createElement('div');
+							item.className = 'immo-preview-item';
+							item.innerHTML = '<div style="font-size:30px;text-align:center;padding-top:20px;">📄</div><div style="font-size:11px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:4px;" title="' + name + '">' + name + '</div><button type="button" class="immo-preview-remove" data-id="' + id + '">✕</button>';
+							item.querySelector('.immo-preview-remove').addEventListener('click', function () {
+								var idx = ids.indexOf(String(id));
+								if (idx > -1) ids.splice(idx, 1);
+								idsInput.value = ids.join(',');
+								item.remove();
+								self.saveToStorage();
+							});
+							preview.appendChild(item);
+						}
+					});
+					self.saveToStorage();
+				});
+				docMediaFrame.open();
+			});
+		}
 	};
 
 	WizardManager.prototype.uploadDocs = function (files, preview, ids, idsInput) {
 		var self = this;
-		Array.from(files).forEach(function (file) {
+		var fileArray = Array.from(files);
+
+		function processNext() {
+			if (fileArray.length === 0) return;
+			var file = fileArray.shift();
+
 			var placeholder = document.createElement('div');
 			placeholder.className = 'immo-preview-item immo-preview-uploading';
 			placeholder.innerHTML = '<div class="immo-spinner"></div>';
@@ -726,7 +860,8 @@
 
 			var fd = new FormData();
 			fd.append('action', 'upload-attachment');
-			fd.append('_wpnonce', self.el.dataset.nonce);
+			fd.append('_wpnonce', self.el.dataset.mediaNonce || self.el.dataset.nonce);
+			if (self.postId > 0) { fd.append('post_id', self.postId); }
 			fd.append('async-upload', file, file.name);
 
 			fetch(self.ajaxUrl, { method: 'POST', body: fd })
@@ -740,8 +875,11 @@
 						placeholder.querySelector('.immo-preview-remove').addEventListener('click', function () { ids.splice(ids.indexOf(String(id)), 1); idsInput.value = ids.join(','); placeholder.remove(); });
 						placeholder.classList.remove('immo-preview-uploading');
 					} else { placeholder.remove(); }
-				}).catch(function () { placeholder.remove(); });
-		});
+				})
+				.catch(function () { placeholder.remove(); })
+				.finally(processNext);
+		}
+		processNext();
 	};
 
 	WizardManager.prototype.addExistingDocPreview = function (id, preview, ids, idsInput) {

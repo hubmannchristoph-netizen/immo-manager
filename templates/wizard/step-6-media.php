@@ -19,7 +19,10 @@ defined( 'ABSPATH' ) || exit;
 				<p><?php esc_html_e( 'Bilder hierher ziehen oder klicken zum Auswählen', 'immo-manager' ); ?></p>
 				<p class="immo-upload-hint"><?php esc_html_e( 'JPEG, PNG, WebP – max. 8 MB pro Bild', 'immo-manager' ); ?></p>
 				<input type="file" id="immo-file-input" multiple accept="image/*" style="display:none">
-				<button type="button" class="immo-btn immo-btn-secondary immo-upload-btn"><?php esc_html_e( 'Bilder auswählen', 'immo-manager' ); ?></button>
+				<div style="display:flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+					<button type="button" class="immo-btn immo-btn-secondary immo-upload-btn"><?php esc_html_e( 'Bilder hochladen', 'immo-manager' ); ?></button>
+					<button type="button" class="immo-btn immo-btn-secondary immo-media-btn"><?php esc_html_e( 'Aus Mediathek wählen', 'immo-manager' ); ?></button>
+				</div>
 			</div>
 			<div class="immo-upload-preview" id="immo-upload-preview"></div>
 			<input type="hidden" name="gallery_ids" id="immo-gallery-ids" value="<?php echo esc_attr( implode( ',', array_map( 'absint', (array) ( $prefill['_immo_gallery'] ?? array() ) ) ) ); ?>">
@@ -36,7 +39,10 @@ defined( 'ABSPATH' ) || exit;
 				<span class="immo-upload-icon">📄</span>
 				<p><?php esc_html_e( 'Exposés, Grundrisse oder PDFs hierher ziehen', 'immo-manager' ); ?></p>
 				<input type="file" id="immo-doc-file-input" multiple accept=".pdf,.doc,.docx,.xls,.xlsx" style="display:none">
-				<button type="button" class="immo-btn immo-btn-secondary immo-doc-upload-btn"><?php esc_html_e( 'Dokumente auswählen', 'immo-manager' ); ?></button>
+				<div style="display:flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+					<button type="button" class="immo-btn immo-btn-secondary immo-doc-upload-btn"><?php esc_html_e( 'Dokumente hochladen', 'immo-manager' ); ?></button>
+					<button type="button" class="immo-btn immo-btn-secondary immo-doc-media-btn"><?php esc_html_e( 'Aus Mediathek wählen', 'immo-manager' ); ?></button>
+				</div>
 			</div>
 			<div class="immo-upload-preview" id="immo-doc-preview"></div>
 			<input type="hidden" name="document_ids" id="immo-document-ids" value="<?php echo esc_attr( implode( ',', array_map( 'absint', (array) ( $prefill['_immo_documents'] ?? array() ) ) ) ); ?>">

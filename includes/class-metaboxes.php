@@ -511,6 +511,15 @@ class Metaboxes {
 		wp_nonce_field( 'immo_gallery_nonce', 'immo_gallery_nonce' );
 		?>
 		<div id="immo-gallery-container">
+			<div class="immo-upload-drop-zone" id="immo-gallery-drop-zone">
+				<span class="immo-upload-icon">📸</span>
+				<p><?php esc_html_e( 'Bilder hierher ziehen oder klicken zum Auswählen', 'immo-manager' ); ?></p>
+				<input type="file" id="immo-gallery-file-input" multiple accept="image/*" style="display:none">
+				<div style="display:flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px;">
+					<button type="button" class="button immo-upload-btn"><?php esc_html_e( 'Bilder hochladen', 'immo-manager' ); ?></button>
+					<button type="button" id="immo-gallery-add" class="button"><?php esc_html_e( 'Aus Mediathek wählen', 'immo-manager' ); ?></button>
+				</div>
+			</div>
 			<div id="immo-gallery-images">
 				<?php foreach ( $gallery as $image_id ) : ?>
 					<?php if ( wp_attachment_is_image( $image_id ) ) : ?>
@@ -521,7 +530,6 @@ class Metaboxes {
 					<?php endif; ?>
 				<?php endforeach; ?>
 			</div>
-			<button type="button" id="immo-gallery-add" class="button"><?php esc_html_e( 'Bilder hinzufügen', 'immo-manager' ); ?></button>
 			<input type="hidden" id="immo-gallery-ids" name="immo_gallery_ids" value="<?php echo esc_attr( implode( ',', $gallery ) ); ?>" />
 		</div>
 		<script>
@@ -568,14 +576,87 @@ class Metaboxes {
 				});
 				$('#immo-gallery-ids').val(ids.join(','));
 			}
+			if ($.fn.sortable) {
+				$('#immo-gallery-images').sortable({
+					items: '.immo-gallery-item',
+					cursor: 'move',
+					update: function() {
+						updateGalleryIds();
+					}
+				});
+			}
+
+			// Drag & Drop Upload Logic
+			var dropZone = document.getElementById('immo-gallery-drop-zone');
+			var fileInput = document.getElementById('immo-gallery-file-input');
+			if (dropZone && fileInput) {
+				dropZone.addEventListener('click', function (e) {
+					if (e.target.id === 'immo-gallery-add') return;
+					fileInput.click();
+				});
+				var uBtn = dropZone.querySelector('.immo-upload-btn');
+				if (uBtn) uBtn.addEventListener('click', function(e) { e.stopPropagation(); fileInput.click(); });
+				
+				dropZone.addEventListener('dragover', function (e) { e.preventDefault(); dropZone.classList.add('drag-over'); });
+				dropZone.addEventListener('dragleave', function () { dropZone.classList.remove('drag-over'); });
+				dropZone.addEventListener('drop', function (e) {
+					e.preventDefault(); dropZone.classList.remove('drag-over');
+					uploadFiles(e.dataTransfer.files);
+				});
+				fileInput.addEventListener('change', function () { uploadFiles(fileInput.files); });
+
+				function uploadFiles(files) {
+					var fileArray = Array.from(files).filter(function(file) { return file.type.startsWith('image/'); });
+					function processNext() {
+						if (fileArray.length === 0) return;
+						var file = fileArray.shift();
+
+						var placeholder = $('<div class="immo-gallery-item immo-preview-uploading"><div class="immo-spinner"></div></div>');
+						$('#immo-gallery-images').append(placeholder);
+
+						var fd = new FormData();
+						fd.append('action', 'upload-attachment');
+						fd.append('_wpnonce', '<?php echo esc_js( wp_create_nonce( 'media-form' ) ); ?>');
+						fd.append('post_id', '<?php echo esc_js( $post->ID ); ?>');
+						fd.append('async-upload', file, file.name);
+
+						$.ajax({
+							url: ajaxurl,
+							type: 'POST',
+							data: fd,
+							processData: false,
+							contentType: false,
+							success: function(data) {
+								if (data.success && data.data && data.data.id) {
+									var id = data.data.id;
+									placeholder.attr('data-id', id);
+									placeholder.removeClass('immo-preview-uploading');
+									placeholder.html('<img src="' + (data.data.url || '') + '" alt=""><button type="button" class="immo-gallery-remove" title="Entfernen">×</button>');
+									updateGalleryIds();
+								} else {
+									placeholder.remove();
+								}
+							},
+							error: function() { placeholder.remove(); },
+							complete: function() { processNext(); }
+						});
+					}
+					processNext();
+				}
+			}
 		});
 		</script>
 		<style>
 		#immo-gallery-container { margin-top: 10px; }
+		.immo-upload-drop-zone { border: 2px dashed #ccc; border-radius: 8px; padding: 2rem 1rem; text-align: center; cursor: pointer; transition: all 0.2s ease; background: #fafafa; margin-bottom: 1rem; }
+		.immo-upload-drop-zone:hover, .immo-upload-drop-zone.drag-over { border-color: #0073aa; background: rgba(0,115,170,0.05); }
+		.immo-upload-icon { font-size: 2.5em; display: block; margin-bottom: 0.5rem; }
 		#immo-gallery-images { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
-		.immo-gallery-item { position: relative; display: inline-block; }
-		.immo-gallery-item img { width: 80px; height: 80px; object-fit: cover; border: 1px solid #ddd; }
-		.immo-gallery-remove { position: absolute; top: -5px; right: -5px; background: #f00; color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 14px; line-height: 1; }
+		.immo-gallery-item { position: relative; display: inline-block; cursor: move; width: 80px; height: 80px; border: 1px solid #ddd; background: #fff; display: flex; align-items: center; justify-content: center; }
+		.immo-gallery-item img { width: 100%; height: 100%; object-fit: cover; }
+		.immo-gallery-remove { position: absolute; top: -5px; right: -5px; background: #f00; color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 14px; line-height: 1; z-index: 10; padding: 0;}
+		.immo-preview-uploading .immo-spinner { width: 24px; height: 24px; border: 3px solid #ccc; border-top-color: #0073aa; border-radius: 50%; animation: immo-spin 1s linear infinite; }
+		@keyframes immo-spin { to { transform: rotate(360deg); } }
 		</style>
 		<?php
 	}
