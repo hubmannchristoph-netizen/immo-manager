@@ -40,7 +40,13 @@ $currency = \ImmoManager\Settings::get( 'currency_symbol', '€' );
 						<?php if ( $img ) : ?>
 							<a href="<?php echo esc_url( $proj['permalink'] ?? '#' ); ?>" class="immo-card-link" tabindex="-1" aria-hidden="true">
 								<div class="immo-card-image">
-									<img src="<?php echo esc_url( $img['url_thumbnail'] ); ?>" alt="<?php echo esc_attr( $img['alt'] ?: $proj['title'] ); ?>" loading="lazy">
+										<img
+											src="<?php echo esc_url( $img['url_large'] ?? $img['url_medium'] ?? $img['url'] ); ?>"
+											alt="<?php echo esc_attr( $img['alt'] ?: $proj['title'] ); ?>"
+											loading="lazy"
+											width="800"
+											height="600"
+										>
 									<span class="immo-status-badge status-available">
 										<?php echo esc_html( $status_labels[ $meta['project_status'] ?? '' ] ?? '' ); ?>
 									</span>

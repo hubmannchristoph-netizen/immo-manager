@@ -49,3 +49,25 @@ defined( 'ABSPATH' ) || exit;
 		</div>
 	<?php endif; ?>
 </div>
+
+<div class="immo-wizard-section">
+	<h3><?php esc_html_e( 'Video & Virtuelle Tour', 'immo-manager' ); ?></h3>
+	<div class="immo-field" style="margin-bottom: 20px;">
+		<label for="_immo_video_url"><?php esc_html_e( 'YouTube / Vimeo Link (optional)', 'immo-manager' ); ?></label>
+		<input type="url" name="_immo_video_url" id="_immo_video_url" class="immo-wizard-input" value="<?php echo esc_attr( $prefill['_immo_video_url'] ?? '' ); ?>" placeholder="https://www.youtube.com/watch?v=..." style="width: 100%;">
+	</div>
+	
+	<?php if ( is_user_logged_in() ) : ?>
+		<div class="immo-wizard-upload" id="immo-video-upload">
+			<label style="display:block; font-weight:600; margin-bottom: 8px;"><?php esc_html_e( 'Oder: Video hochladen / auswählen', 'immo-manager' ); ?></label>
+			<div class="immo-upload-drop-zone" id="immo-video-drop-zone" style="padding: 1.5rem 1rem;">
+				<span class="immo-upload-icon">🎥</span>
+				<div style="display:flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+					<button type="button" class="immo-btn immo-btn-secondary immo-video-media-btn"><?php esc_html_e( 'Video aus Mediathek wählen', 'immo-manager' ); ?></button>
+				</div>
+			</div>
+			<div class="immo-upload-preview" id="immo-video-preview" style="margin-top: 10px;"></div>
+			<input type="hidden" name="_immo_video_id" id="immo-video-id" class="immo-wizard-input" value="<?php echo esc_attr( (string) ( $prefill['_immo_video_id'] ?? '' ) ); ?>">
+		</div>
+	<?php endif; ?>
+</div>

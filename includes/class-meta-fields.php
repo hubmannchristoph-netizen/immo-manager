@@ -77,6 +77,8 @@ class MetaFields {
 			'_immo_features'          => array( 'type' => 'array',   'default' => array(), 'single' => true, 'show_in_rest' => false ),
 			'_immo_custom_features'   => array( 'type' => 'string',  'default' => '' ),
 			'_immo_documents'         => array( 'type' => 'array',   'default' => array(), 'single' => true, 'show_in_rest' => false ),
+			'_immo_video_url'         => array( 'type' => 'string',  'default' => '' ),
+			'_immo_video_id'          => array( 'type' => 'integer', 'default' => 0 ),
 
 			// Kontakt.
 			'_immo_contact_name'      => array( 'type' => 'string',  'default' => '' ),
@@ -117,6 +119,8 @@ class MetaFields {
 			// Gemeinschafts-Features.
 			'_immo_features'              => array( 'type' => 'array',   'default' => array(), 'single' => true, 'show_in_rest' => false ),
 			'_immo_documents'             => array( 'type' => 'array',   'default' => array(), 'single' => true, 'show_in_rest' => false ),
+			'_immo_video_url'             => array( 'type' => 'string',  'default' => '' ),
+			'_immo_video_id'              => array( 'type' => 'integer', 'default' => 0 ),
 			
 			// Kontakt.
 			'_immo_contact_name'          => array( 'type' => 'string',  'default' => '' ),

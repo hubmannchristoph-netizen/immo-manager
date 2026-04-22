@@ -47,6 +47,7 @@ class Metaboxes {
 		add_meta_box( 'immo_property_details',  __( 'Immobilie – Details', 'immo-manager' ),       array( $this, 'render_property_details' ),  PostTypes::POST_TYPE_PROPERTY, 'normal', 'high' );
 		add_meta_box( 'immo_property_location', __( 'Standort', 'immo-manager' ),                  array( $this, 'render_property_location' ), PostTypes::POST_TYPE_PROPERTY, 'normal', 'high' );
 		add_meta_box( 'immo_property_gallery',  __( 'Bildergalerie', 'immo-manager' ),             array( $this, 'render_gallery' ),           PostTypes::POST_TYPE_PROPERTY, 'normal', 'high' );
+		add_meta_box( 'immo_property_video',    __( 'Video / Virtuelle Tour', 'immo-manager' ),    array( $this, 'render_video' ),             PostTypes::POST_TYPE_PROPERTY, 'normal', 'high' );
 		add_meta_box( 'immo_property_price',    __( 'Preis & Bedingungen', 'immo-manager' ),       array( $this, 'render_property_price' ),    PostTypes::POST_TYPE_PROPERTY, 'normal', 'default' );
 		add_meta_box( 'immo_property_energy',   __( 'Energie', 'immo-manager' ),                   array( $this, 'render_property_energy' ),   PostTypes::POST_TYPE_PROPERTY, 'normal', 'default' );
 		add_meta_box( 'immo_property_features', __( 'Ausstattung', 'immo-manager' ),               array( $this, 'render_features' ),          PostTypes::POST_TYPE_PROPERTY, 'normal', 'default' );
@@ -57,6 +58,7 @@ class Metaboxes {
 		add_meta_box( 'immo_project_details',   __( 'Projekt – Daten', 'immo-manager' ),           array( $this, 'render_project_details' ),   PostTypes::POST_TYPE_PROJECT,  'normal', 'high' );
 		add_meta_box( 'immo_project_location',  __( 'Standort', 'immo-manager' ),                  array( $this, 'render_property_location' ), PostTypes::POST_TYPE_PROJECT,  'normal', 'high' );
 		add_meta_box( 'immo_project_gallery',   __( 'Bildergalerie', 'immo-manager' ),             array( $this, 'render_gallery' ),           PostTypes::POST_TYPE_PROJECT,  'normal', 'high' );
+		add_meta_box( 'immo_project_video',     __( 'Video / Virtuelle Tour', 'immo-manager' ),    array( $this, 'render_video' ),             PostTypes::POST_TYPE_PROJECT,  'normal', 'high' );
 		add_meta_box( 'immo_project_features',  __( 'Gemeinschafts-Ausstattung', 'immo-manager' ), array( $this, 'render_features' ),          PostTypes::POST_TYPE_PROJECT,  'normal', 'default' );
 		add_meta_box( 'immo_project_units',     __( 'Wohneinheiten', 'immo-manager' ),             array( $this, 'render_project_units' ),     PostTypes::POST_TYPE_PROJECT,  'normal', 'default' );
 		add_meta_box( 'immo_project_contact',   __( 'Kontakt / Agent', 'immo-manager' ),           array( $this, 'render_contact' ),           PostTypes::POST_TYPE_PROJECT,  'side',   'default' );

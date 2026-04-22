@@ -21,6 +21,7 @@
 		this.currentStep = 1;
 		this.draftId     = 0;
 		this.draftTimer  = null;
+		this.apiBase     = el.dataset.apiBase || '';
 		this.storageKey  = 'immo_wizard_' + (this.postId || 'new');
 		this.init();
 	}
@@ -99,6 +100,7 @@
 		// Image upload.
 		this.initImageUpload();
 		this.initDocumentUpload();
+		this.initVideoUpload();
 
 		// Auto-save on input changes.
 		var inputs = this.el.querySelectorAll('.immo-wizard-input');
@@ -760,7 +762,7 @@
 		item.className = 'immo-preview-item';
 		item.innerHTML = '<div class="immo-spinner"></div>';
 		preview.appendChild(item);
-		fetch(self.apiBase.replace('/immo-manager/v1', '') + '/wp/v2/media/' + id + '?_fields=id,source_url')
+		fetch(self.apiBase.replace(/immo-manager\/v1\/?/, 'wp/v2/media/') + id + '?_fields=id,source_url')
 			.then(function (r) { return r.json(); })
 			.then(function (data) {
 				if (data.source_url) {
@@ -844,6 +846,78 @@
 				docMediaFrame.open();
 			});
 		}
+	};
+
+	/* ── Video Upload ── */
+	WizardManager.prototype.initVideoUpload = function () {
+		var self      = this;
+		var dropZone  = this.el.querySelector('#immo-video-drop-zone');
+		var preview   = this.el.querySelector('#immo-video-preview');
+		var idsInput  = this.el.querySelector('#immo-video-id');
+
+		if (!dropZone || !preview || !idsInput) { return; }
+
+		var existingId = idsInput.value ? parseInt(idsInput.value, 10) : 0;
+		if (existingId) {
+			self.addExistingVideoPreview(existingId, preview, idsInput);
+		}
+
+		var mediaBtn = dropZone.querySelector('.immo-video-media-btn');
+		if (mediaBtn) {
+			var mediaFrame;
+			mediaBtn.addEventListener('click', function(e) {
+				e.stopPropagation();
+				if (mediaFrame) { mediaFrame.open(); return; }
+				mediaFrame = wp.media({
+					title: 'Video aus Mediathek wählen',
+					button: { text: 'Verwenden' },
+					multiple: false,
+					library: { type: 'video' }
+				});
+				mediaFrame.on('select', function() {
+					var attachment = mediaFrame.state().get('selection').first().toJSON();
+					idsInput.value = attachment.id;
+					var name = attachment.filename || attachment.title || 'Video';
+					preview.innerHTML = '';
+					var item = document.createElement('div');
+					item.className = 'immo-preview-item';
+					item.innerHTML = '<div style="font-size:30px;text-align:center;padding-top:20px;">🎥</div><div style="font-size:11px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:4px;" title="' + name + '">' + name + '</div><button type="button" class="immo-preview-remove">✕</button>';
+					item.querySelector('.immo-preview-remove').addEventListener('click', function () {
+						idsInput.value = '';
+						item.remove();
+						self.saveToStorage();
+					});
+					preview.appendChild(item);
+					self.saveToStorage();
+				});
+				mediaFrame.open();
+			});
+		}
+	};
+
+	WizardManager.prototype.addExistingVideoPreview = function (id, preview, idsInput) {
+		var self = this;
+		if (!id) { return; }
+		var item = document.createElement('div');
+		item.className = 'immo-preview-item';
+		item.innerHTML = '<div class="immo-spinner"></div>';
+		preview.appendChild(item);
+		fetch(self.apiBase.replace(/immo-manager\/v1\/?/, 'wp/v2/media/') + id + '?_fields=id,source_url,title')
+			.then(function (r) { return r.json(); })
+			.then(function (data) {
+				if (data.source_url) {
+					item.dataset.id = id;
+					var name = data.title && data.title.rendered ? data.title.rendered : 'Video';
+					item.innerHTML = '<div style="font-size:30px;text-align:center;padding-top:20px;">🎥</div><div style="font-size:11px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:4px;" title="' + name + '">' + name + '</div><button type="button" class="immo-preview-remove">✕</button>';
+					item.querySelector('.immo-preview-remove').addEventListener('click', function () {
+						idsInput.value = '';
+						item.remove();
+					});
+				} else {
+					item.remove();
+				}
+			})
+			.catch(function () { item.remove(); });
 	};
 
 	WizardManager.prototype.uploadDocs = function (files, preview, ids, idsInput) {

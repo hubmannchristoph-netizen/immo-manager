@@ -792,6 +792,8 @@ class RestApi {
 				'contact_email'         => (string) $m( '_immo_contact_email', '' ),
 				'contact_phone'         => (string) $m( '_immo_contact_phone', '' ),
 				'contact_image'         => $this->format_image( (int) $m( '_immo_contact_image_id', 0 ) ),
+				'video_url'             => (string) $m( '_immo_video_url', '' ),
+				'video_file_url'        => (int) $m( '_immo_video_id', 0 ) > 0 ? wp_get_attachment_url( (int) $m( '_immo_video_id', 0 ) ) : '',
 				'project_id'            => $project_id,
 				'project'               => $project_data,
 			),
@@ -858,6 +860,8 @@ class RestApi {
 				'contact_email'      => (string) $m( '_immo_contact_email', '' ),
 				'contact_phone'      => (string) $m( '_immo_contact_phone', '' ),
 				'contact_image'      => $this->format_image( (int) $m( '_immo_contact_image_id', 0 ) ),
+				'video_url'          => (string) $m( '_immo_video_url', '' ),
+				'video_file_url'     => (int) $m( '_immo_video_id', 0 ) > 0 ? wp_get_attachment_url( (int) $m( '_immo_video_id', 0 ) ) : '',
 				'documents'          => $documents,
 			),
 			'unit_stats'  => array_merge( $counts, array( 'total' => array_sum( $counts ) ) ),
@@ -985,6 +989,7 @@ class RestApi {
 			return null;
 		}
 		$full      = wp_get_attachment_image_url( $attachment_id, 'full' );
+		$hero      = wp_get_attachment_image_url( $attachment_id, '1536x1536' );
 		$large     = wp_get_attachment_image_url( $attachment_id, 'large' );
 		$medium    = wp_get_attachment_image_url( $attachment_id, 'medium_large' );
 		$thumbnail = wp_get_attachment_image_url( $attachment_id, 'medium' );
@@ -992,8 +997,8 @@ class RestApi {
 
 		return array(
 			'url'           => $full ?: '',
-			'url_large'     => $large ?: $full ?: '',
-			'url_medium'    => $medium ?: $full ?: '',
+			'url_large'     => $hero ?: $large ?: $full ?: '',
+			'url_medium'    => $large ?: $medium ?: $full ?: '',
 			'url_thumbnail' => $thumbnail ?: $medium ?: $full ?: '',
 			'alt'           => (string) $alt,
 		);

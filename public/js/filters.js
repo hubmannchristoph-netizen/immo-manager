@@ -225,7 +225,7 @@
 		return '<article class="immo-property-card" role="listitem" data-property-id="' + p.id + '">'
 			+ '<a href="' + escHtml(p.permalink) + '" class="immo-card-link" tabindex="-1" aria-hidden="true">'
 			+ '<div class="immo-card-image">'
-			+ (img ? '<img src="' + escHtml(img.url_thumbnail) + '" alt="' + escHtml(img.alt || p.title) + '" loading="lazy" width="400" height="280">' : '<div class="immo-card-no-image">🏠</div>')
+			+ (img ? '<img src="' + escHtml(img.url_large || img.url_medium || img.url) + '" alt="' + escHtml(img.alt || p.title) + '" loading="lazy" width="800" height="600">' : '<div class="immo-card-no-image">🏠</div>')
 			+ '<span class="immo-status-badge status-' + escHtml(statusClass[status] || 'available') + '">' + escHtml(statusMap[status] || status) + '</span>'
 			+ (meta.property_type ? '<span class="immo-type-badge">' + escHtml(meta.property_type) + '</span>' : '')
 			+ '</div></a>'

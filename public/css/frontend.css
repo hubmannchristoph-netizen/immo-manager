@@ -205,8 +205,9 @@
 	display:flex;flex-direction:column;
 }
 .immo-property-card:hover { transform:translateY(-3px);box-shadow:var(--immo-shadow-lg); }
-.layout-list .immo-property-card { flex-direction:row; }
-.layout-list .immo-card-image { width:240px;flex-shrink:0; }
+.layout-list .immo-property-card { flex-direction:row; align-items: stretch; }
+.layout-list .immo-card-link { display: flex; align-items: stretch; }
+.layout-list .immo-card-image { width:260px;flex-shrink:0; height:100%; aspect-ratio: auto; }
 .layout-list .immo-card-image img { height:100%;object-fit:cover; }
 .immo-card-image { position:relative;overflow:hidden;aspect-ratio:var(--immo-aspect-ratio);background:var(--immo-bg); }
 .immo-card-image img { width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease; }

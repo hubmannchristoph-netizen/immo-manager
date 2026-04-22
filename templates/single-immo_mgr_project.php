@@ -274,6 +274,51 @@ if ( ! empty( $gallery ) ) {
 				</div>
 			<?php endif; ?>
 
+			<?php if ( ! empty( $meta['documents'] ) ) : ?>
+				<div class="immo-accordion">
+					<button class="immo-accordion-header" aria-expanded="false"><?php esc_html_e( 'Dokumente & Exposé', 'immo-manager' ); ?><span class="immo-accordion-badge"><?php echo count( $meta['documents'] ); ?></span><span class="immo-accordion-icon" aria-hidden="true"></span></button>
+					<div class="immo-accordion-body" hidden>
+						<ul class="immo-documents-list" style="list-style: none; padding: 0; margin: 0;">
+							<?php foreach ( $meta['documents'] as $doc ) : ?>
+								<li style="margin-bottom: 12px; border: 1px solid var(--immo-border); border-radius: var(--immo-radius-sm); padding: 10px;">
+									<a href="<?php echo esc_url( $doc['url'] ); ?>" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--immo-text);">
+										<span style="font-size: 1.5em; color: var(--immo-primary);">📄</span>
+										<span style="font-weight: 500; font-size: 0.95em; word-break: break-all; flex: 1;"><?php echo esc_html( $doc['title'] ); ?></span>
+										<span style="font-size: 0.85em; color: var(--immo-primary);"><?php esc_html_e( 'Ansehen', 'immo-manager' ); ?> &rarr;</span>
+									</a>
+								</li>
+							<?php endforeach; ?>
+						</ul>
+					</div>
+				</div>
+			<?php endif; ?>
+
+			<?php if ( ! empty( $meta['video_url'] ) || ! empty( $meta['video_file_url'] ) ) : ?>
+				<div class="immo-accordion">
+					<button class="immo-accordion-header" aria-expanded="false"><?php esc_html_e( 'Video / Virtuelle Tour', 'immo-manager' ); ?><span class="immo-accordion-icon" aria-hidden="true"></span></button>
+					<div class="immo-accordion-body" hidden style="padding: 1.5rem;">
+						<?php if ( ! empty( $meta['video_url'] ) ) : ?>
+							<div class="immo-video-embed" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; border-radius: var(--immo-radius-sm); background: #000;">
+								<?php 
+								$embed = wp_oembed_get( $meta['video_url'], array( 'width' => 800 ) );
+								if ( $embed ) {
+									// Make iframe responsive
+									echo str_replace( '<iframe', '<iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"', $embed );
+								} else {
+									echo '<a href="' . esc_url( $meta['video_url'] ) . '" target="_blank" rel="noopener">' . esc_html__( 'Video ansehen', 'immo-manager' ) . '</a>';
+								}
+								?>
+							</div>
+						<?php elseif ( ! empty( $meta['video_file_url'] ) ) : ?>
+							<video controls style="width: 100%; max-height: 500px; border-radius: var(--immo-radius-sm); background: #000;">
+								<source src="<?php echo esc_url( $meta['video_file_url'] ); ?>">
+								<?php esc_html_e( 'Dein Browser unterstützt das Video-Tag nicht.', 'immo-manager' ); ?>
+							</video>
+						<?php endif; ?>
+					</div>
+				</div>
+			<?php endif; ?>
+
 			<!-- Lage -->
 			<?php if ( $has_map || $meta['address'] ) : ?>
 				<div class="immo-accordion">

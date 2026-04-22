@@ -38,11 +38,11 @@ $image           = $property['featured_image'] ?? null;
 		<div class="immo-card-image">
 			<?php if ( $image ) : ?>
 				<img
-					src="<?php echo esc_url( $image['url_thumbnail'] ); ?>"
+					src="<?php echo esc_url( $image['url_large'] ?? $image['url_medium'] ?? $image['url'] ); ?>"
 					alt="<?php echo esc_attr( $image['alt'] ?: $property['title'] ); ?>"
 					loading="lazy"
-					width="400"
-					height="280"
+					width="800"
+					height="600"
 				>
 			<?php else : ?>
 				<div class="immo-card-no-image">🏠</div>
