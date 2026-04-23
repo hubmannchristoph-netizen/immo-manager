@@ -59,8 +59,8 @@
 	transition:all var(--immo-transition);white-space:nowrap;
 	font-family:var(--immo-font-body);
 }
-.immo-btn-primary, .immo-btn-secondary { background: linear-gradient(to right, var(--immo-primary), var(--immo-secondary)); color:#fff; border-color: transparent; box-shadow:0 10px 20px rgba(0,0,0,.12); }
-.immo-btn-primary:hover, .immo-btn-secondary:hover { filter:brightness(1.05); box-shadow:0 14px 26px rgba(0,0,0,.16); color:#fff; }
+.immo-btn-primary, .immo-btn-secondary { background: linear-gradient(to right, var(--immo-primary), var(--immo-secondary)) !important; color:#fff !important; border-color: transparent !important; box-shadow:0 10px 20px rgba(0,0,0,.12); }
+.immo-btn-primary:hover, .immo-btn-secondary:hover { filter:brightness(1.05); box-shadow:0 14px 26px rgba(0,0,0,.16); color:#fff !important; }
 .immo-btn-sm { padding:.4rem .85rem;font-size:.85rem; }
 .immo-btn-call { background:var(--immo-surface);color:var(--immo-text);border:1px solid var(--immo-border);width:100%; }
 .immo-btn-call:hover { background:var(--immo-accent);border-color:var(--immo-accent);color:#fff; }
