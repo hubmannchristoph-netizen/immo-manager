@@ -120,6 +120,13 @@ class Plugin {
 	private $templates = null;
 
 	/**
+	 * Schema-Handler.
+	 *
+	 * @var Schema|null
+	 */
+	private $schema = null;
+
+	/**
 	 * Singleton-Instanz zurückgeben.
 	 *
 	 * @return Plugin
@@ -192,6 +199,7 @@ class Plugin {
 		$this->get_wizard();
 		$this->get_templates();
 		$this->get_elementor();
+		$this->get_schema();
 	}
 
 	/**
@@ -430,5 +438,17 @@ class Plugin {
 			$this->templates = new Templates();
 		}
 		return $this->templates;
+	}
+
+	/**
+	 * Schema-Handler abrufen (Lazy Loading).
+	 *
+	 * @return Schema
+	 */
+	public function get_schema(): Schema {
+		if ( null === $this->schema ) {
+			$this->schema = new Schema();
+		}
+		return $this->schema;
 	}
 }
