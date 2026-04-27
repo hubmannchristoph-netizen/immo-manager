@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git stash *)",
+      "Bash(git checkout *)",
+      "Bash(php -l \"C:\\\\Users\\\\ch\\\\Desktop\\\\Projekte\\\\immo-manager\\\\includes\\\\class-schema.php\")",
+      "Bash(php -l \"C:\\\\Users\\\\ch\\\\Desktop\\\\Projekte\\\\immo-manager\\\\includes\\\\class-plugin.php\")",
+      "PowerShell(php -l \"C:\\\\Users\\\\ch\\\\Desktop\\\\Projekte\\\\immo-manager\\\\includes\\\\class-schema.php\"; php -l \"C:\\\\Users\\\\ch\\\\Desktop\\\\Projekte\\\\immo-manager\\\\includes\\\\class-plugin.php\")",
+      "PowerShell(Get-Command *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
