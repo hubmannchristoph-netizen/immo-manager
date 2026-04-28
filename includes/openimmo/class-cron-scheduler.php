@@ -60,9 +60,7 @@ class CronScheduler {
 	}
 
 	/**
-	 * Daily-Sync-Callback. In Phase 0 No-Op-Stub.
-	 *
-	 * In Phase 2/4 wird hier der eigentliche Export/Import getriggert.
+	 * Daily-Sync-Callback. Führt den Export für alle aktiven Portale durch.
 	 *
 	 * @return void
 	 */
@@ -72,7 +70,21 @@ class CronScheduler {
 			return;
 		}
 
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-		error_log( '[immo-manager openimmo] daily_sync hook fired (Phase 0 stub)' );
+		// Klasse laden — Sub-Namespace, Autoloader greift hier nicht.
+		require_once dirname( __FILE__ ) . '/export/class-listing-dto.php';
+		require_once dirname( __FILE__ ) . '/export/class-collector.php';
+		require_once dirname( __FILE__ ) . '/export/class-xml-builder.php';
+		require_once dirname( __FILE__ ) . '/export/class-xsd-validator.php';
+		require_once dirname( __FILE__ ) . '/export/class-mapper.php';
+		require_once dirname( __FILE__ ) . '/export/class-image-processor.php';
+		require_once dirname( __FILE__ ) . '/export/class-zip-packager.php';
+		require_once dirname( __FILE__ ) . '/export/class-export-service.php';
+
+		$service = new \ImmoManager\OpenImmo\Export\ExportService();
+		foreach ( $settings['portals'] as $portal_key => $portal ) {
+			if ( ! empty( $portal['enabled'] ) ) {
+				$service->run( $portal_key );
+			}
+		}
 	}
 }

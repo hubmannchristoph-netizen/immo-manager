@@ -141,6 +141,13 @@ class Plugin {
 	private $openimmo_cron = null;
 
 	/**
+	 * OpenImmo Export-Service.
+	 *
+	 * @var \ImmoManager\OpenImmo\Export\ExportService|null
+	 */
+	private $openimmo_export_service = null;
+
+	/**
 	 * Singleton-Instanz zurückgeben.
 	 *
 	 * @return Plugin
@@ -498,5 +505,27 @@ class Plugin {
 			$this->openimmo_cron = new \ImmoManager\OpenImmo\CronScheduler();
 		}
 		return $this->openimmo_cron;
+	}
+
+	/**
+	 * OpenImmo Export-Service abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\Export\ExportService
+	 */
+	public function get_openimmo_export_service(): \ImmoManager\OpenImmo\Export\ExportService {
+		if ( null === $this->openimmo_export_service ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-sync-log.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-listing-dto.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-collector.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-xml-builder.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-xsd-validator.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-mapper.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-image-processor.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-zip-packager.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-export-service.php';
+			$this->openimmo_export_service = new \ImmoManager\OpenImmo\Export\ExportService();
+		}
+		return $this->openimmo_export_service;
 	}
 }
