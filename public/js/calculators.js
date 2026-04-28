@@ -12,7 +12,7 @@
 		var c = ( settings && settings.currency ) || {};
 		var dec = parseInt( c.decimals, 10 ) || 0;
 		var thousands = typeof c.thousands === 'string' ? c.thousands : '.';
-		var decimal   = typeof c.decimal   === 'string' ? c.decimal   : ',';
+		var decimal   = decSep();
 		var symbol    = c.symbol || '€';
 		var position  = c.position || 'after';
 		var fixed = Math.round( amount * Math.pow( 10, dec ) ) / Math.pow( 10, dec );
@@ -20,6 +20,11 @@
 		parts[0] = parts[0].replace( /\B(?=(\d{3})+(?!\d))/g, thousands );
 		var num = parts.join( decimal );
 		return position === 'before' ? symbol + ' ' + num : num + ' ' + symbol;
+	}
+
+	function decSep() {
+		return ( settings && settings.currency && typeof settings.currency.decimal === 'string' )
+			? settings.currency.decimal : ',';
 	}
 
 	function calcCosts( price, commissionFree ) {
@@ -82,7 +87,7 @@
 		if ( itemsEl ) {
 			itemsEl.innerHTML = data.items.map( function ( item ) {
 				var rate = item.rate !== null && item.rate !== undefined
-					? '<span class="immo-calc-row-rate">' + item.rate.toFixed( 1 ).replace( '.', settings.currency.decimal ) + ' %</span>'
+					? '<span class="immo-calc-row-rate">' + item.rate.toFixed( 1 ).replace( '.', decSep() ) + ' %</span>'
 					: '';
 				return '<div class="immo-calc-row">' +
 					'<span class="immo-calc-row-label">' + item.label + rate + '</span>' +
