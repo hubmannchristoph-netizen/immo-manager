@@ -207,6 +207,9 @@ class MetaFields {
 				}
 				return is_array( $value ) ? array_values( $value ) : array();
 
+			case 'boolean':
+				return ! empty( $value ) ? '1' : '0';
+
 			case 'string':
 			default:
 				$str = is_scalar( $value ) ? (string) $value : '';

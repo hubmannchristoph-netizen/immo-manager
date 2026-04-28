@@ -28,6 +28,11 @@ class Metaboxes {
 	private const PROJECT_NONCE = 'immo_project_metabox_save';
 
 	/**
+	 * Nonce-Action für OpenImmo-Export-Save.
+	 */
+	private const OPENIMMO_NONCE = 'immo_openimmo_meta';
+
+	/**
 	 * Konstruktor – Hooks registrieren.
 	 */
 	public function __construct() {
@@ -386,7 +391,7 @@ class Metaboxes {
 	public function render_property_openimmo( \WP_Post $post ): void {
 		$willhaben    = (bool) get_post_meta( $post->ID, '_immo_openimmo_willhaben', true );
 		$immoscout24  = (bool) get_post_meta( $post->ID, '_immo_openimmo_immoscout24', true );
-		wp_nonce_field( 'immo_openimmo_meta', 'immo_openimmo_nonce' );
+		wp_nonce_field( self::OPENIMMO_NONCE, 'immo_openimmo_nonce' );
 		?>
 		<p><?php esc_html_e( 'Diese Immobilie an folgende Portale exportieren:', 'immo-manager' ); ?></p>
 		<p>
@@ -808,9 +813,8 @@ class Metaboxes {
 		}
 
 		// OpenImmo-Export Opt-In speichern.
-		if ( PostTypes::POST_TYPE_PROPERTY === $post->post_type
-			&& isset( $_POST['immo_openimmo_nonce'] )
-			&& wp_verify_nonce( sanitize_key( $_POST['immo_openimmo_nonce'] ), 'immo_openimmo_meta' )
+		if ( isset( $_POST['immo_openimmo_nonce'] )
+			&& wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['immo_openimmo_nonce'] ) ), self::OPENIMMO_NONCE )
 		) {
 			$oi = isset( $_POST['immo_openimmo'] ) && is_array( $_POST['immo_openimmo'] )
 				? wp_unslash( $_POST['immo_openimmo'] )
