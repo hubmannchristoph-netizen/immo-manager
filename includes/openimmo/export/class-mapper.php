@@ -15,12 +15,12 @@ class Mapper {
 	 * Erweitern wenn neue Property-Types dazukommen.
 	 */
 	private const TYPE_MAP = array(
-		'wohnung'     => array( 'wohnung',   null ),
-		'haus'        => array( 'haus',      null ),
-		'grundstueck' => array( 'grundstueck', null ),
-		'buero'       => array( 'gewerbe',   'BUERO' ),
-		'gewerbe'     => array( 'gewerbe',   null ),
-		'gastronomie' => array( 'gastgew',   'GASTRONOMIE' ),
+		'wohnung'     => array( 'wohnung',     null,          null ),
+		'haus'        => array( 'haus',        null,          null ),
+		'grundstueck' => array( 'grundstueck', null,          null ),
+		'buero'       => array( 'gewerbe',     'BUERO',       'gewerbetyp' ),
+		'gewerbe'     => array( 'gewerbe',     null,          null ),
+		'gastronomie' => array( 'gastgew',     'GASTRONOMIE', 'gastgewtyp' ),
 	);
 
 	/**
@@ -73,6 +73,11 @@ class Mapper {
 
 		// <vermarktungsart>.
 		$mode = (string) ( $l->meta['_immo_mode'] ?? 'sale' );
+		if ( ! in_array( $mode, array( 'sale', 'rent', 'both' ), true ) ) {
+			throw new \InvalidArgumentException(
+				sprintf( 'Unbekannter _immo_mode-Wert "%s" fuer Listing %s', $mode, $l->external_id )
+			);
+		}
 		$verm = $this->dom->createElement( 'vermarktungsart' );
 		$verm->setAttribute( 'KAUF',        in_array( $mode, array( 'sale', 'both' ), true ) ? 'true' : 'false' );
 		$verm->setAttribute( 'MIETE_PACHT', in_array( $mode, array( 'rent', 'both' ), true ) ? 'true' : 'false' );
@@ -80,11 +85,11 @@ class Mapper {
 
 		// <objektart>.
 		$type    = (string) ( $l->meta['_immo_property_type'] ?? 'wohnung' );
-		$mapping = self::TYPE_MAP[ $type ] ?? array( 'wohnung', null );
+		$mapping = self::TYPE_MAP[ $type ] ?? array( 'wohnung', null, null );
 		$art     = $this->dom->createElement( 'objektart' );
 		$sub     = $this->dom->createElement( $mapping[0] );
-		if ( null !== $mapping[1] ) {
-			$sub->setAttribute( $mapping[0] . 'typ', $mapping[1] );
+		if ( null !== $mapping[1] && null !== $mapping[2] ) {
+			$sub->setAttribute( $mapping[2], $mapping[1] );
 		}
 		$art->appendChild( $sub );
 		$el->appendChild( $art );
@@ -107,8 +112,8 @@ class Mapper {
 
 		if ( ! empty( $l->meta['_immo_lat'] ) || ! empty( $l->meta['_immo_lng'] ) ) {
 			$geo = $this->dom->createElement( 'geokoordinaten' );
-			$geo->setAttribute( 'breitengrad', (string) ( $l->meta['_immo_lat'] ?? '0' ) );
-			$geo->setAttribute( 'laengengrad',  (string) ( $l->meta['_immo_lng'] ?? '0' ) );
+			$geo->setAttribute( 'breitengrad', $this->float_str( $l->meta['_immo_lat'] ?? 0 ) );
+			$geo->setAttribute( 'laengengrad',  $this->float_str( $l->meta['_immo_lng'] ?? 0 ) );
 			$el->appendChild( $geo );
 		}
 
@@ -126,6 +131,9 @@ class Mapper {
 		$el = $this->dom->createElement( 'kontaktperson' );
 
 		$name  = (string) ( $l->meta['_immo_contact_name'] ?? '' );
+		// TODO Phase 6: Naive Whitespace-Aufteilung in Vor-/Nachname produziert bei
+		// Firmennamen ("Müller GmbH") falsche Werte. Heuristik (Anrede-Detection,
+		// Firmenkennzeichen) oder explizite vorname/nachname-Felder einführen.
 		$parts = preg_split( '/\\s+/', $name, 2 );
 		$vor   = $parts[0] ?? '';
 		$nach  = $parts[1] ?? '';
@@ -148,16 +156,16 @@ class Mapper {
 		$mode = (string) ( $l->meta['_immo_mode'] ?? 'sale' );
 
 		if ( in_array( $mode, array( 'sale', 'both' ), true ) && ! empty( $l->meta['_immo_price'] ) ) {
-			$this->text( $el, 'kaufpreis', (string) (float) $l->meta['_immo_price'] );
+			$this->text( $el, 'kaufpreis', $this->float_str( $l->meta['_immo_price'] ) );
 		}
 		if ( in_array( $mode, array( 'rent', 'both' ), true ) && ! empty( $l->meta['_immo_rent'] ) ) {
-			$this->text( $el, 'kaltmiete', (string) (float) $l->meta['_immo_rent'] );
+			$this->text( $el, 'kaltmiete', $this->float_str( $l->meta['_immo_rent'] ) );
 		}
 		if ( ! empty( $l->meta['_immo_operating_costs'] ) ) {
-			$this->text( $el, 'nebenkosten', (string) (float) $l->meta['_immo_operating_costs'] );
+			$this->text( $el, 'nebenkosten', $this->float_str( $l->meta['_immo_operating_costs'] ) );
 		}
 		if ( ! empty( $l->meta['_immo_deposit'] ) ) {
-			$this->text( $el, 'kaution', (string) (float) $l->meta['_immo_deposit'] );
+			$this->text( $el, 'kaution', $this->float_str( $l->meta['_immo_deposit'] ) );
 		}
 		if ( ! empty( $l->meta['_immo_commission'] ) ) {
 			$this->text( $el, 'aussen_courtage', (string) $l->meta['_immo_commission'] );
@@ -169,13 +177,13 @@ class Mapper {
 		$el = $this->dom->createElement( 'flaechen' );
 
 		if ( ! empty( $l->meta['_immo_area'] ) ) {
-			$this->text( $el, 'wohnflaeche', (string) (float) $l->meta['_immo_area'] );
+			$this->text( $el, 'wohnflaeche', $this->float_str( $l->meta['_immo_area'] ) );
 		}
 		if ( ! empty( $l->meta['_immo_usable_area'] ) ) {
-			$this->text( $el, 'nutzflaeche', (string) (float) $l->meta['_immo_usable_area'] );
+			$this->text( $el, 'nutzflaeche', $this->float_str( $l->meta['_immo_usable_area'] ) );
 		}
 		if ( ! empty( $l->meta['_immo_land_area'] ) ) {
-			$this->text( $el, 'grundstuecksflaeche', (string) (float) $l->meta['_immo_land_area'] );
+			$this->text( $el, 'grundstuecksflaeche', $this->float_str( $l->meta['_immo_land_area'] ) );
 		}
 		if ( ! empty( $l->meta['_immo_rooms'] ) ) {
 			$this->text( $el, 'anzahl_zimmer', (string) (int) $l->meta['_immo_rooms'] );
@@ -210,8 +218,13 @@ class Mapper {
 		}
 
 		if ( ! empty( $l->meta['_immo_heating'] ) ) {
+			// TODO Phase 6: Enum-Mapping für heizungsart. OpenImmo erwartet als Boolean-Attribute
+			// ETAGE/GAS/ELEKTRO/OFEN/FUSSBODEN/KAMIN. Hier wird OFEN=false als sicheres Default
+			// gesetzt; der eigentliche Wert landet in <sonstige_heizungsart>. Korrektes Mapping
+			// von _immo_heating-Strings auf die richtigen OpenImmo-Booleans braucht eine
+			// strukturierte Lookup-Tabelle, die in Phase 6 portal-spezifisch werden kann.
 			$heiz = $this->dom->createElement( 'heizungsart' );
-			$heiz->setAttribute( 'OFEN', 'false' );  // Default-Attribute, OpenImmo-Spec verlangt ein Set.
+			$heiz->setAttribute( 'OFEN', 'false' );
 			$el->appendChild( $heiz );
 			// Heizungs-Detail als Freitext.
 			$this->text( $el, 'sonstige_heizungsart', (string) $l->meta['_immo_heating'] );
@@ -239,11 +252,13 @@ class Mapper {
 				$this->text( $energie, 'energieverbrauchkennwert', (string) $l->meta['_immo_energy_class'] );
 			}
 			if ( ! empty( $l->meta['_immo_energy_hwb'] ) ) {
-				$this->text( $energie, 'hwbwert',  (string) (float) $l->meta['_immo_energy_hwb'] );
-				$this->text( $energie, 'hwbklasse', (string) ( $l->meta['_immo_energy_class'] ?? '' ) );
+				$this->text( $energie, 'hwbwert', $this->float_str( $l->meta['_immo_energy_hwb'] ) );
+				if ( ! empty( $l->meta['_immo_energy_class'] ) ) {
+					$this->text( $energie, 'hwbklasse', (string) $l->meta['_immo_energy_class'] );
+				}
 			}
 			if ( ! empty( $l->meta['_immo_energy_fgee'] ) ) {
-				$this->text( $energie, 'fgeewert', (string) (float) $l->meta['_immo_energy_fgee'] );
+				$this->text( $energie, 'fgeewert', $this->float_str( $l->meta['_immo_energy_fgee'] ) );
 			}
 			$el->appendChild( $energie );
 		}
@@ -286,5 +301,19 @@ class Mapper {
 		$el = $this->dom->createElement( $tag );
 		$el->appendChild( $this->dom->createTextNode( $value ) );
 		$parent->appendChild( $el );
+	}
+
+	/**
+	 * Locale-safe float-to-string conversion.
+	 *
+	 * PHP's `(string) (float) $value` uses the current C locale, which can produce
+	 * `,` instead of `.` as decimal separator on servers with non-English locales.
+	 * OpenImmo's XSD requires xs:decimal with `.` — this helper guarantees that.
+	 */
+	private function float_str( $value ): string {
+		$str = sprintf( '%F', (float) $value );
+		// "%F" in PHP is locale-independent (always uses '.').
+		// Trim trailing zeros for compactness, then trailing '.' if no decimals remain.
+		return rtrim( rtrim( $str, '0' ), '.' );
 	}
 }
