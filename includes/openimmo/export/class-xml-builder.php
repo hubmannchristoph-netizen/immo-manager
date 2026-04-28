@@ -54,9 +54,7 @@ class XmlBuilder {
 	}
 
 	public function append_immobilie( \DOMElement $immobilie ): void {
-		// Importiert den Knoten in das eigene DOMDocument und hängt ihn an.
-		$imported = $this->dom->importNode( $immobilie, true );
-		$this->anbieter->appendChild( $imported );
+		$this->anbieter->appendChild( $immobilie );
 	}
 
 	public function dom(): \DOMDocument {

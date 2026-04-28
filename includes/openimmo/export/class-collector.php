@@ -57,6 +57,8 @@ class Collector {
 		$table = Database::units_table();
 
 		// Units holen: status='available' AND opt-in AND project_id zeigt auf published project.
+		// $col is whitelisted via column_for_portal() — safe to interpolate.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$sql = $wpdb->prepare(
 			"SELECT u.*
 			   FROM {$table} u

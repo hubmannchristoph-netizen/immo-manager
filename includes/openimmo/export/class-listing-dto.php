@@ -112,7 +112,8 @@ class ListingDTO {
 			'_immo_status'        => (string) ( $unit['status']     ?? 'available' ),
 			// Bei Units: hardcode auf "wohnung". Phase 6 kann das verfeinern.
 			'_immo_property_type' => 'wohnung',
-			// Default Mode bei Units: aus Preis/Miete ableiten.
+			// Plan-Abweichung (T3-Code-Review): bei Units mit beiden Preisen wird 'both' gewählt
+			// statt nur 'rent' — verhindert dass kaufpreis verloren geht.
 			'_immo_mode'          => ( ! empty( $unit['rent'] ) && ! empty( $unit['price'] ) ) ? 'both'
 				                   : ( ! empty( $unit['rent'] ) ? 'rent' : 'sale' ),
 			'_immo_features'      => (array) ( $unit['features'] ?? array() ),

@@ -15,8 +15,8 @@ class ZipPackager {
 		$dir = dirname( $target_path );
 		if ( ! is_dir( $dir ) ) {
 			wp_mkdir_p( $dir );
-			$this->protect_dir( $dir );
 		}
+		$this->protect_dir( $dir );
 
 		$zip = new \ZipArchive();
 		if ( true !== $zip->open( $target_path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE ) ) {

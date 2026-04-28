@@ -78,13 +78,12 @@ class ExportService {
 						foreach ( $images as $img ) {
 							$all_images[] = $img;
 						}
+						$img_errors = array_merge( $img_errors, $imager->get_errors() );
 						++$exported;
 					} catch ( \Throwable $e ) {
 						$errors[] = array( 'id' => $listing->external_id, 'message' => $e->getMessage() );
 					}
 				}
-
-				$img_errors = $imager->get_errors();
 
 				// XSD-Validierung.
 				$validator = new XsdValidator();
@@ -185,7 +184,11 @@ class ExportService {
 	 * @return array{status:string, summary:string, zip_path:string, count:int}
 	 */
 	private function finish( int $sync_id, string $status, string $summary, string $zip_path, int $count, array $details ): array {
-		SyncLog::finish( $sync_id, $status, $summary, $details, $count );
+		if ( 0 !== $sync_id ) {
+			SyncLog::finish( $sync_id, $status, $summary, $details, $count );
+		} else {
+			error_log( sprintf( '[immo-manager openimmo] Export finished without log persistence (status=%s, summary=%s)', $status, $summary ) );
+		}
 		return array(
 			'status'   => $status,
 			'summary'  => $summary,

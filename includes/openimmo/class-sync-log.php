@@ -44,7 +44,7 @@ class SyncLog {
 	 * Sync-Lauf abschließen.
 	 *
 	 * @param int    $id      Sync-Log-ID.
-	 * @param string $status  'success' oder 'failed'.
+	 * @param string $status  One of 'success', 'partial', 'skipped', 'error'.
 	 * @param string $summary Kurzbeschreibung.
 	 * @param array  $details Zusatz-Daten (wird als JSON gespeichert).
 	 * @param int    $count   Anzahl betroffener Properties.

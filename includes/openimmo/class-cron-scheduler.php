@@ -70,11 +70,7 @@ class CronScheduler {
 			return;
 		}
 
-		// Klasse laden — Sub-Namespace, Autoloader greift hier nicht.
-		require_once dirname( __FILE__ ) . '/export/class-export-service.php';
-		\ImmoManager\OpenImmo\Export\ExportService::require_dependencies();
-
-		$service = new \ImmoManager\OpenImmo\Export\ExportService();
+		$service = \ImmoManager\Plugin::instance()->get_openimmo_export_service();
 		foreach ( $settings['portals'] as $portal_key => $portal ) {
 			if ( ! empty( $portal['enabled'] ) ) {
 				$service->run( $portal_key );

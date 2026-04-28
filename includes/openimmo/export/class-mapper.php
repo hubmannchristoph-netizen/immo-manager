@@ -68,7 +68,7 @@ class Mapper {
 
 		// <nutzungsart wohnen="true"/> — wir fokussieren in Phase 1 auf Wohnen.
 		$nutzung = $this->dom->createElement( 'nutzungsart' );
-		$nutzung->setAttribute( 'WOHNEN', 'true' );
+		$nutzung->setAttribute( 'wohnen', 'true' );
 		$el->appendChild( $nutzung );
 
 		// <vermarktungsart>.
@@ -168,7 +168,12 @@ class Mapper {
 			$this->text( $el, 'kaution', $this->float_str( $l->meta['_immo_deposit'] ) );
 		}
 		if ( ! empty( $l->meta['_immo_commission'] ) ) {
-			$this->text( $el, 'aussen_courtage', (string) $l->meta['_immo_commission'] );
+			$val = $l->meta['_immo_commission'];
+			if ( is_numeric( $val ) ) {
+				$this->text( $el, 'aussen_courtage', $this->float_str( $val ) );
+			} else {
+				$this->text( $el, 'aussen_courtage', (string) $val );
+			}
 		}
 		return $el;
 	}
@@ -247,15 +252,17 @@ class Mapper {
 			|| ! empty( $l->meta['_immo_energy_hwb'] )
 			|| ! empty( $l->meta['_immo_energy_fgee'] ) ) {
 			$energie = $this->dom->createElement( 'energiepass' );
-			if ( ! empty( $l->meta['_immo_energy_class'] ) ) {
-				$this->text( $energie, 'epart', 'BEDARF' );
-				$this->text( $energie, 'energieverbrauchkennwert', (string) $l->meta['_immo_energy_class'] );
-			}
+
+			// epart: BEDARF (Bedarfsausweis) is the standard fallback when not specified explicitly.
+			// Phase 6 may make this configurable per listing.
+			$this->text( $energie, 'epart', 'BEDARF' );
+
 			if ( ! empty( $l->meta['_immo_energy_hwb'] ) ) {
 				$this->text( $energie, 'hwbwert', $this->float_str( $l->meta['_immo_energy_hwb'] ) );
-				if ( ! empty( $l->meta['_immo_energy_class'] ) ) {
-					$this->text( $energie, 'hwbklasse', (string) $l->meta['_immo_energy_class'] );
-				}
+			}
+			if ( ! empty( $l->meta['_immo_energy_class'] ) ) {
+				// OpenImmo: energy CLASS letter goes into hwbklasse, not energieverbrauchkennwert.
+				$this->text( $energie, 'hwbklasse', (string) $l->meta['_immo_energy_class'] );
 			}
 			if ( ! empty( $l->meta['_immo_energy_fgee'] ) ) {
 				$this->text( $energie, 'fgeewert', $this->float_str( $l->meta['_immo_energy_fgee'] ) );
@@ -314,6 +321,7 @@ class Mapper {
 		$str = sprintf( '%F', (float) $value );
 		// "%F" in PHP is locale-independent (always uses '.').
 		// Trim trailing zeros for compactness, then trailing '.' if no decimals remain.
-		return rtrim( rtrim( $str, '0' ), '.' );
+		$str = rtrim( rtrim( $str, '0' ), '.' );
+		return '' === $str ? '0' : $str;
 	}
 }

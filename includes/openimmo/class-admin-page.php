@@ -66,6 +66,8 @@ class AdminPage {
 			'portals'   => array(),
 		);
 
+		$existing = Settings::get();
+
 		foreach ( array( 'willhaben', 'immoscout24_at' ) as $key ) {
 			$portal = isset( $post['portals'][ $key ] ) && is_array( $post['portals'][ $key ] )
 				? $post['portals'][ $key ]
@@ -78,7 +80,7 @@ class AdminPage {
 				'sftp_user'     => sanitize_text_field( $portal['sftp_user'] ?? '' ),
 				'sftp_password' => (string) ( $portal['sftp_password'] ?? '' ),
 				'remote_path'   => sanitize_text_field( $portal['remote_path'] ?? '/' ),
-				'last_sync'     => '',
+				'last_sync'     => (string) ( $existing['portals'][ $key ]['last_sync'] ?? '' ),
 				// Anbieter-Block.
 				'anbieternr'    => sanitize_text_field( $portal['anbieternr']    ?? '' ),
 				'firma'         => sanitize_text_field( $portal['firma']         ?? '' ),
