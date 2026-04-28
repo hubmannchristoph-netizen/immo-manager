@@ -39,7 +39,10 @@ class Schema {
 		}
 
 		if ( is_singular( PostTypes::POST_TYPE_PROJECT ) ) {
-			echo "\n<!-- Immo Manager Schema (Project) -->\n";
+			$post_id = (int) get_queried_object_id();
+			$data    = $this->build_project( $post_id );
+			$data    = apply_filters( 'immo_manager_schema_project', $data, $post_id );
+			$this->output_jsonld( $data );
 			return;
 		}
 	}
@@ -452,6 +455,148 @@ class Schema {
 			$data['offers'] = $offers[0];
 		} elseif ( count( $offers ) > 1 ) {
 			$data['offers'] = $offers;
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Eine Unit als Apartment-Schema bauen (für containsPlace).
+	 *
+	 * @param array<string, mixed> $unit          Hydrierte Unit-Row.
+	 * @param int                  $project_id    Projekt-Post-ID.
+	 * @param string               $project_title Projekt-Titel (für Name-Prefix).
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function build_unit_apartment( array $unit, int $project_id, string $project_title ): array {
+		$unit_id     = (int) ( $unit['id'] ?? 0 );
+		$unit_number = (string) ( $unit['unit_number'] ?? '' );
+		$anchor      = '#unit-' . $unit_id;
+		$url         = get_permalink( $project_id ) . $anchor;
+
+		$name = '' !== $unit_number
+			? sprintf( '%s – %s', $project_title, $unit_number )
+			: sprintf( '%s – Wohnung %d', $project_title, $unit_id );
+
+		$apt = array(
+			'@type' => 'Apartment',
+			'@id'   => $url,
+			'url'   => $url,
+			'name'  => $name,
+		);
+
+		$area = (float) ( $unit['area'] ?? 0 );
+		if ( $area > 0 ) {
+			$apt['floorSize'] = array(
+				'@type'    => 'QuantitativeValue',
+				'value'    => $area,
+				'unitCode' => 'MTK',
+			);
+		}
+
+		$rooms = (int) ( $unit['rooms'] ?? 0 );
+		if ( $rooms > 0 ) {
+			$apt['numberOfRooms'] = $rooms;
+		}
+
+		$floor = (int) ( $unit['floor'] ?? 0 );
+		if ( $floor > 0 ) {
+			$apt['floorLevel'] = $floor;
+		}
+
+		// Fixpreis-Offer (kein "ab" – Units sind Fixpreise).
+		$price  = (float) ( $unit['price'] ?? 0 );
+		$status = (string) ( $unit['status'] ?? 'available' );
+
+		if ( $price > 0 ) {
+			$apt['offers'] = array(
+				'@type'         => 'Offer',
+				'price'         => $price,
+				'priceCurrency' => 'EUR',
+				'availability'  => $this->map_status_to_availability( $status ),
+			);
+		}
+
+		return $apt;
+	}
+
+	/**
+	 * ApartmentComplex-Schema für ein Bauprojekt bauen.
+	 *
+	 * @param int $post_id Projekt-Post-ID.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function build_project( int $post_id ): ?array {
+		$post = get_post( $post_id );
+		if ( ! $post || 'publish' !== $post->post_status ) {
+			return null;
+		}
+
+		$permalink = get_permalink( $post_id );
+		$title     = get_the_title( $post_id );
+
+		$data = array(
+			'@context'   => 'https://schema.org',
+			'@type'      => 'ApartmentComplex',
+			'@id'        => $permalink,
+			'url'        => $permalink,
+			'name'       => $title,
+			'inLanguage' => $this->get_in_language(),
+		);
+
+		$description = (string) get_the_excerpt( $post_id );
+		if ( '' === $description ) {
+			$description = wp_trim_words( wp_strip_all_tags( (string) $post->post_content ), 50, '…' );
+		}
+		if ( '' !== $description ) {
+			$data['description'] = $description;
+		}
+
+		$images = $this->build_image_list( $post_id );
+		if ( ! empty( $images ) ) {
+			$data['image'] = $images;
+		}
+
+		$address = $this->build_address( $post_id );
+		if ( $address ) {
+			$data['address'] = $address;
+		}
+
+		$geo = $this->build_geo( $post_id );
+		if ( $geo ) {
+			$data['geo'] = $geo;
+		}
+
+		// Units → containsPlace.
+		$units     = Units::get_by_project( $post_id );
+		$skip_sold = (bool) apply_filters( 'immo_manager_schema_skip_sold_units', false, $post_id );
+
+		$apartments = array();
+		foreach ( $units as $unit ) {
+			$status = (string) ( $unit['status'] ?? 'available' );
+			if ( $skip_sold && in_array( $status, array( 'sold', 'rented' ), true ) ) {
+				continue;
+			}
+			$apartments[] = $this->build_unit_apartment( $unit, $post_id, $title );
+		}
+
+		if ( ! empty( $apartments ) ) {
+			$data['numberOfAccommodationUnits'] = count( $apartments );
+			$data['containsPlace']              = $apartments;
+		}
+
+		// Projekt-Status als additionalProperty.
+		$project_status = (string) get_post_meta( $post_id, '_immo_project_status', true );
+		if ( '' !== $project_status ) {
+			$data['additionalProperty'] = array(
+				array(
+					'@type' => 'PropertyValue',
+					'name'  => 'projectStatus',
+					'value' => $project_status,
+				),
+			);
 		}
 
 		return $data;
