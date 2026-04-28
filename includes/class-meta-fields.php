@@ -98,6 +98,8 @@ class MetaFields {
 			// OpenImmo-Export Opt-In (Phase 1).
 			'_immo_openimmo_willhaben'    => array( 'type' => 'boolean', 'default' => false ),
 			'_immo_openimmo_immoscout24'  => array( 'type' => 'boolean', 'default' => false ),
+			// OpenImmo-Import-Tracking (Phase 3).
+			'_immo_openimmo_external_id'  => array( 'type' => 'string',  'default' => '' ),
 		);
 	}
 

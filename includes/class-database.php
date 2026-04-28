@@ -20,7 +20,7 @@ class Database {
 	/**
 	 * Aktuelle DB-Schema-Version.
 	 */
-	public const DB_VERSION = '1.4.0';
+	public const DB_VERSION = '1.5.0';
 
 	/**
 	 * Option-Key für die gespeicherte DB-Version.
@@ -143,6 +143,7 @@ class Database {
 			rented_date DATETIME NULL DEFAULT NULL,
 			openimmo_willhaben TINYINT(1) NOT NULL DEFAULT 0,
 			openimmo_immoscout24 TINYINT(1) NOT NULL DEFAULT 0,
+			external_id VARCHAR(100) NULL DEFAULT NULL,
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),
@@ -150,7 +151,8 @@ class Database {
 			KEY property_id (property_id),
 			KEY status (status),
 			KEY price (price),
-			KEY floor (floor)
+			KEY floor (floor),
+			KEY external_id (external_id)
 		) {$charset_collate};";
 
 		// Anfragen.

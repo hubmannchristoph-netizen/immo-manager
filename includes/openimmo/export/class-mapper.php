@@ -14,7 +14,7 @@ class Mapper {
 	 * Mapping Plugin-property_type → OpenImmo objektart-Kindknoten.
 	 * Erweitern wenn neue Property-Types dazukommen.
 	 */
-	private const TYPE_MAP = array(
+	public const TYPE_MAP = array(
 		'wohnung'     => array( 'wohnung',     null,          null ),
 		'haus'        => array( 'haus',        null,          null ),
 		'grundstueck' => array( 'grundstueck', null,          null ),
@@ -26,7 +26,7 @@ class Mapper {
 	/**
 	 * Slug aus _immo_features → OpenImmo-Boolean-Knoten unter <ausstattung>.
 	 */
-	private const FEATURE_MAP = array(
+	public const FEATURE_MAP = array(
 		'balkon'       => 'balkon_terrasse',
 		'terrasse'     => 'balkon_terrasse',
 		'garten'       => 'gartennutzung',
