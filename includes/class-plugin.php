@@ -155,6 +155,13 @@ class Plugin {
 	private $openimmo_sftp_uploader = null;
 
 	/**
+	 * OpenImmo Import-Service.
+	 *
+	 * @var \ImmoManager\OpenImmo\Import\ImportService|null
+	 */
+	private $openimmo_import_service = null;
+
+	/**
 	 * Singleton-Instanz zurückgeben.
 	 *
 	 * @return Plugin
@@ -544,5 +551,27 @@ class Plugin {
 			$this->openimmo_sftp_uploader = new \ImmoManager\OpenImmo\Sftp\SftpUploader();
 		}
 		return $this->openimmo_sftp_uploader;
+	}
+
+	/**
+	 * OpenImmo Import-Service abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\Import\ImportService
+	 */
+	public function get_openimmo_import_service(): \ImmoManager\OpenImmo\Import\ImportService {
+		if ( null === $this->openimmo_import_service ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-sync-log.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-conflicts.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-mapper.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/import/class-import-listing-dto.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/import/class-zip-extractor.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/import/class-import-mapper.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/import/class-image-importer.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/import/class-conflict-detector.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/import/class-import-service.php';
+			$this->openimmo_import_service = new \ImmoManager\OpenImmo\Import\ImportService();
+		}
+		return $this->openimmo_import_service;
 	}
 }

@@ -27,6 +27,7 @@ class AdminPage {
 		add_action( 'wp_ajax_immo_manager_openimmo_export_now',      array( $this, 'ajax_export_now' ) );
 		add_action( 'wp_ajax_immo_manager_openimmo_test_connection', array( $this, 'ajax_test_connection' ) );
 		add_action( 'wp_ajax_immo_manager_openimmo_upload_now',      array( $this, 'ajax_upload_now' ) );
+		add_action( 'wp_ajax_immo_manager_openimmo_import_zip',      array( $this, 'ajax_import_zip' ) );
 	}
 
 	/**
@@ -206,6 +207,58 @@ class AdminPage {
 					$result['attempts'],
 					1 === (int) $result['attempts'] ? '' : 'e'
 				),
+			) );
+		}
+		wp_send_json_error( array( 'message' => $result['summary'] ) );
+	}
+
+	/**
+	 * AJAX-Handler: ZIP hochladen und importieren.
+	 */
+	public function ajax_import_zip(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Keine Berechtigung.', 'immo-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'immo_manager_openimmo_import_zip', 'nonce' );
+
+		if ( empty( $_FILES['zip']['tmp_name'] ) || empty( $_FILES['zip']['name'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Keine Datei hochgeladen.', 'immo-manager' ) ), 400 );
+		}
+		if ( ! is_uploaded_file( $_FILES['zip']['tmp_name'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Upload ungültig.', 'immo-manager' ) ), 400 );
+		}
+		$original_name = sanitize_file_name( wp_unslash( $_FILES['zip']['name'] ) );
+		if ( ! preg_match( '/\.zip$/i', $original_name ) ) {
+			wp_send_json_error( array( 'message' => __( 'Nur .zip akzeptiert.', 'immo-manager' ) ), 400 );
+		}
+
+		$upload_dir = wp_get_upload_dir();
+		$stage_dir  = $upload_dir['basedir'] . '/openimmo/import-staging';
+		if ( ! is_dir( $stage_dir ) ) {
+			wp_mkdir_p( $stage_dir );
+		}
+		$stage_path = $stage_dir . '/' . time() . '-' . $original_name;
+		if ( ! move_uploaded_file( $_FILES['zip']['tmp_name'], $stage_path ) ) {
+			wp_send_json_error( array( 'message' => __( 'Konnte Upload nicht speichern.', 'immo-manager' ) ), 500 );
+		}
+
+		$service = \ImmoManager\Plugin::instance()->get_openimmo_import_service();
+		$result  = $service->run( $stage_path );
+
+		@unlink( $stage_path );  // phpcs:ignore WordPress.PHP.NoSilencedErrors
+
+		if ( in_array( $result['status'], array( 'success', 'partial' ), true ) ) {
+			$c = $result['counts'];
+			wp_send_json_success( array(
+				'message' => sprintf(
+					__( 'Import fertig: %1$d neu, %2$d Konflikte, %3$d übersprungen, %4$d Fehler', 'immo-manager' ),
+					$c['new'],
+					$c['conflicts'],
+					$c['skipped'],
+					$c['errors']
+				),
+				'counts'  => $c,
+				'sync_id' => $result['sync_id'],
 			) );
 		}
 		wp_send_json_error( array( 'message' => $result['summary'] ) );
@@ -393,6 +446,20 @@ class AdminPage {
 
 				<?php endforeach; ?>
 
+				<h2><?php esc_html_e( 'OpenImmo-Import (Test)', 'immo-manager' ); ?></h2>
+				<p class="description">
+					<?php esc_html_e( 'ZIP-Datei mit openimmo.xml + images/ hier hochladen. Neue Listings werden direkt angelegt, bestehende landen in der Konflikt-Queue.', 'immo-manager' ); ?>
+				</p>
+				<p>
+					<input type="file" id="immo-openimmo-import-zip" accept=".zip">
+					<button type="button"
+							class="button button-primary immo-openimmo-import-now"
+							data-nonce="<?php echo esc_attr( wp_create_nonce( 'immo_manager_openimmo_import_zip' ) ); ?>">
+						<?php esc_html_e( 'ZIP importieren', 'immo-manager' ); ?>
+					</button>
+					<span class="immo-openimmo-import-status" style="margin-left:10px;"></span>
+				</p>
+
 				<?php submit_button(); ?>
 			</form>
 
@@ -454,6 +521,41 @@ class AdminPage {
 						action: 'immo_manager_openimmo_upload_now',
 						portal: $btn.data('portal'),
 						nonce:  $btn.data('nonce')
+					}).done(function(resp){
+						if (resp.success) {
+							$stat.css('color', 'green').text(resp.data.message);
+						} else {
+							$stat.css('color', 'red').text(resp.data && resp.data.message ? resp.data.message : 'Fehler');
+						}
+					}).fail(function(){
+						$stat.css('color', 'red').text('<?php echo esc_js( __( 'Netzwerkfehler', 'immo-manager' ) ); ?>');
+					}).always(function(){
+						$btn.prop('disabled', false);
+					});
+				});
+
+				$(document).on('click', '.immo-openimmo-import-now', function(e){
+					e.preventDefault();
+					var $btn  = $(this);
+					var $stat = $btn.siblings('.immo-openimmo-import-status');
+					var file  = $('#immo-openimmo-import-zip')[0].files[0];
+					if (!file) {
+						$stat.css('color', 'red').text('<?php echo esc_js( __( 'Bitte ZIP-Datei wählen.', 'immo-manager' ) ); ?>');
+						return;
+					}
+					var fd = new FormData();
+					fd.append('action', 'immo_manager_openimmo_import_zip');
+					fd.append('nonce',  $btn.data('nonce'));
+					fd.append('zip',    file);
+
+					$btn.prop('disabled', true);
+					$stat.css('color', '').text('<?php echo esc_js( __( 'Importiere…', 'immo-manager' ) ); ?>');
+					$.ajax({
+						url:         ajaxurl,
+						type:        'POST',
+						data:        fd,
+						processData: false,
+						contentType: false
 					}).done(function(resp){
 						if (resp.success) {
 							$stat.css('color', 'green').text(resp.data.message);
