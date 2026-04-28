@@ -20,7 +20,7 @@ class Database {
 	/**
 	 * Aktuelle DB-Schema-Version.
 	 */
-	public const DB_VERSION = '1.2.4';
+	public const DB_VERSION = '1.3.0';
 
 	/**
 	 * Option-Key für die gespeicherte DB-Version.
@@ -63,6 +63,24 @@ class Database {
 	}
 
 	/**
+	 * Tabellenname: OpenImmo Sync-Log.
+	 *
+	 * @return string
+	 */
+	public static function sync_log_table(): string {
+		return self::table_prefix() . 'sync_log';
+	}
+
+	/**
+	 * Tabellenname: OpenImmo Konflikt-Queue.
+	 *
+	 * @return string
+	 */
+	public static function conflicts_table(): string {
+		return self::table_prefix() . 'conflicts';
+	}
+
+	/**
 	 * Prüft bei jedem Request, ob ein Schema-Upgrade nötig ist.
 	 *
 	 * @return void
@@ -95,6 +113,8 @@ class Database {
 		$charset_collate = $wpdb->get_charset_collate();
 		$units_table     = self::units_table();
 		$inquiries_table = self::inquiries_table();
+		$sync_log_table  = self::sync_log_table();
+		$conflicts_table = self::conflicts_table();
 
 		// Wohneinheiten.
 		$sql_units = "CREATE TABLE {$units_table} (
@@ -154,8 +174,48 @@ class Database {
 			KEY created_at (created_at)
 		) {$charset_collate};";
 
+		// OpenImmo Sync-Log.
+		$sql_sync_log = "CREATE TABLE {$sync_log_table} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			portal VARCHAR(50) NOT NULL DEFAULT '',
+			direction VARCHAR(20) NOT NULL DEFAULT '',
+			status VARCHAR(20) NOT NULL DEFAULT 'running',
+			summary VARCHAR(500) NOT NULL DEFAULT '',
+			details LONGTEXT NULL,
+			properties_count INT NOT NULL DEFAULT 0,
+			started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			finished_at DATETIME NULL DEFAULT NULL,
+			PRIMARY KEY  (id),
+			KEY portal (portal),
+			KEY direction (direction),
+			KEY status (status),
+			KEY started_at (started_at)
+		) {$charset_collate};";
+
+		// OpenImmo Konflikt-Queue.
+		$sql_conflicts = "CREATE TABLE {$conflicts_table} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			post_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			portal VARCHAR(50) NOT NULL DEFAULT '',
+			source_data LONGTEXT NULL,
+			local_data LONGTEXT NULL,
+			conflict_fields LONGTEXT NULL,
+			status VARCHAR(20) NOT NULL DEFAULT 'pending',
+			resolution VARCHAR(20) NOT NULL DEFAULT '',
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			resolved_at DATETIME NULL DEFAULT NULL,
+			resolved_by BIGINT UNSIGNED NULL DEFAULT NULL,
+			PRIMARY KEY  (id),
+			KEY post_id (post_id),
+			KEY portal (portal),
+			KEY status (status),
+			KEY created_at (created_at)
+		) {$charset_collate};";
+
 		dbDelta( $sql_units );
 		dbDelta( $sql_inquiries );
+		dbDelta( $sql_sync_log );
+		dbDelta( $sql_conflicts );
 
 		update_option( self::DB_VERSION_OPTION, self::DB_VERSION );
 	}
@@ -195,7 +255,12 @@ class Database {
 	public static function uninstall(): void {
 		global $wpdb;
 
-		$tables = array( self::units_table(), self::inquiries_table() );
+		$tables = array(
+			self::units_table(),
+			self::inquiries_table(),
+			self::sync_log_table(),
+			self::conflicts_table(),
+		);
 		foreach ( $tables as $table ) {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
