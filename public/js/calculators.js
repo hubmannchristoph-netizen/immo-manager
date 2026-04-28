@@ -22,6 +22,60 @@
 		return position === 'before' ? symbol + ' ' + num : num + ' ' + symbol;
 	}
 
+	function calcCosts( price, commissionFree ) {
+		var items = [];
+		var r = settings.rates;
+		var s = settings.show;
+		price = Math.max( 0, price || 0 );
+
+		if ( s.grest ) {
+			items.push( {
+				key: 'grest',
+				label: 'Grunderwerbsteuer',
+				rate: r.grest,
+				amount: price * r.grest / 100,
+			} );
+		}
+		if ( s.grundbuch ) {
+			items.push( {
+				key: 'grundbuch',
+				label: 'Grundbucheintragung',
+				rate: r.grundbuch,
+				amount: price * r.grundbuch / 100,
+			} );
+		}
+		if ( s.notar ) {
+			var notarFlat = settings.notar.mode === 'flat';
+			var notarAmount = notarFlat ? settings.notar.flat : ( price * r.notar / 100 );
+			items.push( {
+				key: 'notar',
+				label: 'Notar/Treuhand',
+				rate: notarFlat ? null : r.notar,
+				amount: notarAmount,
+			} );
+		}
+		if ( s.provision && ! commissionFree ) {
+			var provision = price * r.provision / 100;
+			items.push( {
+				key: 'provision',
+				label: 'Maklerprovision',
+				rate: r.provision,
+				amount: provision,
+			} );
+			if ( s.ust ) {
+				items.push( {
+					key: 'ust',
+					label: 'USt auf Provision',
+					rate: r.ust,
+					amount: provision * r.ust / 100,
+				} );
+			}
+		}
+
+		var total = items.reduce( function ( a, i ) { return a + i.amount; }, 0 );
+		return { items: items, total: total, grandTotal: price + total };
+	}
+
 	function $( sel, root ) { return ( root || document ).querySelector( sel ); }
 	function $$( sel, root ) { return Array.prototype.slice.call( ( root || document ).querySelectorAll( sel ) ); }
 
@@ -69,4 +123,5 @@
 
 	// Public API erweitern.
 	window.immoCalculators.formatMoney = formatMoney;
+	window.immoCalculators.calcCosts = calcCosts;
 } )();
