@@ -427,13 +427,6 @@ class Schema {
 			$data['image'] = $images;
 		}
 
-		if ( $address ) {
-			$data['address'] = $address;
-		}
-		if ( $geo ) {
-			$data['geo'] = $geo;
-		}
-
 		// Offer-Logik.
 		$mode   = (string) get_post_meta( $post_id, '_immo_mode', true );
 		$status = (string) get_post_meta( $post_id, '_immo_status', true );
