@@ -516,14 +516,8 @@ class Plugin {
 		if ( null === $this->openimmo_export_service ) {
 			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
 			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-sync-log.php';
-			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-listing-dto.php';
-			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-collector.php';
-			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-xml-builder.php';
-			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-xsd-validator.php';
-			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-mapper.php';
-			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-image-processor.php';
-			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-zip-packager.php';
 			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-export-service.php';
+			\ImmoManager\OpenImmo\Export\ExportService::require_dependencies();
 			$this->openimmo_export_service = new \ImmoManager\OpenImmo\Export\ExportService();
 		}
 		return $this->openimmo_export_service;

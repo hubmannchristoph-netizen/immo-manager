@@ -13,6 +13,9 @@ class ImageProcessor {
 
 	private string $tmp_base;
 
+	/** @var array<int,array{att_id:int,message:string}> */
+	private array $errors = array();
+
 	public function __construct( string $tmp_base ) {
 		$this->tmp_base = rtrim( $tmp_base, '/\\' );
 		if ( ! is_dir( $this->tmp_base ) ) {
@@ -21,13 +24,21 @@ class ImageProcessor {
 	}
 
 	/**
+	 * @return array<int,array{att_id:int,message:string}>
+	 */
+	public function get_errors(): array {
+		return $this->errors;
+	}
+
+	/**
 	 * Resize alle Bilder eines Listings.
 	 *
-	 * @return array<int,array{relpath:string,tmppath:string,gruppe:string,errors:array}>
+	 * @return array<int,array{relpath:string,tmppath:string,gruppe:string,att_id:int}>
 	 */
 	public function resize_attached( ListingDTO $listing ): array {
-		$output = array();
-		$idx    = 0;
+		$this->errors = array();
+		$output       = array();
+		$idx          = 0;
 
 		// Featured Image als TITELBILD.
 		if ( $listing->featured_image_id ) {
@@ -58,11 +69,13 @@ class ImageProcessor {
 	private function resize_one( int $attachment_id, string $relpath ): ?array {
 		$orig_path = get_attached_file( $attachment_id );
 		if ( ! $orig_path || ! file_exists( $orig_path ) ) {
+			$this->errors[] = array( 'att_id' => $attachment_id, 'message' => 'cannot read attachment file' );
 			return null;
 		}
 
 		$editor = wp_get_image_editor( $orig_path );
 		if ( is_wp_error( $editor ) ) {
+			$this->errors[] = array( 'att_id' => $attachment_id, 'message' => $editor->get_error_message() );
 			return null;
 		}
 
@@ -76,6 +89,8 @@ class ImageProcessor {
 		$saved    = $editor->save( $tmp_path, 'image/jpeg' );
 
 		if ( is_wp_error( $saved ) || empty( $saved['path'] ) ) {
+			$save_message = is_wp_error( $saved ) ? $saved->get_error_message() : 'save failed';
+			$this->errors[] = array( 'att_id' => $attachment_id, 'message' => $save_message );
 			return null;
 		}
 

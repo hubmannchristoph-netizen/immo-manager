@@ -71,14 +71,8 @@ class CronScheduler {
 		}
 
 		// Klasse laden — Sub-Namespace, Autoloader greift hier nicht.
-		require_once dirname( __FILE__ ) . '/export/class-listing-dto.php';
-		require_once dirname( __FILE__ ) . '/export/class-collector.php';
-		require_once dirname( __FILE__ ) . '/export/class-xml-builder.php';
-		require_once dirname( __FILE__ ) . '/export/class-xsd-validator.php';
-		require_once dirname( __FILE__ ) . '/export/class-mapper.php';
-		require_once dirname( __FILE__ ) . '/export/class-image-processor.php';
-		require_once dirname( __FILE__ ) . '/export/class-zip-packager.php';
 		require_once dirname( __FILE__ ) . '/export/class-export-service.php';
+		\ImmoManager\OpenImmo\Export\ExportService::require_dependencies();
 
 		$service = new \ImmoManager\OpenImmo\Export\ExportService();
 		foreach ( $settings['portals'] as $portal_key => $portal ) {

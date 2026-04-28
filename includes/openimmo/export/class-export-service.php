@@ -12,22 +12,45 @@ defined( 'ABSPATH' ) || exit;
 class ExportService {
 
 	/**
+	 * Lädt alle Sub-Namespace-Klassen, die ExportService braucht
+	 * (Autoloader greift nicht für ImmoManager\OpenImmo\* und \Export\*).
+	 *
+	 * @return void
+	 */
+	public static function require_dependencies(): void {
+		$base = dirname( __FILE__ );
+		require_once $base . '/class-listing-dto.php';
+		require_once $base . '/class-collector.php';
+		require_once $base . '/class-xml-builder.php';
+		require_once $base . '/class-xsd-validator.php';
+		require_once $base . '/class-mapper.php';
+		require_once $base . '/class-image-processor.php';
+		require_once $base . '/class-zip-packager.php';
+		// ExportService selbst wird vom Caller geladen, weil dieser Aufruf
+		// sonst eine Henne-Ei-Situation wäre.
+	}
+
+	/**
 	 * @return array{status:string, summary:string, zip_path:string, count:int}
 	 */
 	public function run( string $portal_key ): array {
 		$sync_id = SyncLog::start( $portal_key, 'export' );
 
+		if ( 0 === $sync_id ) {
+			error_log( '[immo-manager openimmo] SyncLog::start failed for portal ' . $portal_key . ' — proceeding without log persistence' );
+		}
+
 		try {
 			$settings = Settings::get();
 			$portal   = $settings['portals'][ $portal_key ] ?? null;
 			if ( null === $portal ) {
-				return $this->finish( $sync_id, 'error', 'unknown portal: ' . $portal_key, '', 0, array() );
+				return $this->finish( $sync_id, 'error', 'unknown portal: ' . $portal_key, '-', 0, array() );
 			}
 
 			$collector = new Collector();
 			$listings  = $collector->gather( $portal_key );
 			if ( empty( $listings ) ) {
-				return $this->finish( $sync_id, 'skipped', 'no listings opted in', '', 0, array() );
+				return $this->finish( $sync_id, 'skipped', 'no listings opted in', '-', 0, array() );
 			}
 
 			// XML-Skelett.
@@ -39,75 +62,82 @@ class ExportService {
 			$tmp_base   = $upload_dir['basedir'] . '/openimmo/tmp/' . $portal_key . '-' . time();
 			$imager     = new ImageProcessor( $tmp_base );
 
-			$mapper      = new Mapper( $builder->dom() );
-			$all_images  = array();
-			$errors      = array();
-			$img_errors  = array();
-			$exported    = 0;
+			try {
+				$mapper     = new Mapper( $builder->dom() );
+				$all_images = array();
+				$errors     = array();
+				$img_errors = array();
+				$exported   = 0;
 
-			foreach ( $listings as $listing ) {
-				try {
-					$immobilie = $mapper->to_immobilie( $listing );
-					$images    = $imager->resize_attached( $listing );
-					$this->append_anhaenge( $immobilie, $images, $builder->dom() );
-					$builder->append_immobilie( $immobilie );
-					$all_images = array_merge( $all_images, $images );
-					++$exported;
-				} catch ( \Throwable $e ) {
-					$errors[] = array( 'id' => $listing->external_id, 'message' => $e->getMessage() );
+				foreach ( $listings as $listing ) {
+					try {
+						$immobilie = $mapper->to_immobilie( $listing );
+						$images    = $imager->resize_attached( $listing );
+						$this->append_anhaenge( $immobilie, $images, $builder->dom() );
+						$builder->append_immobilie( $immobilie );
+						foreach ( $images as $img ) {
+							$all_images[] = $img;
+						}
+						++$exported;
+					} catch ( \Throwable $e ) {
+						$errors[] = array( 'id' => $listing->external_id, 'message' => $e->getMessage() );
+					}
 				}
-			}
 
-			// XSD-Validierung.
-			$validator = new XsdValidator();
-			$check     = $validator->validate( $builder->dom(), XsdValidator::default_xsd_path() );
-			if ( ! $check['valid'] ) {
-				$debug_path = $upload_dir['basedir'] . '/openimmo/exports/' . $portal_key . '/' . gmdate( 'Y-m-d-His' ) . '.invalid.xml';
-				wp_mkdir_p( dirname( $debug_path ) );
-				file_put_contents( $debug_path, $builder->to_string() );
+				$img_errors = $imager->get_errors();
+
+				// XSD-Validierung.
+				$validator = new XsdValidator();
+				$check     = $validator->validate( $builder->dom(), XsdValidator::default_xsd_path() );
+				if ( ! $check['valid'] ) {
+					$debug_path = $upload_dir['basedir'] . '/openimmo/exports/' . $portal_key . '/' . gmdate( 'Y-m-d-His' ) . '.invalid.xml';
+					wp_mkdir_p( dirname( $debug_path ) );
+					file_put_contents( $debug_path, $builder->to_string() );
+					return $this->finish( $sync_id, 'error', 'XSD invalid', '-', 0, array(
+						'errors'       => $errors,
+						'image_errors' => $img_errors,
+						'xsd_errors'   => $check['errors'],
+						'invalid_xml'  => $debug_path,
+					) );
+				}
+
+				// ZIP packen.
+				$target  = sprintf(
+					'%s/openimmo/exports/%s/%s-export-%s.zip',
+					$upload_dir['basedir'],
+					$portal_key,
+					$portal_key,
+					gmdate( 'Y-m-d-His' )
+				);
+				$packer  = new ZipPackager();
+				$written = $packer->write( $builder->dom(), $all_images, $target );
+
+				if ( ! $written ) {
+					return $this->finish( $sync_id, 'error', 'ZIP write failed', $target, 0, array(
+						'errors' => $errors,
+					) );
+				}
+
+				$status  = empty( $errors ) ? 'success' : 'partial';
+				$summary = sprintf(
+					'%d/%d Listings exportiert%s',
+					$exported,
+					count( $listings ),
+					empty( $errors ) ? '' : sprintf( ', %d übersprungen', count( $errors ) )
+				);
+				return $this->finish( $sync_id, $status, $summary, $target, $exported, array(
+					'errors'              => $errors,
+					'image_errors'        => $img_errors,
+					'zip_path'            => $target,
+					'openimmo_xml_size_kb' => (int) ( strlen( $builder->to_string() ) / 1024 ),
+				) );
+
+			} finally {
 				$imager->cleanup();
-				return $this->finish( $sync_id, 'error', 'XSD invalid', '', 0, array(
-					'errors'       => $errors,
-					'image_errors' => $img_errors,
-					'xsd_errors'   => $check['errors'],
-					'invalid_xml'  => $debug_path,
-				) );
 			}
-
-			// ZIP packen.
-			$target  = sprintf(
-				'%s/openimmo/exports/%s/%s-export-%s.zip',
-				$upload_dir['basedir'],
-				$portal_key,
-				$portal_key,
-				gmdate( 'Y-m-d-His' )
-			);
-			$packer  = new ZipPackager();
-			$written = $packer->write( $builder->dom(), $all_images, $target );
-			$imager->cleanup();
-
-			if ( ! $written ) {
-				return $this->finish( $sync_id, 'error', 'ZIP write failed', $target, 0, array(
-					'errors' => $errors,
-				) );
-			}
-
-			$status  = empty( $errors ) ? 'success' : 'partial';
-			$summary = sprintf(
-				'%d/%d Listings exportiert%s',
-				$exported,
-				count( $listings ),
-				empty( $errors ) ? '' : sprintf( ', %d übersprungen', count( $errors ) )
-			);
-			return $this->finish( $sync_id, $status, $summary, $target, $exported, array(
-				'errors'       => $errors,
-				'image_errors' => $img_errors,
-				'zip_path'     => $target,
-				'xml_size_kb'  => (int) ( strlen( $builder->to_string() ) / 1024 ),
-			) );
 
 		} catch ( \Throwable $e ) {
-			return $this->finish( $sync_id, 'error', $e->getMessage(), '', 0, array(
+			return $this->finish( $sync_id, 'error', $e->getMessage(), '-', 0, array(
 				'exception' => $e->getMessage(),
 				'trace'     => $e->getTraceAsString(),
 			) );
@@ -120,12 +150,13 @@ class ExportService {
 			return;
 		}
 		foreach ( $images as $img ) {
+			$gruppe = (string) ( $img['gruppe'] ?? 'BILD' );
 			$anhang = $dom->createElement( 'anhang' );
 			$anhang->setAttribute( 'location', 'EXTERN' );
-			$anhang->setAttribute( 'gruppe',   (string) ( $img['gruppe'] ?? 'BILD' ) );
+			$anhang->setAttribute( 'gruppe',   $gruppe );
 
 			$titel = $dom->createElement( 'anhangtitel' );
-			$titel->appendChild( $dom->createTextNode( '' ) );
+			$titel->appendChild( $dom->createTextNode( 'TITELBILD' === $gruppe ? 'Hauptansicht' : 'Bild' ) );
 			$anhang->appendChild( $titel );
 
 			$format = $dom->createElement( 'format' );
