@@ -24,7 +24,9 @@ class AdminPage {
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_submenu' ), 20 );
 		add_action( 'admin_init', array( $this, 'maybe_save' ) );
-		add_action( 'wp_ajax_immo_manager_openimmo_export_now', array( $this, 'ajax_export_now' ) );
+		add_action( 'wp_ajax_immo_manager_openimmo_export_now',      array( $this, 'ajax_export_now' ) );
+		add_action( 'wp_ajax_immo_manager_openimmo_test_connection', array( $this, 'ajax_test_connection' ) );
+		add_action( 'wp_ajax_immo_manager_openimmo_upload_now',      array( $this, 'ajax_upload_now' ) );
 	}
 
 	/**
@@ -139,6 +141,96 @@ class AdminPage {
 			) );
 		}
 		wp_send_json_error( array( 'message' => $result['summary'], 'status' => $result['status'] ) );
+	}
+
+	/**
+	 * AJAX-Handler: SFTP-Verbindung testen.
+	 *
+	 * @return void
+	 */
+	public function ajax_test_connection(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Keine Berechtigung.', 'immo-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'immo_manager_openimmo_test_connection', 'nonce' );
+
+		$portal_key = isset( $_POST['portal'] ) ? sanitize_key( wp_unslash( $_POST['portal'] ) ) : '';
+		if ( ! in_array( $portal_key, array( 'willhaben', 'immoscout24_at' ), true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unbekanntes Portal.', 'immo-manager' ) ), 400 );
+		}
+
+		$uploader = \ImmoManager\Plugin::instance()->get_openimmo_sftp_uploader();
+		$result   = $uploader->test_connection( $portal_key );
+
+		if ( $result['ok'] ) {
+			wp_send_json_success( array(
+				'message' => __( 'Verbindung OK ✓ (mkdir, write+delete erfolgreich)', 'immo-manager' ),
+			) );
+		}
+		wp_send_json_error( array(
+			'message' => sprintf( __( 'Verbindung fehlgeschlagen: %s', 'immo-manager' ), $result['message'] ),
+		) );
+	}
+
+	/**
+	 * AJAX-Handler: letztes ZIP eines Portals jetzt hochladen.
+	 *
+	 * @return void
+	 */
+	public function ajax_upload_now(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Keine Berechtigung.', 'immo-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'immo_manager_openimmo_upload_now', 'nonce' );
+
+		$portal_key = isset( $_POST['portal'] ) ? sanitize_key( wp_unslash( $_POST['portal'] ) ) : '';
+		if ( ! in_array( $portal_key, array( 'willhaben', 'immoscout24_at' ), true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unbekanntes Portal.', 'immo-manager' ) ), 400 );
+		}
+
+		$latest_zip = $this->find_latest_zip( $portal_key );
+		if ( null === $latest_zip ) {
+			wp_send_json_error( array(
+				'message' => __( 'Kein ZIP gefunden — zuerst exportieren.', 'immo-manager' ),
+			) );
+		}
+
+		$uploader = \ImmoManager\Plugin::instance()->get_openimmo_sftp_uploader();
+		$result   = $uploader->upload( $latest_zip, $portal_key );
+
+		if ( 'success' === $result['status'] ) {
+			wp_send_json_success( array(
+				'message' => sprintf(
+					__( 'Upload erfolgreich: %1$s (%2$d Versuch%3$s)', 'immo-manager' ),
+					$result['remote_path'],
+					$result['attempts'],
+					1 === (int) $result['attempts'] ? '' : 'e'
+				),
+			) );
+		}
+		wp_send_json_error( array( 'message' => $result['summary'] ) );
+	}
+
+	/**
+	 * Findet das jüngste ZIP eines Portals nach mtime.
+	 */
+	private function find_latest_zip( string $portal_key ): ?string {
+		$upload_dir = wp_get_upload_dir();
+		$dir        = $upload_dir['basedir'] . '/openimmo/exports/' . $portal_key;
+		if ( ! is_dir( $dir ) ) {
+			return null;
+		}
+		$files = glob( $dir . '/*.zip' );
+		if ( empty( $files ) ) {
+			return null;
+		}
+		usort(
+			$files,
+			static function ( $a, $b ) {
+				return filemtime( $b ) <=> filemtime( $a );
+			}
+		);
+		return $files[0];
 	}
 
 	/**
@@ -283,6 +375,22 @@ class AdminPage {
 						<span class="immo-openimmo-export-status" style="margin-left:10px;"></span>
 					</p>
 
+					<p>
+						<button type="button"
+								class="button button-secondary immo-openimmo-test-connection"
+								data-portal="<?php echo esc_attr( $key ); ?>"
+								data-nonce="<?php echo esc_attr( wp_create_nonce( 'immo_manager_openimmo_test_connection' ) ); ?>">
+							<?php esc_html_e( 'SFTP-Verbindung testen', 'immo-manager' ); ?>
+						</button>
+						<button type="button"
+								class="button button-secondary immo-openimmo-upload-now"
+								data-portal="<?php echo esc_attr( $key ); ?>"
+								data-nonce="<?php echo esc_attr( wp_create_nonce( 'immo_manager_openimmo_upload_now' ) ); ?>">
+							<?php esc_html_e( 'Letztes ZIP jetzt hochladen', 'immo-manager' ); ?>
+						</button>
+						<span class="immo-openimmo-sftp-status" style="margin-left:10px;"></span>
+					</p>
+
 				<?php endforeach; ?>
 
 				<?php submit_button(); ?>
@@ -300,6 +408,52 @@ class AdminPage {
 						action:  'immo_manager_openimmo_export_now',
 						portal:  $btn.data('portal'),
 						nonce:   $btn.data('nonce')
+					}).done(function(resp){
+						if (resp.success) {
+							$stat.css('color', 'green').text(resp.data.message);
+						} else {
+							$stat.css('color', 'red').text(resp.data && resp.data.message ? resp.data.message : 'Fehler');
+						}
+					}).fail(function(){
+						$stat.css('color', 'red').text('<?php echo esc_js( __( 'Netzwerkfehler', 'immo-manager' ) ); ?>');
+					}).always(function(){
+						$btn.prop('disabled', false);
+					});
+				});
+
+				$(document).on('click', '.immo-openimmo-test-connection', function(e){
+					e.preventDefault();
+					var $btn  = $(this);
+					var $stat = $btn.siblings('.immo-openimmo-sftp-status');
+					$btn.prop('disabled', true);
+					$stat.css('color', '').text('<?php echo esc_js( __( 'Teste…', 'immo-manager' ) ); ?>');
+					$.post(ajaxurl, {
+						action: 'immo_manager_openimmo_test_connection',
+						portal: $btn.data('portal'),
+						nonce:  $btn.data('nonce')
+					}).done(function(resp){
+						if (resp.success) {
+							$stat.css('color', 'green').text(resp.data.message);
+						} else {
+							$stat.css('color', 'red').text(resp.data && resp.data.message ? resp.data.message : 'Fehler');
+						}
+					}).fail(function(){
+						$stat.css('color', 'red').text('<?php echo esc_js( __( 'Netzwerkfehler', 'immo-manager' ) ); ?>');
+					}).always(function(){
+						$btn.prop('disabled', false);
+					});
+				});
+
+				$(document).on('click', '.immo-openimmo-upload-now', function(e){
+					e.preventDefault();
+					var $btn  = $(this);
+					var $stat = $btn.siblings('.immo-openimmo-sftp-status');
+					$btn.prop('disabled', true);
+					$stat.css('color', '').text('<?php echo esc_js( __( 'Lade hoch…', 'immo-manager' ) ); ?>');
+					$.post(ajaxurl, {
+						action: 'immo_manager_openimmo_upload_now',
+						portal: $btn.data('portal'),
+						nonce:  $btn.data('nonce')
 					}).done(function(resp){
 						if (resp.success) {
 							$stat.css('color', 'green').text(resp.data.message);
