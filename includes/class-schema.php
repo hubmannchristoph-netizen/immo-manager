@@ -538,12 +538,11 @@ class Schema {
 		$title     = get_the_title( $post_id );
 
 		$data = array(
-			'@context'   => 'https://schema.org',
-			'@type'      => 'ApartmentComplex',
-			'@id'        => $permalink,
-			'url'        => $permalink,
-			'name'       => $title,
-			'inLanguage' => $this->get_in_language(),
+			'@context' => 'https://schema.org',
+			'@type'    => 'ApartmentComplex',
+			'@id'      => $permalink,
+			'url'      => $permalink,
+			'name'     => $title,
 		);
 
 		$description = (string) get_the_excerpt( $post_id );
