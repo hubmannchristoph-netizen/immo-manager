@@ -42,7 +42,7 @@ $show_tabs = $enable_costs && $enable_financing;
 	<div class="immo-accordion-body" hidden>
 		<div class="immo-calculator"
 			data-base-price="<?php echo esc_attr( (string) $base_price ); ?>"
-			data-commission-free="<?php echo $commission_free ? '1' : '0'; ?>"
+			data-commission-free="<?php echo esc_attr( $commission_free ? '1' : '0' ); ?>"
 			<?php if ( ! empty( $units ) ) : ?>
 				data-units="<?php echo esc_attr( wp_json_encode( $units ) ); ?>"
 			<?php endif; ?>>
@@ -56,7 +56,7 @@ $show_tabs = $enable_costs && $enable_financing;
 						<?php foreach ( $units as $u ) : ?>
 							<option value="<?php echo esc_attr( (string) $u['id'] ); ?>"
 								data-price="<?php echo esc_attr( (string) $u['price'] ); ?>"
-								data-commission-free="<?php echo ! empty( $u['commission_free'] ) ? '1' : '0'; ?>">
+								data-commission-free="<?php echo esc_attr( ! empty( $u['commission_free'] ) ? '1' : '0' ); ?>">
 								<?php echo esc_html( $u['label'] ); ?>
 							</option>
 						<?php endforeach; ?>

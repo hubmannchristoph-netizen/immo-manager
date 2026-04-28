@@ -2,17 +2,24 @@
 ( function () {
 	'use strict';
 
+	// Public API container — initialisiere leer, damit auch ohne Settings vorhanden.
+	window.immoCalculators = window.immoCalculators || {};
+
 	var settings = ( window.immoManager && window.immoManager.calc ) || null;
 	if ( ! settings ) { return; }
 
 	function formatMoney( amount ) {
-		var c = settings.currency;
+		var c = ( settings && settings.currency ) || {};
 		var dec = parseInt( c.decimals, 10 ) || 0;
+		var thousands = typeof c.thousands === 'string' ? c.thousands : '.';
+		var decimal   = typeof c.decimal   === 'string' ? c.decimal   : ',';
+		var symbol    = c.symbol || '€';
+		var position  = c.position || 'after';
 		var fixed = Math.round( amount * Math.pow( 10, dec ) ) / Math.pow( 10, dec );
 		var parts = fixed.toFixed( dec ).split( '.' );
-		parts[0] = parts[0].replace( /\B(?=(\d{3})+(?!\d))/g, c.thousands );
-		var num = parts.join( c.decimal );
-		return c.position === 'before' ? c.symbol + ' ' + num : num + ' ' + c.symbol;
+		parts[0] = parts[0].replace( /\B(?=(\d{3})+(?!\d))/g, thousands );
+		var num = parts.join( decimal );
+		return position === 'before' ? symbol + ' ' + num : num + ' ' + symbol;
 	}
 
 	function $( sel, root ) { return ( root || document ).querySelector( sel ); }
@@ -60,8 +67,6 @@
 		$$( '.immo-calculator' ).forEach( initCalculator );
 	} );
 
-	// Public API für Tests.
-	window.immoCalculators = {
-		formatMoney: formatMoney,
-	};
+	// Public API erweitern.
+	window.immoCalculators.formatMoney = formatMoney;
 } )();
