@@ -842,6 +842,7 @@ class RestApi {
 				'operating_costs'       => (float) $m( '_immo_operating_costs', 0 ),
 				'deposit'               => (float) $m( '_immo_deposit', 0 ),
 				'commission'            => (string) $m( '_immo_commission', '' ),
+				'commission_free'       => '1' === (string) $m( '_immo_commission_free', '0' ),
 				'available_from'        => (string) $m( '_immo_available_from', '' ),
 				'features'              => $features,
 				'features_detail'       => $features_detail,
