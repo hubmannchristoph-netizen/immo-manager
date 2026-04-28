@@ -1,0 +1,14 @@
+{
+  "name": "immo-manager/immo-manager",
+  "description": "Immobilien-Plugin für WordPress mit OpenImmo-Schnittstelle.",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": ">=7.4",
+    "phpseclib/phpseclib": "^3.0"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true
+  }
+}
