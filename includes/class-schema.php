@@ -31,7 +31,10 @@ class Schema {
 	 */
 	public function render(): void {
 		if ( is_singular( PostTypes::POST_TYPE_PROPERTY ) ) {
-			echo "\n<!-- Immo Manager Schema (Property) -->\n";
+			$post_id = (int) get_queried_object_id();
+			$data    = $this->build_property( $post_id );
+			$data    = apply_filters( 'immo_manager_schema_property', $data, $post_id );
+			$this->output_jsonld( $data );
 			return;
 		}
 
@@ -233,5 +236,231 @@ class Schema {
 	 */
 	private function get_in_language(): string {
 		return str_replace( '_', '-', get_locale() );
+	}
+
+	/**
+	 * Sale-Offer mit "ab"-Preis (minPrice) bauen.
+	 *
+	 * @param float  $price          Kaufpreis.
+	 * @param string $status         Plugin-Status.
+	 * @param string $available_from ISO-Datum oder leer.
+	 *
+	 * @return array<string, mixed>|null Null wenn Preis 0.
+	 */
+	private function build_offer_sale( float $price, string $status, string $available_from = '' ): ?array {
+		if ( $price <= 0.0 ) {
+			return null;
+		}
+
+		$offer = array(
+			'@type'              => 'Offer',
+			'priceSpecification' => array(
+				'@type'         => 'PriceSpecification',
+				'minPrice'      => $price,
+				'priceCurrency' => 'EUR',
+			),
+			'availability'       => $this->map_status_to_availability( $status ),
+		);
+
+		if ( '' !== $available_from ) {
+			$offer['availabilityStarts'] = $available_from;
+		}
+
+		return $offer;
+	}
+
+	/**
+	 * Rent-Offer mit Monats-Miete bauen.
+	 *
+	 * @param float  $rent   Monatsmiete.
+	 * @param string $status Plugin-Status.
+	 *
+	 * @return array<string, mixed>|null Null wenn Miete 0.
+	 */
+	private function build_offer_rent( float $rent, string $status ): ?array {
+		if ( $rent <= 0.0 ) {
+			return null;
+		}
+
+		return array(
+			'@type'              => 'Offer',
+			'priceSpecification' => array(
+				'@type'         => 'UnitPriceSpecification',
+				'price'         => $rent,
+				'priceCurrency' => 'EUR',
+				'unitText'      => 'MONTH',
+			),
+			'availability'       => $this->map_status_to_availability( $status ),
+		);
+	}
+
+	/**
+	 * Liste der additionalProperty-Werte aus Meta zusammenstellen.
+	 *
+	 * @param int $post_id Post-ID.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function build_additional_properties( int $post_id ): array {
+		$out = array();
+
+		$energy_class = (string) get_post_meta( $post_id, '_immo_energy_class', true );
+		if ( '' !== $energy_class ) {
+			$out[] = array( '@type' => 'PropertyValue', 'name' => 'energyClass', 'value' => $energy_class );
+		}
+
+		$hwb = (float) get_post_meta( $post_id, '_immo_energy_hwb', true );
+		if ( $hwb > 0 ) {
+			$out[] = array( '@type' => 'PropertyValue', 'name' => 'HWB', 'value' => $hwb, 'unitText' => 'kWh/m²a' );
+		}
+
+		$fgee = (float) get_post_meta( $post_id, '_immo_energy_fgee', true );
+		if ( $fgee > 0 ) {
+			$out[] = array( '@type' => 'PropertyValue', 'name' => 'fGEE', 'value' => $fgee );
+		}
+
+		$heating = (string) get_post_meta( $post_id, '_immo_heating', true );
+		if ( '' !== $heating ) {
+			$out[] = array( '@type' => 'PropertyValue', 'name' => 'heating', 'value' => $heating );
+		}
+
+		$commission = (string) get_post_meta( $post_id, '_immo_commission', true );
+		if ( '' !== $commission ) {
+			$out[] = array( '@type' => 'PropertyValue', 'name' => 'commission', 'value' => $commission );
+		}
+
+		$reno = (int) get_post_meta( $post_id, '_immo_renovation_year', true );
+		if ( $reno > 0 ) {
+			$out[] = array( '@type' => 'PropertyValue', 'name' => 'renovationYear', 'value' => $reno );
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Komplettes RealEstateListing-Schema für eine Property bauen.
+	 *
+	 * @param int $post_id Post-ID.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function build_property( int $post_id ): ?array {
+		$post = get_post( $post_id );
+		if ( ! $post || 'publish' !== $post->post_status ) {
+			return null;
+		}
+
+		// mainEntity (Apartment/House/...).
+		$type_meta   = (string) get_post_meta( $post_id, '_immo_property_type', true );
+		$schema_type = $this->map_property_type( $type_meta );
+
+		$main_entity = array( '@type' => $schema_type );
+
+		$area = (float) get_post_meta( $post_id, '_immo_area', true );
+		if ( $area > 0 ) {
+			$main_entity['floorSize'] = array(
+				'@type'    => 'QuantitativeValue',
+				'value'    => $area,
+				'unitCode' => 'MTK',
+			);
+		}
+
+		$rooms = (int) get_post_meta( $post_id, '_immo_rooms', true );
+		if ( $rooms > 0 ) {
+			$main_entity['numberOfRooms'] = $rooms;
+		}
+
+		$bedrooms = (int) get_post_meta( $post_id, '_immo_bedrooms', true );
+		if ( $bedrooms > 0 ) {
+			$main_entity['numberOfBedrooms'] = $bedrooms;
+		}
+
+		$baths = (int) get_post_meta( $post_id, '_immo_bathrooms', true );
+		if ( $baths > 0 ) {
+			$main_entity['numberOfBathroomsTotal'] = $baths;
+		}
+
+		$built = (int) get_post_meta( $post_id, '_immo_built_year', true );
+		if ( $built > 0 ) {
+			$main_entity['yearBuilt'] = $built;
+		}
+
+		$address = $this->build_address( $post_id );
+		if ( $address ) {
+			$main_entity['address'] = $address;
+		}
+
+		$geo = $this->build_geo( $post_id );
+		if ( $geo ) {
+			$main_entity['geo'] = $geo;
+		}
+
+		$additional = $this->build_additional_properties( $post_id );
+		if ( ! empty( $additional ) ) {
+			$main_entity['additionalProperty'] = $additional;
+		}
+
+		// Top-Level RealEstateListing.
+		$permalink = get_permalink( $post_id );
+
+		$data = array(
+			'@context'   => 'https://schema.org',
+			'@type'      => 'RealEstateListing',
+			'@id'        => $permalink,
+			'url'        => $permalink,
+			'name'       => get_the_title( $post_id ),
+			'datePosted' => get_the_date( 'c', $post_id ),
+			'inLanguage' => $this->get_in_language(),
+			'mainEntity' => $main_entity,
+		);
+
+		$description = (string) get_the_excerpt( $post_id );
+		if ( '' === $description ) {
+			$description = wp_trim_words( wp_strip_all_tags( (string) $post->post_content ), 50, '…' );
+		}
+		if ( '' !== $description ) {
+			$data['description'] = $description;
+		}
+
+		$images = $this->build_image_list( $post_id );
+		if ( ! empty( $images ) ) {
+			$data['image'] = $images;
+		}
+
+		if ( $address ) {
+			$data['address'] = $address;
+		}
+		if ( $geo ) {
+			$data['geo'] = $geo;
+		}
+
+		// Offer-Logik.
+		$mode   = (string) get_post_meta( $post_id, '_immo_mode', true );
+		$status = (string) get_post_meta( $post_id, '_immo_status', true );
+		$price  = (float) get_post_meta( $post_id, '_immo_price', true );
+		$rent   = (float) get_post_meta( $post_id, '_immo_rent', true );
+		$avail  = (string) get_post_meta( $post_id, '_immo_available_from', true );
+
+		$offers = array();
+		if ( in_array( $mode, array( 'sale', 'both' ), true ) ) {
+			$o = $this->build_offer_sale( $price, $status, $avail );
+			if ( $o ) {
+				$offers[] = $o;
+			}
+		}
+		if ( in_array( $mode, array( 'rent', 'both' ), true ) ) {
+			$o = $this->build_offer_rent( $rent, $status );
+			if ( $o ) {
+				$offers[] = $o;
+			}
+		}
+
+		if ( count( $offers ) === 1 ) {
+			$data['offers'] = $offers[0];
+		} elseif ( count( $offers ) > 1 ) {
+			$data['offers'] = $offers;
+		}
+
+		return $data;
 	}
 }
