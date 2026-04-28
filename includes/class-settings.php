@@ -133,6 +133,27 @@ class Settings {
 			'map_default_lat'     => 47.5162,
 			'map_default_lng'     => 14.5501,
 			'map_default_zoom'    => 7,
+
+			// === RECHNER ===
+			'calc_enable_costs'            => 1,
+			'calc_enable_financing'        => 1,
+			'calc_grest_rate'              => 3.5,
+			'calc_grundbuch_rate'          => 1.1,
+			'calc_notar_rate'              => 2.5,
+			'calc_provision_rate'          => 3.0,
+			'calc_ust_rate'                => 20.0,
+			'calc_show_grest'              => 1,
+			'calc_show_grundbuch'          => 1,
+			'calc_show_notar'              => 1,
+			'calc_show_provision'          => 1,
+			'calc_show_ust_on_provision'   => 1,
+			'calc_notar_mode'              => 'percent',
+			'calc_notar_flat'              => 1500,
+			'calc_default_equity_pct'      => 20,
+			'calc_default_interest_rate'   => 3.5,
+			'calc_default_term_years'      => 25,
+			'calc_default_extra_payment'   => 0,
+			'calc_show_amortization_table' => 1,
 		);
 	}
 
