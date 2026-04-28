@@ -78,6 +78,16 @@ class AdminPage {
 				'sftp_password' => (string) ( $portal['sftp_password'] ?? '' ),
 				'remote_path'   => sanitize_text_field( $portal['remote_path'] ?? '/' ),
 				'last_sync'     => '',
+				// Anbieter-Block.
+				'anbieternr'    => sanitize_text_field( $portal['anbieternr']    ?? '' ),
+				'firma'         => sanitize_text_field( $portal['firma']         ?? '' ),
+				'openimmo_anid' => sanitize_text_field( $portal['openimmo_anid'] ?? '' ),
+				'lizenzkennung' => sanitize_text_field( $portal['lizenzkennung'] ?? '' ),
+				'impressum'     => wp_kses_post(        $portal['impressum']     ?? '' ),
+				'email_direkt'  => sanitize_email(      $portal['email_direkt']  ?? '' ),
+				'tel_zentrale'  => sanitize_text_field( $portal['tel_zentrale']  ?? '' ),
+				'regi_id'       => sanitize_text_field( $portal['regi_id']       ?? '' ),
+				'techn_email'   => sanitize_email(      $portal['techn_email']   ?? '' ),
 			);
 		}
 
@@ -182,6 +192,46 @@ class AdminPage {
 									name="portals[<?php echo esc_attr( $key ); ?>][remote_path]"
 									value="<?php echo esc_attr( $portal['remote_path'] ); ?>">
 							</td>
+						</tr>
+					</table>
+
+					<h3><?php echo esc_html( self::portal_label( $key ) . ' – ' . __( 'Anbieter-Daten', 'immo-manager' ) ); ?></h3>
+					<table class="form-table">
+						<tr>
+							<th><label><?php esc_html_e( 'Anbieter-Nr.', 'immo-manager' ); ?></label></th>
+							<td><input type="text" class="regular-text" name="portals[<?php echo esc_attr( $key ); ?>][anbieternr]" value="<?php echo esc_attr( $portal['anbieternr'] ?? '' ); ?>"></td>
+						</tr>
+						<tr>
+							<th><label><?php esc_html_e( 'Firma', 'immo-manager' ); ?></label></th>
+							<td><input type="text" class="regular-text" name="portals[<?php echo esc_attr( $key ); ?>][firma]" value="<?php echo esc_attr( $portal['firma'] ?? '' ); ?>"></td>
+						</tr>
+						<tr>
+							<th><label>OpenImmo-ANID</label></th>
+							<td><input type="text" class="regular-text" name="portals[<?php echo esc_attr( $key ); ?>][openimmo_anid]" value="<?php echo esc_attr( $portal['openimmo_anid'] ?? '' ); ?>"></td>
+						</tr>
+						<tr>
+							<th><label><?php esc_html_e( 'Lizenz-Kennung', 'immo-manager' ); ?></label></th>
+							<td><input type="text" class="regular-text" name="portals[<?php echo esc_attr( $key ); ?>][lizenzkennung]" value="<?php echo esc_attr( $portal['lizenzkennung'] ?? '' ); ?>"></td>
+						</tr>
+						<tr>
+							<th><label>regi_id</label></th>
+							<td><input type="text" class="regular-text" name="portals[<?php echo esc_attr( $key ); ?>][regi_id]" value="<?php echo esc_attr( $portal['regi_id'] ?? '' ); ?>"></td>
+						</tr>
+						<tr>
+							<th><label><?php esc_html_e( 'Technische E-Mail', 'immo-manager' ); ?></label></th>
+							<td><input type="email" class="regular-text" name="portals[<?php echo esc_attr( $key ); ?>][techn_email]" value="<?php echo esc_attr( $portal['techn_email'] ?? '' ); ?>"></td>
+						</tr>
+						<tr>
+							<th><label><?php esc_html_e( 'Anbieter-E-Mail', 'immo-manager' ); ?></label></th>
+							<td><input type="email" class="regular-text" name="portals[<?php echo esc_attr( $key ); ?>][email_direkt]" value="<?php echo esc_attr( $portal['email_direkt'] ?? '' ); ?>"></td>
+						</tr>
+						<tr>
+							<th><label><?php esc_html_e( 'Anbieter-Telefon', 'immo-manager' ); ?></label></th>
+							<td><input type="text" class="regular-text" name="portals[<?php echo esc_attr( $key ); ?>][tel_zentrale]" value="<?php echo esc_attr( $portal['tel_zentrale'] ?? '' ); ?>"></td>
+						</tr>
+						<tr>
+							<th><label><?php esc_html_e( 'Impressum', 'immo-manager' ); ?></label></th>
+							<td><textarea class="large-text" rows="3" name="portals[<?php echo esc_attr( $key ); ?>][impressum]"><?php echo esc_textarea( $portal['impressum'] ?? '' ); ?></textarea></td>
 						</tr>
 					</table>
 				<?php endforeach; ?>

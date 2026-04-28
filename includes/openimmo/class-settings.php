@@ -39,13 +39,24 @@ class Settings {
 	 */
 	public static function portal_defaults(): array {
 		return array(
-			'enabled'       => false,
-			'sftp_host'     => '',
-			'sftp_port'     => 22,
-			'sftp_user'     => '',
-			'sftp_password' => '',
-			'remote_path'   => '/',
-			'last_sync'     => '',
+			'enabled'        => false,
+			// SFTP (aus Phase 0).
+			'sftp_host'      => '',
+			'sftp_port'      => 22,
+			'sftp_user'      => '',
+			'sftp_password'  => '',
+			'remote_path'    => '/',
+			'last_sync'      => '',
+			// Anbieter-Block (Phase 1).
+			'anbieternr'     => '',
+			'firma'          => '',
+			'openimmo_anid'  => '',
+			'lizenzkennung'  => '',
+			'impressum'      => '',
+			'email_direkt'   => '',
+			'tel_zentrale'   => '',
+			'regi_id'        => '',
+			'techn_email'    => '',
 		);
 	}
 
