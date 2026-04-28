@@ -148,6 +148,13 @@ class Plugin {
 	private $openimmo_export_service = null;
 
 	/**
+	 * OpenImmo SFTP-Uploader.
+	 *
+	 * @var \ImmoManager\OpenImmo\Sftp\SftpUploader|null
+	 */
+	private $openimmo_sftp_uploader = null;
+
+	/**
 	 * Singleton-Instanz zurückgeben.
 	 *
 	 * @return Plugin
@@ -521,5 +528,21 @@ class Plugin {
 			$this->openimmo_export_service = new \ImmoManager\OpenImmo\Export\ExportService();
 		}
 		return $this->openimmo_export_service;
+	}
+
+	/**
+	 * OpenImmo SFTP-Uploader abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\Sftp\SftpUploader
+	 */
+	public function get_openimmo_sftp_uploader(): \ImmoManager\OpenImmo\Sftp\SftpUploader {
+		if ( null === $this->openimmo_sftp_uploader ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-sync-log.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/sftp/class-sftp-client.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/sftp/class-sftp-uploader.php';
+			$this->openimmo_sftp_uploader = new \ImmoManager\OpenImmo\Sftp\SftpUploader();
+		}
+		return $this->openimmo_sftp_uploader;
 	}
 }

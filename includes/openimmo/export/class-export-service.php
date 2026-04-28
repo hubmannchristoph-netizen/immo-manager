@@ -124,11 +124,30 @@ class ExportService {
 					count( $listings ),
 					empty( $errors ) ? '' : sprintf( ', %d übersprungen', count( $errors ) )
 				);
+
+				// SFTP-Upload (Phase 2).
+				$uploader      = \ImmoManager\Plugin::instance()->get_openimmo_sftp_uploader();
+				$upload_result = $uploader->upload( $target, $portal_key );
+				$sftp_details  = array(
+					'status'      => $upload_result['status'],
+					'attempts'    => $upload_result['attempts'],
+					'remote_path' => $upload_result['remote_path'] ?? '',
+					'error'       => $upload_result['error'] ?? null,
+				);
+
+				if ( 'error' === $upload_result['status'] ) {
+					$status   = 'error';
+					$summary .= ' — SFTP-Upload fehlgeschlagen: ' . ( $upload_result['error'] ?? 'unbekannt' );
+				} elseif ( 'skipped' === $upload_result['status'] ) {
+					$summary .= ' (SFTP-Upload übersprungen: ' . ( $upload_result['summary'] ?? 'lock held' ) . ')';
+				}
+
 				return $this->finish( $sync_id, $status, $summary, $target, $exported, array(
 					'errors'              => $errors,
 					'image_errors'        => $img_errors,
 					'zip_path'            => $target,
 					'openimmo_xml_size_kb' => (int) ( strlen( $builder->to_string() ) / 1024 ),
+					'sftp'                => $sftp_details,
 				) );
 
 			} finally {
