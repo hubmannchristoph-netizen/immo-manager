@@ -32,17 +32,27 @@ class Schema {
 	public function render(): void {
 		if ( is_singular( PostTypes::POST_TYPE_PROPERTY ) ) {
 			$post_id = (int) get_queried_object_id();
-			$data    = $this->build_property( $post_id );
-			$data    = apply_filters( 'immo_manager_schema_property', $data, $post_id );
+
+			$data = $this->build_property( $post_id );
+			$data = apply_filters( 'immo_manager_schema_property', $data, $post_id );
 			$this->output_jsonld( $data );
+
+			$crumbs = $this->build_breadcrumbs( $post_id, PostTypes::POST_TYPE_PROPERTY );
+			$crumbs = apply_filters( 'immo_manager_schema_breadcrumbs', $crumbs, $post_id );
+			$this->output_jsonld( $crumbs );
 			return;
 		}
 
 		if ( is_singular( PostTypes::POST_TYPE_PROJECT ) ) {
 			$post_id = (int) get_queried_object_id();
-			$data    = $this->build_project( $post_id );
-			$data    = apply_filters( 'immo_manager_schema_project', $data, $post_id );
+
+			$data = $this->build_project( $post_id );
+			$data = apply_filters( 'immo_manager_schema_project', $data, $post_id );
 			$this->output_jsonld( $data );
+
+			$crumbs = $this->build_breadcrumbs( $post_id, PostTypes::POST_TYPE_PROJECT );
+			$crumbs = apply_filters( 'immo_manager_schema_breadcrumbs', $crumbs, $post_id );
+			$this->output_jsonld( $crumbs );
 			return;
 		}
 	}
@@ -599,5 +609,52 @@ class Schema {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * BreadcrumbList für eine Detailseite bauen.
+	 *
+	 * @param int    $post_id   Post-ID.
+	 * @param string $post_type Post-Type-Slug.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function build_breadcrumbs( int $post_id, string $post_type ): ?array {
+		$archive_url   = get_post_type_archive_link( $post_type );
+		$pt_obj        = get_post_type_object( $post_type );
+		$archive_label = $pt_obj && isset( $pt_obj->labels->name )
+			? (string) $pt_obj->labels->name
+			: $post_type;
+
+		$items = array(
+			array(
+				'@type'    => 'ListItem',
+				'position' => 1,
+				'name'     => __( 'Home', 'immo-manager' ),
+				'item'     => home_url( '/' ),
+			),
+		);
+
+		if ( $archive_url ) {
+			$items[] = array(
+				'@type'    => 'ListItem',
+				'position' => 2,
+				'name'     => $archive_label,
+				'item'     => $archive_url,
+			);
+		}
+
+		$items[] = array(
+			'@type'    => 'ListItem',
+			'position' => count( $items ) + 1,
+			'name'     => get_the_title( $post_id ),
+			'item'     => get_permalink( $post_id ),
+		);
+
+		return array(
+			'@context'        => 'https://schema.org',
+			'@type'           => 'BreadcrumbList',
+			'itemListElement' => $items,
+		);
 	}
 }
