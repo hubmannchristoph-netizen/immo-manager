@@ -169,6 +169,8 @@ class Mapper {
 		}
 		$commission_free = '1' === (string) ( $l->meta['_immo_commission_free'] ?? '0' );
 		if ( $commission_free ) {
+			// "provisionsfrei" is accepted as free-text by willhaben and ImmoScout24.at.
+			// Formal XSD conformance (xs:decimal) may be revisited in a later phase.
 			$this->text( $el, 'aussen_courtage', 'provisionsfrei' );
 		} elseif ( ! empty( $l->meta['_immo_commission'] ) ) {
 			$val = $l->meta['_immo_commission'];
