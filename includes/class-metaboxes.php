@@ -252,6 +252,12 @@ class Metaboxes {
 				<td><input type="text" id="_immo_commission" name="immo_meta[_immo_commission]" value="<?php echo esc_attr( (string) $meta['_immo_commission'] ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'z. B. 3 % + 20 % USt.', 'immo-manager' ); ?>" /></td>
 			</tr>
 			<tr>
+				<th><label for="_immo_commission_free"><?php esc_html_e( 'Provisionsfrei', 'immo-manager' ); ?></label></th>
+				<td><label><input type="checkbox" id="_immo_commission_free" name="immo_meta[_immo_commission_free]" value="1" <?php checked( (int) ( $meta['_immo_commission_free'] ?? 0 ), 1 ); ?> />
+					<?php esc_html_e( 'Provision im Rechner ausblenden', 'immo-manager' ); ?>
+				</label></td>
+			</tr>
+			<tr>
 				<th><label for="_immo_available_from"><?php esc_html_e( 'Verfügbar ab', 'immo-manager' ); ?></label></th>
 				<td><input type="date" id="_immo_available_from" name="immo_meta[_immo_available_from]" value="<?php echo esc_attr( (string) $meta['_immo_available_from'] ); ?>" /></td>
 			</tr>
