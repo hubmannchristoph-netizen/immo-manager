@@ -21,6 +21,7 @@
 | `includes/class-metaboxes.php` | modify | Checkbox "Provisionsfrei" in Preis-Metabox |
 | `templates/wizard/step-4-price.php` | modify | Checkbox "Provisionsfrei" im Wizard |
 | `includes/class-rest-api.php` | modify | `format_property()` liefert `meta.commission_free` |
+| `includes/openimmo/export/class-mapper.php` | modify | OpenImmo-Export berücksichtigt `_commission_free` |
 | `includes/class-shortcodes.php` | modify | `calculators.js` + `calculators.css` enqueuen, Localize-Payload `immoManager.calc` |
 | `templates/parts/calculator.php` | create | Akkordeon-Template (Tabs, Inputs, Outputs, Plan-Tabelle) |
 | `public/js/calculators.js` | create | Berechnungs-Logik, Tab/Unit-Switch, DOM-Update |
@@ -282,17 +283,19 @@ git commit -m "feat(calculator): add Rechner settings section with all fields"
 **Files:**
 - Modify: `includes/class-meta-fields.php` (`property_fields()`, im "Preis"-Block, nach `_immo_commission`)
 
+> **Hinweis (OpenImmo-Erweiterung):** Die OpenImmo-Phase-1-Erweiterung hat in `MetaFields::sanitize_value()` einen `case 'boolean'`-Branch ergänzt, der `'1'`/`'0'`-Strings zurückgibt. Wir nutzen diesen Type konsistent mit den OpenImmo-Opt-In-Feldern (`_immo_openimmo_willhaben`, `_immo_openimmo_immoscout24`). Dadurch wird `_commission_free` im REST-Output und im OpenImmo-Mapper als String `'1'`/`'0'` gelesen.
+
 - [ ] **Step 1: Eintrag hinzufügen**
 
 In `property_fields()` direkt nach der Zeile mit `'_immo_commission'` einfügen:
 
 ```php
-				'_immo_commission_free'   => array( 'type' => 'integer', 'default' => 0 ),
+				'_immo_commission_free'   => array( 'type' => 'boolean', 'default' => false ),
 ```
 
 - [ ] **Step 2: Verifizieren**
 
-Im WP-CLI oder per `var_dump( get_post_meta( $id, '_immo_commission_free', true ) )` auf einer bestehenden Property: liefert `0`.
+Im WP-CLI oder per `var_dump( get_post_meta( $id, '_immo_commission_free', true ) )` auf einer bestehenden Property: liefert `''` oder `'0'` (nicht-gesetzt = leerer String).
 
 - [ ] **Step 3: Commit**
 
@@ -339,11 +342,13 @@ git commit -m "feat(calculator): add 'provisionsfrei' checkbox to wizard step 4"
 ### Task 2.3: Klassische Property-Metabox erweitern
 
 **Files:**
-- Modify: `includes/class-metaboxes.php` (im Preis-Metabox-Render, nach dem Provisions-`<tr>`, ca. Zeile 247)
+- Modify: `includes/class-metaboxes.php` (im Preis-Metabox-Render, nach dem Provisions-`<tr>`, ca. Zeile 251 — Anker textuell stabil über `_immo_commission`)
+
+> **Hinweis (OpenImmo-Erweiterung):** Seit der OpenImmo-Phase-1 gibt es eine separate Sidebar-Metabox `render_property_openimmo` mit eigenem Nonce. Unser "Provisionsfrei"-Toggle hängt sich in die bestehende Preis-Metabox ein und nutzt die normale `immo_meta[]`-Save-Logik — kein Konflikt mit dem OpenImmo-Save-Block.
 
 - [ ] **Step 1: Neue `<tr>` einfügen**
 
-Direkt nach dem `<tr>` mit `_immo_commission` (Zeile 247 endet mit `</tr>`) folgendes einfügen:
+Direkt nach dem `<tr>` mit `_immo_commission` folgendes einfügen:
 
 ```php
 			<tr>
@@ -377,8 +382,10 @@ git commit -m "feat(calculator): add 'provisionsfrei' checkbox to property metab
 Direkt nach der Zeile mit `'commission'` einfügen:
 
 ```php
-				'commission_free'       => (bool) $m( '_immo_commission_free', 0 ),
+				'commission_free'       => '1' === (string) $m( '_immo_commission_free', '0' ),
 ```
+
+> **Warum nicht `(bool) $m(...)`?** Weil `MetaFields::sanitize_value()` für `boolean`-Typen einen String `'1'`/`'0'` zurückliefert (so wie es die OpenImmo-Erweiterung etabliert hat). `(bool) '0'` wäre `true` — das wäre falsch. String-Vergleich ist hier korrekt.
 
 - [ ] **Step 2: Manuell testen**
 
@@ -389,6 +396,59 @@ Direkt nach der Zeile mit `'commission'` einfügen:
 ```bash
 git add includes/class-rest-api.php
 git commit -m "feat(calculator): expose commission_free in property REST output"
+```
+
+---
+
+### Task 2.5: OpenImmo-Mapper berücksichtigt `_commission_free`
+
+**Files:**
+- Modify: `includes/openimmo/export/class-mapper.php` (`build_preise()`, ca. Zeile 154-179)
+
+> **Warum:** Wenn eine Property als provisionsfrei markiert ist, sollten Calculator-Anzeige und OpenImmo-Export konsistent sein. Aktuell exportiert der Mapper unbedingt `<aussen_courtage>` aus `_immo_commission`. Bei `_immo_commission_free='1'` darf dieses Element nicht exportiert werden.
+
+- [ ] **Step 1: Bedingung in `build_preise()` ergänzen**
+
+Im Block `if ( ! empty( $l->meta['_immo_commission'] ) ) { … }` (ca. Zeile 170) den Test um die Provisionsfrei-Prüfung erweitern. Bestehender Code:
+
+```php
+		if ( ! empty( $l->meta['_immo_commission'] ) ) {
+			$val = $l->meta['_immo_commission'];
+			if ( is_numeric( $val ) ) {
+				$this->text( $el, 'aussen_courtage', $this->float_str( $val ) );
+			} else {
+				$this->text( $el, 'aussen_courtage', (string) $val );
+			}
+		}
+```
+
+Ersetzen durch:
+
+```php
+		$commission_free = '1' === (string) ( $l->meta['_immo_commission_free'] ?? '0' );
+		if ( $commission_free ) {
+			$this->text( $el, 'aussen_courtage', 'provisionsfrei' );
+		} elseif ( ! empty( $l->meta['_immo_commission'] ) ) {
+			$val = $l->meta['_immo_commission'];
+			if ( is_numeric( $val ) ) {
+				$this->text( $el, 'aussen_courtage', $this->float_str( $val ) );
+			} else {
+				$this->text( $el, 'aussen_courtage', (string) $val );
+			}
+		}
+```
+
+> **OpenImmo-Konvention:** Der Wert `'provisionsfrei'` als Freitext im `<aussen_courtage>`-Element ist üblich und wird von willhaben/IS24 als provisionsfreies Listing erkannt. Falls eine spätere XSD-Validierung dies nicht akzeptiert, kann auf `<aussen_courtage>0</aussen_courtage>` oder das Weglassen des Elements + `<courtage_aussen_pflichtig>false</courtage_aussen_pflichtig>` ausgewichen werden — das ist Phase-2-Politur, kein Blocker.
+
+- [ ] **Step 2: Manueller Smoke-Test**
+
+Eine Property als "provisionsfrei" markieren + für willhaben opt-in setzen. Im Admin den "Jetzt exportieren"-Button drücken. Im erzeugten ZIP die XML öffnen → `<aussen_courtage>provisionsfrei</aussen_courtage>` (statt eines Prozent- oder Eurobetrags).
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add includes/openimmo/export/class-mapper.php
+git commit -m "feat(calculator): respect commission_free flag in OpenImmo export"
 ```
 
 ---
@@ -1776,7 +1836,7 @@ git commit --allow-empty -m "chore(calculator): all acceptance criteria verified
 - R6 Sondertilgung → Phase 5.1 + 5.2 ✓
 - R7 Settings voll → Phase 1.1–1.3 ✓
 - R8 Ein Akkordeon mit Tabs → Phase 3.2 + 3.3 ✓
-- R9 Provisionsfrei global + Override → Phase 1.3 (global) + 2.x (Override) + 4.1 (JS-Logik) ✓
+- R9 Provisionsfrei global + Override → Phase 1.3 (global) + 2.1–2.4 (Override Property-Side) + 2.5 (OpenImmo-Konsistenz) + 4.1 (JS-Logik) ✓
 - R10 Nur Kauf+price>0 → Phase 6.1 (Bedingung) ✓
 - R11 Clientseitig → Phase 4.1 + 5.1 ✓
 
@@ -1790,9 +1850,22 @@ git commit --allow-empty -m "chore(calculator): all acceptance criteria verified
 
 ## Zusammenfassung
 
-- **8 Phasen, 19 Tasks** mit ~75 Step-Checkboxes.
+- **8 Phasen, 20 Tasks** mit ~80 Step-Checkboxes.
 - Jede Phase ist eigenständig committet und testbar.
-- Phasen 1+2 ändern nichts am Frontend (Settings + Meta).
+- Phasen 1+2 ändern nichts am Frontend (Settings + Meta + OpenImmo-Konsistenz).
 - Phase 3 baut Skelett, ab Phase 4 wird Logik live.
 - Phasen 6+7 binden den Rechner ein.
 - Phase 8 ist Polish + Verifikation.
+
+## Konflikt-Analyse mit OpenImmo-Phase-1 (durchgeführt 2026-04-28)
+
+Die seit Plan-Erstellung gemergten OpenImmo-Commits berühren drei Plan-Dateien:
+
+| Datei | OpenImmo-Änderung | Behandelt durch |
+|---|---|---|
+| `class-meta-fields.php` | `boolean`-Sanitize-Branch + 2 Opt-In-Felder | Task 2.1 nutzt `boolean`-Type konsistent |
+| `class-metaboxes.php` | Sidebar-Metabox + eigener Save-Block | Task 2.3 hängt sich in bestehende Preis-Metabox; kein Save-Konflikt |
+| `class-rest-api.php` | unverändert | Task 2.4 angepasst: `'1' === (string)$m(...)` statt `(bool)` |
+| `class-mapper.php` (neu) | exportiert `<aussen_courtage>` aus `_immo_commission` | NEUER Task 2.5: berücksichtigt `_commission_free` |
+
+Keine sonstigen Templates oder Frontend-Klassen sind betroffen.
