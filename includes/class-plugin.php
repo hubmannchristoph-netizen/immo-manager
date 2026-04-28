@@ -127,6 +127,13 @@ class Plugin {
 	private $schema = null;
 
 	/**
+	 * OpenImmo Admin-Page.
+	 *
+	 * @var \ImmoManager\OpenImmo\AdminPage|null
+	 */
+	private $openimmo_admin_page = null;
+
+	/**
 	 * Singleton-Instanz zurückgeben.
 	 *
 	 * @return Plugin
@@ -216,6 +223,7 @@ class Plugin {
 		$this->get_metaboxes();
 		$this->get_admin_ajax();
 		$this->get_demo_data();
+		$this->get_openimmo_admin_page();
 	}
 
 	/**
@@ -450,5 +458,23 @@ class Plugin {
 			$this->schema = new Schema();
 		}
 		return $this->schema;
+	}
+
+	/**
+	 * OpenImmo Admin-Page abrufen (Lazy Loading).
+	 *
+	 * Sub-Namespace-Klassen werden manuell required, weil der bestehende
+	 * Autoloader nur den Top-Level-Namespace ImmoManager unterstützt
+	 * (analog zur Elementor-Integration).
+	 *
+	 * @return \ImmoManager\OpenImmo\AdminPage
+	 */
+	public function get_openimmo_admin_page(): \ImmoManager\OpenImmo\AdminPage {
+		if ( null === $this->openimmo_admin_page ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-admin-page.php';
+			$this->openimmo_admin_page = new \ImmoManager\OpenImmo\AdminPage();
+		}
+		return $this->openimmo_admin_page;
 	}
 }
