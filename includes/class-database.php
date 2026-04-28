@@ -20,7 +20,7 @@ class Database {
 	/**
 	 * Aktuelle DB-Schema-Version.
 	 */
-	public const DB_VERSION = '1.3.0';
+	public const DB_VERSION = '1.4.0';
 
 	/**
 	 * Option-Key für die gespeicherte DB-Version.
@@ -141,6 +141,8 @@ class Database {
 			reserved_date DATETIME NULL DEFAULT NULL,
 			sold_date DATETIME NULL DEFAULT NULL,
 			rented_date DATETIME NULL DEFAULT NULL,
+			openimmo_willhaben TINYINT(1) NOT NULL DEFAULT 0,
+			openimmo_immoscout24 TINYINT(1) NOT NULL DEFAULT 0,
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),

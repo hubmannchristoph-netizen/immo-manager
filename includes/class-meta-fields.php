@@ -94,6 +94,10 @@ class MetaFields {
 			'_immo_layout_type'       => array( 'type' => 'string',  'enum' => array( '', 'standard', 'compact' ), 'default' => '' ),
 			'_immo_gallery_type'      => array( 'type' => 'string',  'enum' => array( '', 'slider', 'grid' ), 'default' => '' ),
 			'_immo_hero_type'         => array( 'type' => 'string',  'enum' => array( '', 'full', 'contained' ), 'default' => '' ),
+
+			// OpenImmo-Export Opt-In (Phase 1).
+			'_immo_openimmo_willhaben'    => array( 'type' => 'boolean', 'default' => false ),
+			'_immo_openimmo_immoscout24'  => array( 'type' => 'boolean', 'default' => false ),
 		);
 	}
 

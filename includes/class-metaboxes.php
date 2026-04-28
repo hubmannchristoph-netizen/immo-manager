@@ -53,6 +53,7 @@ class Metaboxes {
 		add_meta_box( 'immo_property_features', __( 'Ausstattung', 'immo-manager' ),               array( $this, 'render_features' ),          PostTypes::POST_TYPE_PROPERTY, 'normal', 'default' );
 		add_meta_box( 'immo_property_display',  __( 'Darstellung & Layout', 'immo-manager' ),      array( $this, 'render_property_display' ),   PostTypes::POST_TYPE_PROPERTY, 'side',   'default' );
 		add_meta_box( 'immo_property_contact',  __( 'Kontakt / Agent', 'immo-manager' ),           array( $this, 'render_contact' ),           PostTypes::POST_TYPE_PROPERTY, 'side',   'default' );
+		add_meta_box( 'immo_property_openimmo', __( 'OpenImmo-Export', 'immo-manager' ),           array( $this, 'render_property_openimmo' ), PostTypes::POST_TYPE_PROPERTY, 'side',   'default' );
 
 		// Project-Metaboxes.
 		add_meta_box( 'immo_project_details',   __( 'Projekt – Daten', 'immo-manager' ),           array( $this, 'render_project_details' ),   PostTypes::POST_TYPE_PROJECT,  'normal', 'high' );
@@ -371,6 +372,37 @@ class Metaboxes {
 		</p>
 		<p class="description">
 			<?php esc_html_e( 'Diese Einstellungen überschreiben die globalen Design-Vorgaben für diese Immobilie.', 'immo-manager' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Metabox: OpenImmo-Export Opt-In.
+	 *
+	 * @param \WP_Post $post Post.
+	 *
+	 * @return void
+	 */
+	public function render_property_openimmo( \WP_Post $post ): void {
+		$willhaben    = (bool) get_post_meta( $post->ID, '_immo_openimmo_willhaben', true );
+		$immoscout24  = (bool) get_post_meta( $post->ID, '_immo_openimmo_immoscout24', true );
+		wp_nonce_field( 'immo_openimmo_meta', 'immo_openimmo_nonce' );
+		?>
+		<p><?php esc_html_e( 'Diese Immobilie an folgende Portale exportieren:', 'immo-manager' ); ?></p>
+		<p>
+			<label>
+				<input type="checkbox" name="immo_openimmo[willhaben]" value="1" <?php checked( $willhaben ); ?>>
+				<?php esc_html_e( 'willhaben.at', 'immo-manager' ); ?>
+			</label>
+		</p>
+		<p>
+			<label>
+				<input type="checkbox" name="immo_openimmo[immoscout24]" value="1" <?php checked( $immoscout24 ); ?>>
+				<?php esc_html_e( 'ImmobilienScout24.at', 'immo-manager' ); ?>
+			</label>
+		</p>
+		<p class="description">
+			<?php esc_html_e( 'Nur „verfügbare" Listings werden tatsächlich exportiert.', 'immo-manager' ); ?>
 		</p>
 		<?php
 	}
@@ -773,6 +805,18 @@ class Metaboxes {
 			$gallery_ids = isset( $_POST['immo_gallery_ids'] ) ? sanitize_text_field( wp_unslash( $_POST['immo_gallery_ids'] ) ) : '';
 			$gallery     = $gallery_ids ? array_map( 'intval', explode( ',', $gallery_ids ) ) : array();
 			update_post_meta( $post_id, '_immo_gallery', $gallery );
+		}
+
+		// OpenImmo-Export Opt-In speichern.
+		if ( PostTypes::POST_TYPE_PROPERTY === $post->post_type
+			&& isset( $_POST['immo_openimmo_nonce'] )
+			&& wp_verify_nonce( sanitize_key( $_POST['immo_openimmo_nonce'] ), 'immo_openimmo_meta' )
+		) {
+			$oi = isset( $_POST['immo_openimmo'] ) && is_array( $_POST['immo_openimmo'] )
+				? wp_unslash( $_POST['immo_openimmo'] )
+				: array();
+			update_post_meta( $post_id, '_immo_openimmo_willhaben',   ! empty( $oi['willhaben'] )   ? '1' : '0' );
+			update_post_meta( $post_id, '_immo_openimmo_immoscout24', ! empty( $oi['immoscout24'] ) ? '1' : '0' );
 		}
 	}
 
