@@ -24,6 +24,7 @@ class AdminPage {
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_submenu' ), 20 );
 		add_action( 'admin_init', array( $this, 'maybe_save' ) );
+		add_action( 'wp_ajax_immo_manager_openimmo_export_now', array( $this, 'ajax_export_now' ) );
 	}
 
 	/**
@@ -101,6 +102,41 @@ class AdminPage {
 					. '</p></div>';
 			}
 		);
+	}
+
+	/**
+	 * AJAX-Handler: Sofort-Export für ein Portal auslösen.
+	 *
+	 * @return void
+	 */
+	public function ajax_export_now(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Keine Berechtigung.', 'immo-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'immo_manager_openimmo_export_now', 'nonce' );
+
+		$portal_key = isset( $_POST['portal'] ) ? sanitize_key( wp_unslash( $_POST['portal'] ) ) : '';
+		if ( ! in_array( $portal_key, array( 'willhaben', 'immoscout24_at' ), true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unbekanntes Portal.', 'immo-manager' ) ), 400 );
+		}
+
+		$service = \ImmoManager\Plugin::instance()->get_openimmo_export_service();
+		$result  = $service->run( $portal_key );
+
+		if ( in_array( $result['status'], array( 'success', 'partial' ), true ) ) {
+			$size = file_exists( $result['zip_path'] ) ? size_format( filesize( $result['zip_path'] ), 1 ) : '';
+			wp_send_json_success( array(
+				'message' => sprintf(
+					__( 'Export erstellt: %1$s (%2$d Listings, %3$s)', 'immo-manager' ),
+					basename( $result['zip_path'] ),
+					$result['count'],
+					$size
+				),
+				'status'  => $result['status'],
+				'summary' => $result['summary'],
+			) );
+		}
+		wp_send_json_error( array( 'message' => $result['summary'], 'status' => $result['status'] ) );
 	}
 
 	/**
@@ -234,10 +270,48 @@ class AdminPage {
 							<td><textarea class="large-text" rows="3" name="portals[<?php echo esc_attr( $key ); ?>][impressum]"><?php echo esc_textarea( $portal['impressum'] ?? '' ); ?></textarea></td>
 						</tr>
 					</table>
+
+					<p>
+						<button type="button"
+								class="button button-secondary immo-openimmo-export-now"
+								data-portal="<?php echo esc_attr( $key ); ?>"
+								data-nonce="<?php echo esc_attr( wp_create_nonce( 'immo_manager_openimmo_export_now' ) ); ?>">
+							<?php esc_html_e( 'Jetzt exportieren (lokal, ohne Upload)', 'immo-manager' ); ?>
+						</button>
+						<span class="immo-openimmo-export-status" style="margin-left:10px;"></span>
+					</p>
+
 				<?php endforeach; ?>
 
 				<?php submit_button(); ?>
 			</form>
+
+			<script>
+			(function($){
+				$(document).on('click', '.immo-openimmo-export-now', function(e){
+					e.preventDefault();
+					var $btn  = $(this);
+					var $stat = $btn.siblings('.immo-openimmo-export-status');
+					$btn.prop('disabled', true);
+					$stat.text('<?php echo esc_js( __( 'Exportiere…', 'immo-manager' ) ); ?>');
+					$.post(ajaxurl, {
+						action:  'immo_manager_openimmo_export_now',
+						portal:  $btn.data('portal'),
+						nonce:   $btn.data('nonce')
+					}).done(function(resp){
+						if (resp.success) {
+							$stat.css('color', 'green').text(resp.data.message);
+						} else {
+							$stat.css('color', 'red').text(resp.data && resp.data.message ? resp.data.message : 'Fehler');
+						}
+					}).fail(function(){
+						$stat.css('color', 'red').text('<?php echo esc_js( __( 'Netzwerkfehler', 'immo-manager' ) ); ?>');
+					}).always(function(){
+						$btn.prop('disabled', false);
+					});
+				});
+			})(jQuery);
+			</script>
 		</div>
 		<?php
 	}
