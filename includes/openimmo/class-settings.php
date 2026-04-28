@@ -157,4 +157,20 @@ class Settings {
 	private static function derive_key(): string {
 		return hash( 'sha256', wp_salt( 'auth' ), true );
 	}
+
+	/**
+	 * Schreibt den last_sync-Timestamp eines Portals direkt ins Storage,
+	 * ohne über save() zu gehen (kein erneutes Sanitisieren aller Felder).
+	 *
+	 * @param string $portal_key 'willhaben' oder 'immoscout24_at'.
+	 * @param string $timestamp  MySQL-Datumformat (current_time('mysql')).
+	 */
+	public static function set_last_sync( string $portal_key, string $timestamp ): void {
+		$stored = get_option( self::OPTION_KEY, array() );
+		if ( ! isset( $stored['portals'][ $portal_key ] ) ) {
+			return;
+		}
+		$stored['portals'][ $portal_key ]['last_sync'] = $timestamp;
+		update_option( self::OPTION_KEY, $stored );
+	}
 }
