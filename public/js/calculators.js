@@ -76,6 +76,27 @@
 		return { items: items, total: total, grandTotal: price + total };
 	}
 
+	function renderCostsPanel( calc, price, commissionFree ) {
+		var data = calcCosts( price, commissionFree );
+		var itemsEl = $( '.immo-calc-items', calc );
+		if ( itemsEl ) {
+			itemsEl.innerHTML = data.items.map( function ( item ) {
+				var rate = item.rate !== null && item.rate !== undefined
+					? '<span class="immo-calc-row-rate">' + item.rate.toFixed( 1 ).replace( '.', settings.currency.decimal ) + ' %</span>'
+					: '';
+				return '<div class="immo-calc-row">' +
+					'<span class="immo-calc-row-label">' + item.label + rate + '</span>' +
+					'<span class="immo-calc-row-amount">' + formatMoney( item.amount ) + '</span>' +
+					'</div>';
+			} ).join( '' );
+		}
+		var totalEl = $( '.immo-calc-costs-total', calc );
+		if ( totalEl ) { totalEl.textContent = formatMoney( data.total ); }
+		var grandEl = $( '.immo-calc-grand-total-value', calc );
+		if ( grandEl ) { grandEl.textContent = formatMoney( data.grandTotal ); }
+		return data;
+	}
+
 	function $( sel, root ) { return ( root || document ).querySelector( sel ); }
 	function $$( sel, root ) { return Array.prototype.slice.call( ( root || document ).querySelectorAll( sel ) ); }
 
@@ -112,9 +133,30 @@
 	}
 
 	function initCalculator( calc ) {
+		var state = {
+			price: parseFloat( calc.getAttribute( 'data-base-price' ) ) || 0,
+			commissionFree: calc.getAttribute( 'data-commission-free' ) === '1',
+		};
+
 		initTabs( calc );
 		initAmortizationToggle( calc );
-		// Berechnung wird in Phase 4/5 ergänzt.
+
+		var priceInput = $( '#immo-calc-price', calc );
+		if ( priceInput ) {
+			priceInput.addEventListener( 'input', function () {
+				state.price = Math.max( 0, parseFloat( priceInput.value ) || 0 );
+				render();
+			} );
+		}
+
+		function render() {
+			renderCostsPanel( calc, state.price, state.commissionFree );
+			// renderFinancingPanel kommt in Phase 5
+		}
+		render();
+
+		calc._state = state;
+		calc._render = render;
 	}
 
 	document.addEventListener( 'DOMContentLoaded', function () {
