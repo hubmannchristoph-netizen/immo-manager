@@ -114,6 +114,11 @@ register_activation_hook(
 		\ImmoManager\Database::install();
 		// Post Types registrieren & Permalinks flushen.
 		\ImmoManager\Plugin::instance()->activate();
+
+		// OpenImmo: täglichen Sync-Cron schedulen.
+		require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+		require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-cron-scheduler.php';
+		\ImmoManager\OpenImmo\CronScheduler::on_activation();
 	}
 );
 
@@ -126,5 +131,9 @@ register_deactivation_hook(
 		require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/Autoloader.php';
 		\ImmoManager\Autoloader::register();
 		\ImmoManager\Plugin::instance()->deactivate();
+
+		// OpenImmo: Cron-Hook entfernen.
+		require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-cron-scheduler.php';
+		\ImmoManager\OpenImmo\CronScheduler::on_deactivation();
 	}
 );

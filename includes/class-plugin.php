@@ -134,6 +134,13 @@ class Plugin {
 	private $openimmo_admin_page = null;
 
 	/**
+	 * OpenImmo Cron-Scheduler.
+	 *
+	 * @var \ImmoManager\OpenImmo\CronScheduler|null
+	 */
+	private $openimmo_cron = null;
+
+	/**
 	 * Singleton-Instanz zurückgeben.
 	 *
 	 * @return Plugin
@@ -207,6 +214,7 @@ class Plugin {
 		$this->get_templates();
 		$this->get_elementor();
 		$this->get_schema();
+		$this->get_openimmo_cron();
 	}
 
 	/**
@@ -476,5 +484,19 @@ class Plugin {
 			$this->openimmo_admin_page = new \ImmoManager\OpenImmo\AdminPage();
 		}
 		return $this->openimmo_admin_page;
+	}
+
+	/**
+	 * OpenImmo Cron-Scheduler abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\CronScheduler
+	 */
+	public function get_openimmo_cron(): \ImmoManager\OpenImmo\CronScheduler {
+		if ( null === $this->openimmo_cron ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-cron-scheduler.php';
+			$this->openimmo_cron = new \ImmoManager\OpenImmo\CronScheduler();
+		}
+		return $this->openimmo_cron;
 	}
 }
