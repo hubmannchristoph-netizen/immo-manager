@@ -53,7 +53,8 @@ class ListingDTO {
 		$dto->title             = $post->post_title;
 		$dto->description       = $post->post_content;
 		$dto->meta              = self::collect_meta( $post->ID );
-		$dto->featured_image_id = (int) get_post_thumbnail_id( $post->ID ) ?: null;
+		$thumb                  = (int) get_post_thumbnail_id( $post->ID );
+		$dto->featured_image_id = $thumb > 0 ? $thumb : null;
 		$dto->gallery_image_ids = self::gallery_for_property( $post->ID );
 		return $dto;
 	}
@@ -64,7 +65,10 @@ class ListingDTO {
 		$dto->id                = (int) $unit['id'];
 		$dto->project_id        = $project_id;
 		$dto->external_id       = 'unit-' . (int) $unit['id'];
-		$dto->title             = sprintf( 'Unit %s', (string) ( $unit['unit_number'] ?? $unit['id'] ) );
+		$unit_number = isset( $unit['unit_number'] ) && '' !== (string) $unit['unit_number']
+			? (string) $unit['unit_number']
+			: (string) $unit['id'];
+		$dto->title  = sprintf( 'Unit %s', $unit_number );
 		$dto->description       = (string) ( $unit['description'] ?? '' );
 		// Unit-Felder + Project-Meta für Geo/Kontakt.
 		$dto->meta              = array_merge(
@@ -76,6 +80,13 @@ class ListingDTO {
 		return $dto;
 	}
 
+	/**
+	 * Sammelt alle _immo_*-Meta-Felder eines Posts in ein assoziatives Array.
+	 *
+	 * Hinweis: Bei Meta-Keys mit mehreren Werten (mehrfaches add_post_meta ohne
+	 * unique-Flag) wird nur der erste Wert übernommen. Im Plugin-Datenmodell
+	 * sind alle _immo_*-Felder single-value (siehe MetaFields::register_meta).
+	 */
 	private static function collect_meta( int $post_id ): array {
 		$raw = get_post_meta( $post_id );
 		$out = array();
@@ -102,7 +113,8 @@ class ListingDTO {
 			// Bei Units: hardcode auf "wohnung". Phase 6 kann das verfeinern.
 			'_immo_property_type' => 'wohnung',
 			// Default Mode bei Units: aus Preis/Miete ableiten.
-			'_immo_mode'          => ! empty( $unit['rent'] ) ? 'rent' : 'sale',
+			'_immo_mode'          => ( ! empty( $unit['rent'] ) && ! empty( $unit['price'] ) ) ? 'both'
+				                   : ( ! empty( $unit['rent'] ) ? 'rent' : 'sale' ),
 			'_immo_features'      => (array) ( $unit['features'] ?? array() ),
 		);
 	}

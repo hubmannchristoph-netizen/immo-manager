@@ -28,26 +28,22 @@ class Collector {
 	}
 
 	private function collect_properties( string $portal_key ): array {
-		$meta_key = '_immo_openimmo_' . $portal_key;
-		// immoscout24_at als Suffix → wir schneiden "_at" weg, weil das Meta-Feld nur
-		// _immo_openimmo_immoscout24 heißt (siehe Task 1).
-		$meta_key = str_replace( '_at', '', $meta_key );
+		$meta_key = self::meta_key_for_portal( $portal_key );
 
 		$query = new \WP_Query( array(
 			'post_type'      => PostTypes::POST_TYPE_PROPERTY,
 			'post_status'    => 'publish',
 			'posts_per_page' => -1,
+			'no_found_rows'  => true,
 			'meta_query'     => array(
 				'relation' => 'AND',
 				array( 'key' => '_immo_status', 'value' => 'available', 'compare' => '=' ),
 				array( 'key' => $meta_key,      'value' => '1',         'compare' => '=' ),
 			),
-			'fields'         => 'ids',
 		) );
 
 		$dtos = array();
-		foreach ( $query->posts as $post_id ) {
-			$post = get_post( (int) $post_id );
+		foreach ( $query->posts as $post ) {
 			if ( $post instanceof \WP_Post ) {
 				$dtos[] = ListingDTO::from_property( $post );
 			}
@@ -57,7 +53,7 @@ class Collector {
 
 	private function collect_units( string $portal_key ): array {
 		global $wpdb;
-		$col   = 'openimmo_' . str_replace( '_at', '', $portal_key );  // 'openimmo_willhaben' / 'openimmo_immoscout24'
+		$col   = self::column_for_portal( $portal_key );
 		$table = Database::units_table();
 
 		// Units holen: status='available' AND opt-in AND project_id zeigt auf published project.
@@ -82,5 +78,31 @@ class Collector {
 			$dtos[] = ListingDTO::from_unit( $row, (int) $row['project_id'] );
 		}
 		return $dtos;
+	}
+
+	private static function meta_key_for_portal( string $portal_key ): string {
+		$map = array(
+			'willhaben'      => '_immo_openimmo_willhaben',
+			'immoscout24_at' => '_immo_openimmo_immoscout24',
+		);
+		if ( ! isset( $map[ $portal_key ] ) ) {
+			throw new \InvalidArgumentException(
+				sprintf( 'Unknown OpenImmo portal key for property meta: %s', $portal_key )
+			);
+		}
+		return $map[ $portal_key ];
+	}
+
+	private static function column_for_portal( string $portal_key ): string {
+		$map = array(
+			'willhaben'      => 'openimmo_willhaben',
+			'immoscout24_at' => 'openimmo_immoscout24',
+		);
+		if ( ! isset( $map[ $portal_key ] ) ) {
+			throw new \InvalidArgumentException(
+				sprintf( 'Unknown OpenImmo portal key for unit column: %s', $portal_key )
+			);
+		}
+		return $map[ $portal_key ];
 	}
 }
