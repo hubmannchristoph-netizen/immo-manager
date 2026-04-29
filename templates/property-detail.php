@@ -327,12 +327,10 @@ $key_facts = array_filter( array(
 
 			<?php
 			// === Finanzierungs- & Nebenkostenrechner ===
-			$dt    = (string) ( $meta['mode'] ?? '' );
-			$is_sale = ( 'sale' === $dt || 'both' === $dt );
-			$base_price_calc = (float) ( $meta['price'] ?? 0 );
-			if ( $is_sale && $base_price_calc > 0 ) {
+			// $show_sale (Zeile ~32) prüft bereits: mode in (sale|both) UND price > 0.
+			if ( $show_sale ) {
 				$calc_context = array(
-					'base_price'      => $base_price_calc,
+					'base_price'      => (float) ( $meta['price'] ?? 0 ),
 					'commission_free' => (bool) ( $meta['commission_free'] ?? false ),
 					'units'           => array(),
 				);
