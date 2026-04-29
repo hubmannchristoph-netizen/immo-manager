@@ -28,6 +28,7 @@ class AdminPage {
 		add_action( 'wp_ajax_immo_manager_openimmo_test_connection', array( $this, 'ajax_test_connection' ) );
 		add_action( 'wp_ajax_immo_manager_openimmo_upload_now',      array( $this, 'ajax_upload_now' ) );
 		add_action( 'wp_ajax_immo_manager_openimmo_import_zip',      array( $this, 'ajax_import_zip' ) );
+		add_action( 'wp_ajax_immo_manager_openimmo_pull_now',        array( $this, 'ajax_pull_now' ) );
 	}
 
 	/**
@@ -208,6 +209,39 @@ class AdminPage {
 					$result['attempts'],
 					1 === (int) $result['attempts'] ? '' : 'e'
 				),
+			) );
+		}
+		wp_send_json_error( array( 'message' => $result['summary'] ) );
+	}
+
+	/**
+	 * AJAX-Handler: Inbox eines Portals jetzt prüfen (manueller Pull).
+	 */
+	public function ajax_pull_now(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Keine Berechtigung.', 'immo-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'immo_manager_openimmo_pull_now', 'nonce' );
+
+		$portal_key = isset( $_POST['portal'] ) ? sanitize_key( wp_unslash( $_POST['portal'] ) ) : '';
+		if ( ! in_array( $portal_key, array( 'willhaben', 'immoscout24_at' ), true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unbekanntes Portal.', 'immo-manager' ) ), 400 );
+		}
+
+		$puller = \ImmoManager\Plugin::instance()->get_openimmo_sftp_puller();
+		$result = $puller->pull( $portal_key );
+
+		if ( in_array( $result['status'], array( 'success', 'partial', 'skipped' ), true ) ) {
+			$c = $result['counts'];
+			wp_send_json_success( array(
+				'message' => sprintf(
+					__( 'Pull fertig: %1$d ZIPs gezogen, %2$d importiert, %3$d Konflikte, %4$d Fehler', 'immo-manager' ),
+					$c['pulled'],
+					$c['imported'],
+					$c['conflicts'],
+					$c['errors']
+				),
+				'counts'  => $c,
 			) );
 		}
 		wp_send_json_error( array( 'message' => $result['summary'] ) );
@@ -454,6 +488,12 @@ class AdminPage {
 								data-nonce="<?php echo esc_attr( wp_create_nonce( 'immo_manager_openimmo_upload_now' ) ); ?>">
 							<?php esc_html_e( 'Letztes ZIP jetzt hochladen', 'immo-manager' ); ?>
 						</button>
+						<button type="button"
+								class="button button-secondary immo-openimmo-pull-now"
+								data-portal="<?php echo esc_attr( $key ); ?>"
+								data-nonce="<?php echo esc_attr( wp_create_nonce( 'immo_manager_openimmo_pull_now' ) ); ?>">
+							<?php esc_html_e( 'Inbox jetzt prüfen', 'immo-manager' ); ?>
+						</button>
 						<span class="immo-openimmo-sftp-status" style="margin-left:10px;"></span>
 					</p>
 
@@ -532,6 +572,29 @@ class AdminPage {
 					$stat.css('color', '').text('<?php echo esc_js( __( 'Lade hoch…', 'immo-manager' ) ); ?>');
 					$.post(ajaxurl, {
 						action: 'immo_manager_openimmo_upload_now',
+						portal: $btn.data('portal'),
+						nonce:  $btn.data('nonce')
+					}).done(function(resp){
+						if (resp.success) {
+							$stat.css('color', 'green').text(resp.data.message);
+						} else {
+							$stat.css('color', 'red').text(resp.data && resp.data.message ? resp.data.message : 'Fehler');
+						}
+					}).fail(function(){
+						$stat.css('color', 'red').text('<?php echo esc_js( __( 'Netzwerkfehler', 'immo-manager' ) ); ?>');
+					}).always(function(){
+						$btn.prop('disabled', false);
+					});
+				});
+
+				$(document).on('click', '.immo-openimmo-pull-now', function(e){
+					e.preventDefault();
+					var $btn  = $(this);
+					var $stat = $btn.siblings('.immo-openimmo-sftp-status');
+					$btn.prop('disabled', true);
+					$stat.css('color', '').text('<?php echo esc_js( __( 'Prüfe Inbox…', 'immo-manager' ) ); ?>');
+					$.post(ajaxurl, {
+						action: 'immo_manager_openimmo_pull_now',
 						portal: $btn.data('portal'),
 						nonce:  $btn.data('nonce')
 					}).done(function(resp){

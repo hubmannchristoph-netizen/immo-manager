@@ -162,6 +162,13 @@ class Plugin {
 	private $openimmo_import_service = null;
 
 	/**
+	 * OpenImmo SFTP-Puller.
+	 *
+	 * @var \ImmoManager\OpenImmo\Sftp\SftpPuller|null
+	 */
+	private $openimmo_sftp_puller = null;
+
+	/**
 	 * Singleton-Instanz zurückgeben.
 	 *
 	 * @return Plugin
@@ -573,5 +580,21 @@ class Plugin {
 			$this->openimmo_import_service = new \ImmoManager\OpenImmo\Import\ImportService();
 		}
 		return $this->openimmo_import_service;
+	}
+
+	/**
+	 * OpenImmo SFTP-Puller abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\Sftp\SftpPuller
+	 */
+	public function get_openimmo_sftp_puller(): \ImmoManager\OpenImmo\Sftp\SftpPuller {
+		if ( null === $this->openimmo_sftp_puller ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-sync-log.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/sftp/class-sftp-client.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/sftp/class-sftp-puller.php';
+			$this->openimmo_sftp_puller = new \ImmoManager\OpenImmo\Sftp\SftpPuller();
+		}
+		return $this->openimmo_sftp_puller;
 	}
 }
