@@ -325,8 +325,18 @@ $key_facts = array_filter( array(
 				</div>
 			<?php endif; ?>
 
+			<?php if ( $has_map || $meta['address'] ) : ?>
+				<div class="immo-accordion">
+					<button class="immo-accordion-header" aria-expanded="false"><?php esc_html_e( 'Lage', 'immo-manager' ); ?><span class="immo-accordion-icon" aria-hidden="true"></span></button>
+					<div class="immo-accordion-body" hidden>
+						<?php if ( $meta['address'] ) : ?><p class="immo-detail-address">📍 <?php echo esc_html( implode( ', ', array_filter( array( $meta['address'], trim( ( $meta['postal_code'] ?? '' ) . ' ' . ( $meta['city'] ?? '' ) ) ) ) ) ); ?></p><?php endif; ?>
+						<?php if ( $has_map ) : ?><div class="immo-map" id="immo-map-<?php echo esc_attr( (string) $property['id'] ); ?>" data-lat="<?php echo esc_attr( (string) $meta['lat'] ); ?>" data-lng="<?php echo esc_attr( (string) $meta['lng'] ); ?>" data-title="<?php echo esc_attr( $property['title'] ?? '' ); ?>" style="height:300px;border-radius:var(--immo-radius);margin-top:12px;"></div><?php endif; ?>
+					</div>
+				</div>
+			<?php endif; ?>
+
 			<?php
-			// === Finanzierungs- & Nebenkostenrechner ===
+			// === Nebenkosten- & Finanzierungsrechner (am Ende der Akkordeons) ===
 			// $show_sale (Zeile ~32) prüft bereits: mode in (sale|both) UND price > 0.
 			if ( $show_sale ) {
 				$calc_context = array(
@@ -337,16 +347,6 @@ $key_facts = array_filter( array(
 				include IMMO_MANAGER_PLUGIN_DIR . 'templates/parts/calculator.php';
 			}
 			?>
-
-			<?php if ( $has_map || $meta['address'] ) : ?>
-				<div class="immo-accordion">
-					<button class="immo-accordion-header" aria-expanded="false"><?php esc_html_e( 'Lage', 'immo-manager' ); ?><span class="immo-accordion-icon" aria-hidden="true"></span></button>
-					<div class="immo-accordion-body" hidden>
-						<?php if ( $meta['address'] ) : ?><p class="immo-detail-address">📍 <?php echo esc_html( implode( ', ', array_filter( array( $meta['address'], trim( ( $meta['postal_code'] ?? '' ) . ' ' . ( $meta['city'] ?? '' ) ) ) ) ) ); ?></p><?php endif; ?>
-						<?php if ( $has_map ) : ?><div class="immo-map" id="immo-map-<?php echo esc_attr( (string) $property['id'] ); ?>" data-lat="<?php echo esc_attr( (string) $meta['lat'] ); ?>" data-lng="<?php echo esc_attr( (string) $meta['lng'] ); ?>" data-title="<?php echo esc_attr( $property['title'] ?? '' ); ?>" style="height:300px;border-radius:var(--immo-radius);margin-top:12px;"></div><?php endif; ?>
-					</div>
-				</div>
-			<?php endif; ?>
 		</div><!-- .immo-detail-content -->
 
 		<!-- RECHTE SPALTE: Objekt-Details auf einen Blick -->

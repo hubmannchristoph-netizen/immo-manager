@@ -8,6 +8,14 @@
 	var settings = ( window.immoManager && window.immoManager.calc ) || null;
 	if ( ! settings ) { return; }
 
+	function $( sel, root ) { return ( root || document ).querySelector( sel ); }
+	function $$( sel, root ) { return Array.prototype.slice.call( ( root || document ).querySelectorAll( sel ) ); }
+
+	function decSep() {
+		return ( settings && settings.currency && typeof settings.currency.decimal === 'string' )
+			? settings.currency.decimal : ',';
+	}
+
 	function formatMoney( amount ) {
 		var c = ( settings && settings.currency ) || {};
 		var dec = parseInt( c.decimals, 10 ) || 0;
@@ -22,11 +30,9 @@
 		return position === 'before' ? symbol + ' ' + num : num + ' ' + symbol;
 	}
 
-	function decSep() {
-		return ( settings && settings.currency && typeof settings.currency.decimal === 'string' )
-			? settings.currency.decimal : ',';
-	}
-
+	/**
+	 * Nebenkosten-Berechnung.
+	 */
 	function calcCosts( price, commissionFree ) {
 		var items = [];
 		var r = settings.rates;
@@ -81,27 +87,9 @@
 		return { items: items, total: total, grandTotal: price + total };
 	}
 
-	function renderCostsPanel( calc, price, commissionFree ) {
-		var data = calcCosts( price, commissionFree );
-		var itemsEl = $( '.immo-calc-items', calc );
-		if ( itemsEl ) {
-			itemsEl.innerHTML = data.items.map( function ( item ) {
-				var rate = item.rate !== null && item.rate !== undefined
-					? '<span class="immo-calc-row-rate">' + item.rate.toFixed( 1 ).replace( '.', decSep() ) + ' %</span>'
-					: '';
-				return '<div class="immo-calc-row">' +
-					'<span class="immo-calc-row-label">' + item.label + rate + '</span>' +
-					'<span class="immo-calc-row-amount">' + formatMoney( item.amount ) + '</span>' +
-					'</div>';
-			} ).join( '' );
-		}
-		var totalEl = $( '.immo-calc-costs-total', calc );
-		if ( totalEl ) { totalEl.textContent = formatMoney( data.total ); }
-		var grandEl = $( '.immo-calc-grand-total-value', calc );
-		if ( grandEl ) { grandEl.textContent = formatMoney( data.grandTotal ); }
-		return data;
-	}
-
+	/**
+	 * Annuitätenrechnung mit jährlicher Sondertilgung.
+	 */
 	function buildAmortization( principal, annualRate, termYears, extraPerYear ) {
 		var K = Math.max( 0, principal );
 		var n = Math.max( 1, termYears * 12 );
@@ -143,6 +131,33 @@
 		return { rate: m, rows: rows, totalInterest: totalInterest, totalPayments: K + totalInterest };
 	}
 
+	/**
+	 * Render: Nebenkosten-Panel.
+	 */
+	function renderCostsPanel( calc, price, commissionFree ) {
+		var data = calcCosts( price, commissionFree );
+		var itemsEl = $( '.immo-calc-items', calc );
+		if ( itemsEl ) {
+			itemsEl.innerHTML = data.items.map( function ( item ) {
+				var rate = item.rate !== null && item.rate !== undefined
+					? '<span class="immo-calc-row-rate">' + item.rate.toFixed( 1 ).replace( '.', decSep() ) + ' %</span>'
+					: '';
+				return '<div class="immo-calc-row">' +
+					'<span class="immo-calc-row-label">' + item.label + rate + '</span>' +
+					'<span class="immo-calc-row-amount">' + formatMoney( item.amount ) + '</span>' +
+					'</div>';
+			} ).join( '' );
+		}
+		var totalEl = $( '.immo-calc-costs-total', calc );
+		if ( totalEl ) { totalEl.textContent = formatMoney( data.total ); }
+		var grandEl = $( '.immo-calc-grand-total-value', calc );
+		if ( grandEl ) { grandEl.textContent = formatMoney( data.grandTotal ); }
+		return data;
+	}
+
+	/**
+	 * Render: Finanzierungs-Panel.
+	 */
 	function renderFinancingPanel( calc, costs, financeState ) {
 		var need = costs.grandTotal;
 
@@ -168,7 +183,11 @@
 		var tableToggle = $( '.immo-amortization-toggle', calc );
 
 		if ( loan <= 0.5 ) {
-			if ( resultsEl ) { resultsEl.innerHTML = '<div class="immo-calc-no-financing">' + ( settings.i18n.noFinancing || '' ) + '</div>'; }
+			if ( resultsEl ) {
+				resultsEl.innerHTML = '<div class="immo-calc-no-financing">' +
+					( ( settings.i18n && settings.i18n.noFinancing ) || 'Keine Finanzierung notwendig.' ) +
+					'</div>';
+			}
 			if ( tableToggle ) { tableToggle.style.display = 'none'; }
 			if ( tableWrap ) { tableWrap.hidden = true; }
 			return;
@@ -205,27 +224,6 @@
 		}
 	}
 
-	function $( sel, root ) { return ( root || document ).querySelector( sel ); }
-	function $$( sel, root ) { return Array.prototype.slice.call( ( root || document ).querySelectorAll( sel ) ); }
-
-	function initTabs( calc ) {
-		var tabs = $$( '.immo-calculator-tab', calc );
-		var panels = $$( '.immo-calculator-panel', calc );
-		tabs.forEach( function ( tab ) {
-			tab.addEventListener( 'click', function () {
-				var target = tab.getAttribute( 'data-tab' );
-				tabs.forEach( function ( t ) {
-					var active = t === tab;
-					t.classList.toggle( 'active', active );
-					t.setAttribute( 'aria-selected', active ? 'true' : 'false' );
-				} );
-				panels.forEach( function ( p ) {
-					p.hidden = p.getAttribute( 'data-panel' ) !== target;
-				} );
-			} );
-		} );
-	}
-
 	function initAmortizationToggle( calc ) {
 		var toggle = $( '.immo-amortization-toggle', calc );
 		var wrap   = $( '.immo-amortization-table-wrap', calc );
@@ -235,52 +233,74 @@
 			wrap.hidden = ! open;
 			toggle.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
 			toggle.textContent = ( open ? '▲ ' : '▼ ' ) + ( open
-				? ( settings.i18n && settings.i18n.hideTable )  || 'Tilgungsplan ausblenden'
-				: ( settings.i18n && settings.i18n.showTable ) || 'Tilgungsplan anzeigen' );
+				? ( ( settings.i18n && settings.i18n.hideTable ) || 'Tilgungsplan ausblenden' )
+				: ( ( settings.i18n && settings.i18n.showTable ) || 'Tilgungsplan anzeigen' ) );
 		} );
 	}
 
+	/**
+	 * Initialisiere einen einzelnen Calculator-Container.
+	 *
+	 * Modus wird über das `data-mode`-Attribut bestimmt: 'costs' oder 'financing'.
+	 */
 	function initCalculator( calc ) {
+		var mode = calc.getAttribute( 'data-mode' ) || 'costs';
+
 		var state = {
 			price: parseFloat( calc.getAttribute( 'data-base-price' ) ) || 0,
 			commissionFree: calc.getAttribute( 'data-commission-free' ) === '1',
 		};
+
 		var finCfg = settings.finance || {};
-		function readNum( sel, def, isInt ) {
-			var el = $( sel, calc );
-			var raw = el ? el.value : '';
+		function readNum( el, def, isInt ) {
+			if ( ! el ) { return def; }
+			var raw = el.value;
 			var p = isInt ? parseInt( raw, 10 ) : parseFloat( raw );
 			return isNaN( p ) ? def : p;
 		}
-		var finance = {
-			price: state.price,
-			equity:     readNum( '#immo-calc-equity',   ( finCfg.equityPct    || 20 ),  false ),
-			equityMode: 'pct',
-			interest:   readNum( '#immo-calc-interest', ( finCfg.interestRate || 3.5 ), false ),
-			term:       readNum( '#immo-calc-term',     ( finCfg.termYears    || 25 ),  true ),
-			extra:      readNum( '#immo-calc-extra',    ( finCfg.extraPayment || 0 ),   false ),
-		};
 
-		initTabs( calc );
+		var finance = null;
+		if ( mode === 'financing' ) {
+			finance = {
+				price:      state.price,
+				equity:     readNum( $( '.immo-calc-equity', calc ),   ( finCfg.equityPct    || 20 ),  false ),
+				equityMode: 'pct',
+				interest:   readNum( $( '.immo-calc-interest', calc ), ( finCfg.interestRate || 3.5 ), false ),
+				term:       readNum( $( '.immo-calc-term', calc ),     ( finCfg.termYears    || 25 ),  true ),
+				extra:      readNum( $( '.immo-calc-extra', calc ),    ( finCfg.extraPayment || 0 ),   false ),
+			};
+		}
+
 		initAmortizationToggle( calc );
 
-		// Equity-Mode-Toggle.
-		$$( '.immo-calc-equity-toggle button', calc ).forEach( function ( btn ) {
-			btn.addEventListener( 'click', function () {
-				$$( '.immo-calc-equity-toggle button', calc ).forEach( function ( b ) { b.classList.toggle( 'active', b === btn ); } );
-				finance.equityMode = btn.getAttribute( 'data-mode' );
-				render();
+		// Equity-Mode-Toggle (nur Finanzierung).
+		if ( mode === 'financing' ) {
+			$$( '.immo-calc-equity-toggle button', calc ).forEach( function ( btn ) {
+				btn.addEventListener( 'click', function () {
+					$$( '.immo-calc-equity-toggle button', calc ).forEach( function ( b ) {
+						b.classList.toggle( 'active', b === btn );
+					} );
+					finance.equityMode = btn.getAttribute( 'data-mode' );
+					render();
+				} );
 			} );
-		} );
+		}
 
 		// Input-Bindings.
 		var bindings = {
-			'#immo-calc-price':    function ( v ) { state.price = Math.max( 0, parseFloat( v ) || 0 ); finance.price = state.price; },
-			'#immo-calc-equity':   function ( v ) { finance.equity = Math.max( 0, parseFloat( v ) || 0 ); },
-			'#immo-calc-interest': function ( v ) { finance.interest = Math.max( 0, Math.min( 20, parseFloat( v ) || 0 ) ); },
-			'#immo-calc-term':     function ( v ) { finance.term = Math.max( 1, Math.min( 50, parseInt( v, 10 ) || 1 ) ); },
-			'#immo-calc-extra':    function ( v ) { finance.extra = Math.max( 0, parseFloat( v ) || 0 ); },
+			'.immo-calc-price': function ( v ) {
+				state.price = Math.max( 0, parseFloat( v ) || 0 );
+				if ( finance ) { finance.price = state.price; }
+			},
 		};
+
+		if ( mode === 'financing' && finance ) {
+			bindings['.immo-calc-equity']   = function ( v ) { finance.equity   = Math.max( 0, parseFloat( v ) || 0 ); };
+			bindings['.immo-calc-interest'] = function ( v ) { finance.interest = Math.max( 0, Math.min( 20, parseFloat( v ) || 0 ) ); };
+			bindings['.immo-calc-term']     = function ( v ) { finance.term     = Math.max( 1, Math.min( 50, parseInt( v, 10 ) || 1 ) ); };
+			bindings['.immo-calc-extra']    = function ( v ) { finance.extra    = Math.max( 0, parseFloat( v ) || 0 ); };
+		}
+
 		Object.keys( bindings ).forEach( function ( sel ) {
 			var input = $( sel, calc );
 			if ( input ) {
@@ -291,24 +311,30 @@
 			}
 		} );
 
-		var unitSelect = $( '#immo-calc-unit-select', calc );
+		// Unit-Dropdown.
+		var unitSelect = $( '.immo-calc-unit-select', calc );
 		if ( unitSelect ) {
 			unitSelect.addEventListener( 'change', function () {
 				var opt = unitSelect.options[ unitSelect.selectedIndex ];
 				if ( ! opt ) { return; }
 				var newPrice = parseFloat( opt.getAttribute( 'data-price' ) ) || 0;
 				state.price = newPrice;
-				finance.price = newPrice;
+				if ( finance ) { finance.price = newPrice; }
 				state.commissionFree = opt.getAttribute( 'data-commission-free' ) === '1';
-				var priceInput = $( '#immo-calc-price', calc );
+				var priceInput = $( '.immo-calc-price', calc );
 				if ( priceInput ) { priceInput.value = String( Math.round( newPrice ) ); }
 				render();
 			} );
 		}
 
 		function render() {
-			var costs = renderCostsPanel( calc, state.price, state.commissionFree );
-			renderFinancingPanel( calc, costs, finance );
+			if ( mode === 'costs' ) {
+				renderCostsPanel( calc, state.price, state.commissionFree );
+			} else {
+				// Finanzierung: Nebenkosten intern berechnen, um Finanzierungsbedarf zu ermitteln.
+				var costs = calcCosts( state.price, state.commissionFree );
+				renderFinancingPanel( calc, costs, finance );
+			}
 		}
 		render();
 

@@ -112,6 +112,7 @@ class AdminPages {
 			return;
 		}
 
+		// Reihenfolge: Verwaltung zuerst, Konfiguration & Hilfe ganz am Ende.
 		$ordered   = array();
 		$order_map = array(
 			$slug                                                     => 10,
@@ -121,8 +122,11 @@ class AdminPages {
 			'post-new.php?post_type=' . PostTypes::POST_TYPE_PROJECT  => 35,
 			'immo-units'                                              => 40,
 			'immo-inquiries'                                          => 50,
-			Settings::MENU_SLUG                                       => 60,
-			'immo-help'                                               => 70,
+			'immo-manager-openimmo'                                   => 55,
+			'immo-manager-openimmo-conflicts'                         => 56,
+			// --- ab hier: Konfiguration & Hilfe ans Ende ---
+			Settings::MENU_SLUG                                       => 90,
+			'immo-help'                                               => 95,
 		);
 
 		$others = 100;
@@ -446,165 +450,446 @@ class AdminPages {
 		if ( ! current_user_can( self::CAPABILITY ) ) {
 			wp_die( esc_html__( 'Keine Berechtigung.', 'immo-manager' ), 403 );
 		}
-		$api_url = rest_url( RestApi::NAMESPACE );
+		$api_url      = rest_url( RestApi::NAMESPACE );
+		$settings_url = admin_url( 'admin.php?page=' . Settings::MENU_SLUG );
 		?>
 		<style>
-			.immo-help-section { background: #fff; padding: 2rem; border-radius: 12px; border: 1px solid #e5e7eb; margin-top: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,.05); }
-			.immo-help-section h2 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 1rem; font-size: 1.5rem; }
-			.immo-help-section h3 { font-size: 1.2rem; margin-top: 2rem; }
-			.immo-help-section pre { background: #f0f0f1; padding: 15px; border-left: 4px solid #0073aa; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; font-size: 14px; }
-			.immo-help-section code { background: #eee; padding: 2px 5px; border-radius: 4px; font-size: 90%; }
-			.immo-help-section pre code { background: transparent; padding: 0; border-radius: 0; }
-			.immo-help-section table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
-			.immo-help-section th, .immo-help-section td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top; }
-			.immo-help-section th { background: #f9f9f9; font-weight: 600; }
-			.immo-help-section .description { font-size: 1.1em; color: #555; }
+			.immo-help-wrap { max-width: 1100px; }
+			.immo-help-section { background: #fff; padding: 2rem; border: 1px solid #e5e7eb; margin-top: 1.5rem; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+			.immo-help-section h2 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 0.75rem; font-size: 1.4rem; }
+			.immo-help-section h3 { font-size: 1.15rem; margin-top: 1.75rem; color: #1f2937; }
+			.immo-help-section h4 { font-size: 1rem; margin-top: 1.25rem; margin-bottom: 0.4rem; color: #374151; }
+			.immo-help-section pre { background: #f3f4f6; padding: 14px 16px; border-left: 3px solid #2563eb; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; font-size: 13px; line-height: 1.5; margin: 10px 0; }
+			.immo-help-section code { background: #eef2ff; padding: 2px 6px; font-size: 90%; color: #1e40af; font-family: Menlo, Consolas, monospace; }
+			.immo-help-section pre code { background: transparent; padding: 0; color: inherit; }
+			.immo-help-section table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13.5px; }
+			.immo-help-section th, .immo-help-section td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; vertical-align: top; }
+			.immo-help-section th { background: #f9fafb; font-weight: 600; }
+			.immo-help-section .description { font-size: 1.05em; color: #4b5563; }
+			.immo-help-section ul, .immo-help-section ol { margin-left: 1.4rem; }
+			.immo-help-section li { margin-bottom: 0.35rem; line-height: 1.55; }
+			.immo-help-toc { background: #f9fafb; border: 1px solid #e5e7eb; padding: 1.25rem 1.5rem; margin-top: 1rem; columns: 2; }
+			.immo-help-toc a { display: block; padding: 4px 0; text-decoration: none; }
+			.immo-help-badge { display: inline-block; padding: 2px 8px; background: #dbeafe; color: #1e40af; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; vertical-align: middle; margin-left: 6px; }
+			.immo-help-callout { padding: 12px 16px; background: #fffbeb; border-left: 4px solid #f59e0b; margin: 14px 0; }
+			.immo-help-callout--info { background: #eff6ff; border-left-color: #3b82f6; }
+			.immo-help-callout--ok { background: #f0fdf4; border-left-color: #10b981; }
 		</style>
-		<div class="wrap immo-manager-admin">
-			<h1><?php esc_html_e( 'Hilfe & Dokumentation', 'immo-manager' ); ?></h1>
+		<div class="wrap immo-manager-admin immo-help-wrap">
+			<h1><?php esc_html_e( 'Hilfe & API-Dokumentation', 'immo-manager' ); ?></h1>
+			<p class="description"><?php esc_html_e( 'Komplette Dokumentation aller Funktionen — Verwaltung, Frontend-Einbindung, Rechner, OpenImmo-Sync und REST-API.', 'immo-manager' ); ?></p>
 
-			<!-- ANLEITUNG -->
-			<div class="immo-help-section">
-				<h2><span aria-hidden="true">🚀</span> <?php esc_html_e( 'Anleitung: So wird\'s gemacht', 'immo-manager' ); ?></h2>
-				<p class="description"><?php esc_html_e( 'Diese Anleitung gibt einen schnellen Überblick über die Kernkonzepte des Immo Managers.', 'immo-manager' ); ?></p>
+			<!-- INHALTSVERZEICHNIS -->
+			<div class="immo-help-toc">
+				<strong><?php esc_html_e( 'Inhalt', 'immo-manager' ); ?></strong>
+				<a href="#help-overview"><?php esc_html_e( '1. Funktionsübersicht', 'immo-manager' ); ?></a>
+				<a href="#help-content"><?php esc_html_e( '2. Inhalte verwalten', 'immo-manager' ); ?></a>
+				<a href="#help-wizard"><?php esc_html_e( '3. Eingabe-Wizard', 'immo-manager' ); ?></a>
+				<a href="#help-frontend"><?php esc_html_e( '4. Frontend (Shortcodes & Elementor)', 'immo-manager' ); ?></a>
+				<a href="#help-design"><?php esc_html_e( '5. Design & Layout', 'immo-manager' ); ?></a>
+				<a href="#help-calculator"><?php esc_html_e( '6. Nebenkosten- & Finanzierungsrechner', 'immo-manager' ); ?></a>
+				<a href="#help-inquiries"><?php esc_html_e( '7. Anfragen-Verwaltung', 'immo-manager' ); ?></a>
+				<a href="#help-openimmo"><?php esc_html_e( '8. OpenImmo Import/Export', 'immo-manager' ); ?></a>
+				<a href="#help-schema"><?php esc_html_e( '9. SEO & Schema.org', 'immo-manager' ); ?></a>
+				<a href="#help-settings"><?php esc_html_e( '10. Einstellungs-Übersicht', 'immo-manager' ); ?></a>
+				<a href="#help-api"><?php esc_html_e( '11. REST-API Referenz', 'immo-manager' ); ?></a>
+			</div>
 
-				<h3><?php esc_html_e( '1. Immobilien und Bauprojekte', 'immo-manager' ); ?></h3>
-				<p><?php esc_html_e( 'Das Plugin unterscheidet zwei Haupttypen von Einträgen:', 'immo-manager' ); ?></p>
+			<!-- 1. ÜBERSICHT -->
+			<div class="immo-help-section" id="help-overview">
+				<h2>🏘️ <?php esc_html_e( '1. Funktionsübersicht', 'immo-manager' ); ?></h2>
+				<p><?php esc_html_e( 'Der Immo Manager ist ein vollwertiges Immobilien-Verwaltungs-Plugin für österreichische Makler, Bauträger und private Anbieter. Es verbindet eine komfortable Backend-Verwaltung mit modernen Frontend-Darstellungen und einer offenen REST-API für Headless-Setups.', 'immo-manager' ); ?></p>
+
+				<h3><?php esc_html_e( 'Kernfunktionen im Überblick', 'immo-manager' ); ?></h3>
 				<ul>
-					<li><strong><?php esc_html_e( 'Immobilien:', 'immo-manager' ); ?></strong> <?php esc_html_e( 'Eigenständige Objekte wie eine Wohnung, ein Einfamilienhaus oder ein Grundstück. Jede Immobilie hat eigene Preise, Bilder und Ausstattungsmerkmale.', 'immo-manager' ); ?></li>
-					<li><strong><?php esc_html_e( 'Bauprojekte:', 'immo-manager' ); ?></strong> <?php esc_html_e( 'Ein "Container" für mehrere Wohneinheiten. Das Projekt selbst hat eine Adresse und allgemeine Informationen. Die einzelnen Wohnungen (Units) mit ihren Preisen und Größen werden direkt im Projekt verwaltet.', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'Immobilien & Bauprojekte', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'zwei eigene WordPress-Inhaltstypen, Bauprojekte verwalten zusätzlich Wohneinheiten in einer eigenen DB-Tabelle.', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( '7-stufiger Eingabe-Wizard', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'klare Schritt-für-Schritt-Eingabe statt Metabox-Wüste, mit Live-Validierung und Auto-Save-Schutz.', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'Frontend-Templates', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'fertige Listen-, Such- und Detail-Seiten mit Slider-Galerie, Lightbox, Karten-Integration und Anfrage-Lightbox.', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'Shortcodes & Elementor-Widgets', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'sieben Shortcodes plus vier dedizierte Elementor-Widgets.', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'Nebenkosten- und Finanzierungsrechner', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'AT-konforme Defaults, vollständig in den Settings konfigurierbar, mit jährlichem Tilgungsplan und Sondertilgung.', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'Anfragen-System', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'eingehende Anfragen werden in einer eigenen DB-Tabelle gesammelt, per Mail benachrichtigt, mit Status-Workflow.', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'OpenImmo 1.2.7 Import & Export', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'XML-Austausch mit Portalen wie ImmoScout24, willhaben oder ImmoboerseAT, inklusive SFTP-Übertragung, Konflikt-Erkennung und Cron-Automation.', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'Schema.org Markup', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'automatisches strukturiertes Datenmarkup (RealEstateListing) für bessere SEO-Sichtbarkeit.', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'REST-API', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'vollständige JSON-API mit Filtern, Sortierung und API-Key-Schutz für Headless-Frontends (React/Vue/etc.).', 'immo-manager' ); ?></li>
 				</ul>
-				<p><?php esc_html_e( 'Alle Einträge werden über den Menüpunkt "Immo Manager" und den zugehörigen Unterpunkten oder direkt über den komfortablen Eingabe-Wizard erstellt und bearbeitet.', 'immo-manager' ); ?></p>
 
-				<h3><?php esc_html_e( '2. Der Eingabe-Wizard', 'immo-manager' ); ?></h3>
-				<p><?php esc_html_e( 'Um die Eingabe so einfach wie möglich zu gestalten, leitet das Plugin dich immer automatisch in den 6-stufigen Wizard. Hier kannst du alle relevanten Daten Schritt für Schritt eingeben, von der Adresse über Preise bis hin zu Bildern und Dokumenten (Exposés).', 'immo-manager' ); ?></p>
-				<p><?php esc_html_e( 'Wenn du ein Bauprojekt bearbeitest, findest du am Ende des Wizards eine Tabelle, in der du die einzelnen Wohneinheiten direkt anlegen, bearbeiten und löschen kannst.', 'immo-manager' ); ?></p>
+				<div class="immo-help-callout immo-help-callout--info">
+					<strong><?php esc_html_e( 'Tipp:', 'immo-manager' ); ?></strong>
+					<?php esc_html_e( 'Alle Einstellungen findest du gesammelt unter ', 'immo-manager' ); ?>
+					<a href="<?php echo esc_url( $settings_url ); ?>"><?php esc_html_e( 'Immo Manager → Einstellungen', 'immo-manager' ); ?></a>.
+				</div>
+			</div>
 
-				<h3><?php esc_html_e( '3. Darstellung im Frontend (Shortcodes)', 'immo-manager' ); ?></h3>
-				<p><?php esc_html_e( 'Um deine Immobilien auf deiner Webseite anzuzeigen, verwendest du Shortcodes. Erstelle einfach eine neue Seite in WordPress und füge einen der folgenden Shortcodes in den Texteditor ein:', 'immo-manager' ); ?></p>
+			<!-- 2. CONTENT MGMT -->
+			<div class="immo-help-section" id="help-content">
+				<h2>📝 <?php esc_html_e( '2. Inhalte verwalten', 'immo-manager' ); ?></h2>
+
+				<h3><?php esc_html_e( 'Immobilien (Single Properties)', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Eigenständige Objekte: Wohnung, Haus, Grundstück, Gewerbeobjekt. Jede Immobilie hat eigene Galerie, Preise (Kauf und/oder Miete), Ausstattungs-Tags, Kontaktperson und optional Geo-Koordinaten für die Karten-Anzeige.', 'immo-manager' ); ?></p>
+				<p><?php esc_html_e( 'Anlegen: ', 'immo-manager' ); ?>
+					<code>Immo Manager → + Neue Immobilie</code>. <?php esc_html_e( 'Du wirst automatisch in den Wizard geleitet.', 'immo-manager' ); ?>
+				</p>
+
+				<h3><?php esc_html_e( 'Bauprojekte (Projects)', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Container für mehrere Wohneinheiten — typischerweise ein Bauträger-Projekt. Das Projekt selbst hat eine Adresse, Galerie, Beschreibung und Status (in Planung / in Bau / fertiggestellt). Innerhalb des Projekts werden die Einheiten (Tops) verwaltet.', 'immo-manager' ); ?></p>
+				<p><?php esc_html_e( 'Anlegen: ', 'immo-manager' ); ?>
+					<code>Immo Manager → + Neues Bauprojekt</code>.
+				</p>
+
+				<h3><?php esc_html_e( 'Wohneinheiten (Units)', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Einzelne Tops innerhalb eines Bauprojekts. Eigene Felder: Top-Nummer, Etage, Fläche, Zimmer, Preis/Miete, Status, Grundriss-Bild. Anlage erfolgt direkt aus dem Bauprojekt-Wizard heraus oder per AJAX-Inline-Editor.', 'immo-manager' ); ?></p>
+				<p><?php esc_html_e( 'Plugin-eigene Übersicht aller Units quer über alle Projekte: ', 'immo-manager' ); ?>
+					<code>Immo Manager → Wohneinheiten</code>.
+				</p>
+
+				<h3><?php esc_html_e( 'Verknüpfung Property ↔ Unit', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Jede Wohneinheit kann optional mit einer normalen Immobilie verknüpft werden. So erscheint die Einheit in der globalen Listenansicht UND auf der Bauprojekt-Seite. Doppelpflege entfällt.', 'immo-manager' ); ?></p>
+			</div>
+
+			<!-- 3. WIZARD -->
+			<div class="immo-help-section" id="help-wizard">
+				<h2>🧙 <?php esc_html_e( '3. Eingabe-Wizard', 'immo-manager' ); ?></h2>
+				<p class="description"><?php esc_html_e( 'Statt klassischer Metaboxen bietet der Immo Manager einen geführten 7-Schritte-Wizard. Beim Anlegen oder Bearbeiten einer Immobilie/eines Projekts wirst du automatisch in den Wizard geleitet.', 'immo-manager' ); ?></p>
+
+				<table>
+					<thead>
+						<tr><th><?php esc_html_e( 'Schritt', 'immo-manager' ); ?></th><th><?php esc_html_e( 'Inhalt', 'immo-manager' ); ?></th></tr>
+					</thead>
+					<tbody>
+						<tr><td><strong>1. Typ</strong></td><td><?php esc_html_e( 'Immobilientyp (Wohnung/Haus/etc.), Modus (Miete/Kauf/beides), Status', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>2. Lage</strong></td><td><?php esc_html_e( 'Adresse, PLZ, Ort, Bundesland, Bezirk, Geo-Koordinaten (Maps-Integration)', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>3. Details</strong></td><td><?php esc_html_e( 'Fläche, Zimmer, Bäder, Etage, Baujahr, Sanierung, Energieklasse, HWB, Heizung', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>4. Preis</strong></td><td><?php esc_html_e( 'Kaufpreis, Miete, Betriebskosten, Kaution, Provisionsfrei-Toggle, Verfügbar-ab', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>5. Ausstattung</strong></td><td><?php esc_html_e( 'Klickbare Feature-Tags (Innen/Außen/Sicherheit/Sonstiges), freier Text', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>6. Medien</strong></td><td><?php esc_html_e( 'Hauptbild, Galerie, Dokumente (Exposé-PDF, Grundriss), Video-URL/Datei', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>7. Kontakt</strong></td><td><?php esc_html_e( 'Ansprechpartner-Name, E-Mail, Telefon, Foto. Werden in der Anfrage-Lightbox angezeigt.', 'immo-manager' ); ?></td></tr>
+					</tbody>
+				</table>
+
+				<div class="immo-help-callout immo-help-callout--ok">
+					<strong>✔️ <?php esc_html_e( 'Auto-Save-Schutz:', 'immo-manager' ); ?></strong>
+					<?php esc_html_e( 'Verlässt du den Wizard mit ungespeicherten Änderungen, warnt das Plugin per Browser-Dialog. Keine verlorene Eingabe mehr.', 'immo-manager' ); ?>
+				</div>
+
+				<h3><?php esc_html_e( 'Bauprojekt-spezifisch: Wohneinheiten anlegen', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Beim Bearbeiten eines Bauprojekts findest du nach den 7 Wizard-Schritten eine zusätzliche Tabelle, in der du Wohneinheiten direkt anlegen, sortieren (Drag & Drop) und löschen kannst — ohne die Seite zu verlassen. Jede Einheit kann auf Wunsch mit einer eigenständigen Immobilie verknüpft werden, sodass sie auch in der globalen Liste auftaucht.', 'immo-manager' ); ?></p>
+			</div>
+
+			<!-- 4. FRONTEND -->
+			<div class="immo-help-section" id="help-frontend">
+				<h2>🎨 <?php esc_html_e( '4. Frontend-Einbindung', 'immo-manager' ); ?></h2>
+
+				<h3><?php esc_html_e( 'Shortcodes', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Sieben Shortcodes für jede Anwendungssituation:', 'immo-manager' ); ?></p>
+
+				<table>
+					<thead>
+						<tr><th><?php esc_html_e( 'Shortcode', 'immo-manager' ); ?></th><th><?php esc_html_e( 'Verwendung', 'immo-manager' ); ?></th></tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><code>[immo_list]</code></td>
+							<td><?php esc_html_e( 'Hauptlisten-Seite mit AJAX-Filter-Sidebar (Status, Modus, Bundesland, Preis, Fläche, Zimmer, Type). Attribute: ', 'immo-manager' ); ?>
+								<code>status</code>, <code>mode</code>, <code>per_page</code>, <code>orderby</code>, <code>layout</code> (grid/list).
+							</td>
+						</tr>
+						<tr>
+							<td><code>[immo_detail id="123"]</code></td>
+							<td><?php esc_html_e( 'Detail-Ansicht für Immobilien-ID 123. Eingebettet in beliebigen Seiten.', 'immo-manager' ); ?></td>
+						</tr>
+						<tr>
+							<td><code>[immo_detail_page]</code></td>
+							<td><?php esc_html_e( 'Dynamische Detail-Seite — ID kommt aus URL-Parameter `?immo_id=123`. Ideal für Single-Page-App-Setup.', 'immo-manager' ); ?></td>
+						</tr>
+						<tr>
+							<td><code>[immo_latest count="3"]</code></td>
+							<td><?php esc_html_e( 'Die N neuesten Immobilien als Cards. Ideal für die Startseite.', 'immo-manager' ); ?></td>
+						</tr>
+						<tr>
+							<td><code>[immo_featured count="3"]</code></td>
+							<td><?php esc_html_e( 'Hervorgehobene Top-Immobilien (per Checkbox in der Property markiert).', 'immo-manager' ); ?></td>
+						</tr>
+						<tr>
+							<td><code>[immo_count]</code></td>
+							<td><?php esc_html_e( 'Reine Zahl: aktuell verfügbare Immobilien. Für Header/Counter-Animationen.', 'immo-manager' ); ?></td>
+						</tr>
+						<tr>
+							<td><code>[immo_search]</code></td>
+							<td><?php esc_html_e( 'Inline-Suchformular (z. B. im Header). Leitet auf die Listen-Seite mit den Filter-Parametern weiter.', 'immo-manager' ); ?></td>
+						</tr>
+					</tbody>
+				</table>
+
+				<h3><?php esc_html_e( 'Elementor-Widgets', 'immo-manager' ); ?> <span class="immo-help-badge"><?php esc_html_e( 'Optional', 'immo-manager' ); ?></span></h3>
+				<p><?php esc_html_e( 'Wenn Elementor installiert ist, registriert das Plugin automatisch vier eigene Widgets unter der Kategorie "Immo Manager":', 'immo-manager' ); ?></p>
 				<ul>
-					<li><code>[immo_list]</code>: <?php esc_html_e( 'Zeigt eine Liste aller Immobilien mit einer Filter-Sidebar an. Ideal für deine Haupt-Immobilienseite.', 'immo-manager' ); ?></li>
-					<li><code>[immo_detail id="123"]</code>: <?php esc_html_e( 'Zeigt die Detailansicht einer einzelnen Immobilie an. Ersetze "123" durch die ID der Immobilie.', 'immo-manager' ); ?></li>
-					<li><code>[immo_detail_page]</code>: <?php esc_html_e( 'Erstellt eine dynamische Detailseite. Die ID wird aus der URL genommen (z.B. `deine-seite.at/immobilie/?immo_id=123`). Perfekt für einen "Single-Page-App"-Ansatz.', 'immo-manager' ); ?></li>
-				</ul>
-
-				<h3><?php esc_html_e( '4. Elementor Integration', 'immo-manager' ); ?></h3>
-				<p><?php esc_html_e( 'Wenn du den Elementor Page Builder nutzt, stehen dir vier spezialisierte Widgets zur Verfügung:', 'immo-manager' ); ?></p>
-				<ul>
-					<li><strong><?php esc_html_e( 'Immobilien-Liste:', 'immo-manager' ); ?></strong> <?php esc_html_e( 'Ein flexibles Widget für Grid-, Listen-, Slider- oder Karten-Ansichten. Du kannst Abfragen nach Preis, Status oder Modus (Miete/Kauf) konfigurieren.', 'immo-manager' ); ?></li>
-					<li><strong><?php esc_html_e( 'Bauprojekte:', 'immo-manager' ); ?></strong> <?php esc_html_e( 'Stellt deine übergeordneten Projekte mit Status-Badges dar.', 'immo-manager' ); ?></li>
-					<li><strong><?php esc_html_e( 'Projekt-Wohneinheiten:', 'immo-manager' ); ?></strong> <?php esc_html_e( 'Listet alle Einheiten eines Projekts in einer tabellarischen Übersicht auf.', 'immo-manager' ); ?></li>
-					<li><strong><?php esc_html_e( 'Immobilien-Suche:', 'immo-manager' ); ?></strong> <?php esc_html_e( 'Ein Suchschlitz für den Header oder die Startseite.', 'immo-manager' ); ?></li>
-				</ul>
-
-				<h3><?php esc_html_e( '5. Layouts & Design anpassen', 'immo-manager' ); ?></h3>
-				<p><?php esc_html_e( 'Du hast volle Kontrolle über das Erscheinungsbild der Detailseiten:', 'immo-manager' ); ?></p>
-				<ul>
-					<li><strong><?php esc_html_e( 'Globale Einstellungen:', 'immo-manager' ); ?></strong> <?php esc_html_e( 'Unter "Einstellungen > Design & Layout" legst du den Standard für die gesamte Seite fest.', 'immo-manager' ); ?></li>
-					<li><strong><?php esc_html_e( 'Individuelle Overrides:', 'immo-manager' ); ?></strong> <?php esc_html_e( 'In jeder Immobilie findest du in der Seitenleiste das Menü "Darstellung & Layout". Hier kannst du für dieses eine Objekt zwischen dem Standard- und Kompakt-Layout wählen oder die Galerie von Slider auf Raster (Grid) umstellen.', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'Immobilien-Liste', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'flexibles Listen-Widget mit Grid/List/Slider/Karten-Layout, eigenen Query-Filtern (Status, Modus, Preis, Region) und einstellbarer Card-Darstellung.', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'Bauprojekte', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'rendert Projekte mit Status-Badges und Verfügbarkeits-Stats.', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'Projekt-Wohneinheiten', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'Tabellen-Übersicht aller Tops eines Projekts (Etage, Fläche, Zimmer, Preis, Status).', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'Immobilien-Suche', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'horizontaler Suchschlitz für Header oder Hero-Sektionen.', 'immo-manager' ); ?></li>
 				</ul>
 			</div>
 
-			<!-- API DOKUMENTATION -->
-			<div class="immo-help-section">
-				<h2><span aria-hidden="true">🔌</span> <?php esc_html_e( 'REST API Dokumentation', 'immo-manager' ); ?></h2>
-				<p class="description"><?php esc_html_e( 'Die REST-API ist das Herzstück für den Headless-Betrieb. Sie erlaubt es, alle Immobiliendaten im standardisierten JSON-Format abzurufen und auf jeder beliebigen externen Webseite (z.B. gebaut mit React, Vue, Svelte, etc.) darzustellen.', 'immo-manager' ); ?></p>
+			<!-- 5. DESIGN & LAYOUT -->
+			<div class="immo-help-section" id="help-design">
+				<h2>🖌️ <?php esc_html_e( '5. Design & Layout', 'immo-manager' ); ?></h2>
+
+				<h3><?php esc_html_e( 'Globale Design-Einstellungen', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Unter Einstellungen → Design & Layout legst du Akzentfarbe, Hintergrund, Text-Farben, Schriftart, Border-Radius und Card-Stil global fest. Die Werte werden als CSS-Custom-Properties (--immo-*) injiziert und gelten für alle Plugin-Templates.', 'immo-manager' ); ?></p>
+
+				<h3><?php esc_html_e( 'Detail-Seite: Layout-Varianten', 'immo-manager' ); ?></h3>
+				<ul>
+					<li><strong><?php esc_html_e( 'Layout-Typ:', 'immo-manager' ); ?></strong> <code>standard</code> (zweispaltig mit Sticky-Sidebar) oder <code>compact</code> (einspaltig kompakt)</li>
+					<li><strong><?php esc_html_e( 'Galerie:', 'immo-manager' ); ?></strong> <code>slider</code> (Hauptbild + Thumbnails) oder <code>grid</code> (Bento-Layout)</li>
+					<li><strong><?php esc_html_e( 'Hero-Größe:', 'immo-manager' ); ?></strong> <code>full</code> (volle Breite) oder <code>compact</code></li>
+				</ul>
+				<p><?php esc_html_e( 'Diese drei Achsen sind zuerst global gesetzt, können aber per Property/Bauprojekt einzeln überschrieben werden (Sidebar-Box "Darstellung & Layout").', 'immo-manager' ); ?></p>
+
+				<h3><?php esc_html_e( 'Listen-Karten', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Card-Design-Optionen: Standard, Modern, Minimal, Compact. Galerie-Hover-Effekte, Status-Badges, Featured-Sterne — alles per Settings konfigurierbar.', 'immo-manager' ); ?></p>
+			</div>
+
+			<!-- 6. CALCULATOR -->
+			<div class="immo-help-section" id="help-calculator">
+				<h2>🧮 <?php esc_html_e( '6. Nebenkosten- & Finanzierungsrechner', 'immo-manager' ); ?></h2>
+				<p class="description"><?php esc_html_e( 'Der Rechner erscheint automatisch auf jeder Kauf-Property mit Preis und auf jeder Bauprojekt-Seite mit mindestens einer Kauf-Einheit. Er besteht aus zwei separaten Akkordeons unterhalb aller Detail-Sektionen.', 'immo-manager' ); ?></p>
+
+				<h3><?php esc_html_e( 'Nebenkostenrechner (Akkordeon 1)', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Berechnet die typischen AT-Erwerbsnebenkosten:', 'immo-manager' ); ?></p>
+				<ul>
+					<li>📋 <?php esc_html_e( 'Grunderwerbsteuer (Default 3,5 %)', 'immo-manager' ); ?></li>
+					<li>📋 <?php esc_html_e( 'Grundbucheintragung (Default 1,1 %)', 'immo-manager' ); ?></li>
+					<li>📋 <?php esc_html_e( 'Notar/Treuhand (Prozent ODER Pauschalbetrag)', 'immo-manager' ); ?></li>
+					<li>📋 <?php esc_html_e( 'Maklerprovision (Default 3 %) — entfällt bei Property-Override "provisionsfrei"', 'immo-manager' ); ?></li>
+					<li>📋 <?php esc_html_e( 'USt auf Provision (Default 20 %)', 'immo-manager' ); ?></li>
+				</ul>
+				<p><?php esc_html_e( 'Jeder Posten ist global ein-/ausschaltbar; Sätze sind frei konfigurierbar.', 'immo-manager' ); ?></p>
+
+				<h3><?php esc_html_e( 'Finanzierungsrechner (Akkordeon 2)', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Klassische Annuitätenrechnung auf Basis Kaufpreis + Nebenkosten:', 'immo-manager' ); ?></p>
+				<ul>
+					<li>💶 <?php esc_html_e( 'Eigenkapital — umschaltbar zwischen € und % (Default 20 %, KIM-V-konform)', 'immo-manager' ); ?></li>
+					<li>📈 <?php esc_html_e( 'Zinssatz, Laufzeit, optionale jährliche Sondertilgung', 'immo-manager' ); ?></li>
+					<li>📊 <?php esc_html_e( 'Ausgabe: monatliche Rate, Gesamt-Zinsen, Gesamtaufwand, Tilgung-Endjahr', 'immo-manager' ); ?></li>
+					<li>📋 <?php esc_html_e( 'Optional: jährlicher Tilgungsplan als Tabelle (Jahr / Zinsen / Tilgung / Restschuld)', 'immo-manager' ); ?></li>
+				</ul>
+
+				<h3><?php esc_html_e( 'Bauprojekt-Modus', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Auf Bauprojekt-Seiten zeigt jeder Rechner zusätzlich ein Wohneinheits-Dropdown. Auswahl wechselt sofort den Berechnungs-Kaufpreis.', 'immo-manager' ); ?></p>
+
+				<h3><?php esc_html_e( 'Konfiguration', 'immo-manager' ); ?></h3>
+				<p><a href="<?php echo esc_url( $settings_url . '#tab-calculator' ); ?>"><?php esc_html_e( '→ Einstellungen → Rechner', 'immo-manager' ); ?></a> <?php esc_html_e( ' — alle Sätze, Toggles, Notar-Modus und Finanz-Defaults.', 'immo-manager' ); ?></p>
+
+				<div class="immo-help-callout">
+					<strong>⚠️ <?php esc_html_e( 'Disclaimer:', 'immo-manager' ); ?></strong>
+					<?php esc_html_e( 'Die Berechnung ist eine unverbindliche Schätzung — kein Ersatz für Bank- oder Steuerberatung. Der Hinweis erscheint automatisch unter jedem Rechner.', 'immo-manager' ); ?>
+				</div>
+			</div>
+
+			<!-- 7. INQUIRIES -->
+			<div class="immo-help-section" id="help-inquiries">
+				<h2>✉️ <?php esc_html_e( '7. Anfragen-Verwaltung', 'immo-manager' ); ?></h2>
+				<p><?php esc_html_e( 'Frontend-Anfragen werden in einer eigenen DB-Tabelle gespeichert (nicht als WP-Comments). Vorteile: getrennte Verwaltung, eigene Status-Workflows, kein Spam-Plugin-Konflikt.', 'immo-manager' ); ?></p>
+
+				<h3><?php esc_html_e( 'Workflow', 'immo-manager' ); ?></h3>
+				<ol>
+					<li><?php esc_html_e( 'Besucher klickt "Anfrage senden" auf einer Property/Projekt-Seite → Lightbox mit Formular öffnet sich.', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Pflichtfelder: Name, E-Mail, DSGVO-Zustimmung. Optional: Telefon, Nachricht, Wohneinheit (bei Projekten).', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Validierung clientseitig + serverseitig. Anti-Spam per Honeypot + (optional) reCAPTCHA.', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Mail-Benachrichtigung an die definierte Empfänger-Adresse — wahlweise globaler Empfänger oder Property-spezifischer Kontakt.', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Anfrage erscheint im Backend unter Immo Manager → Anfragen mit Status "Neu".', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Status-Lifecycle: Neu → Gelesen → Beantwortet → (Spam).', 'immo-manager' ); ?></li>
+				</ol>
+
+				<h3><?php esc_html_e( 'Backend-Funktionen', 'immo-manager' ); ?></h3>
+				<ul>
+					<li><?php esc_html_e( 'Filter nach Status (Tabs: Alle / Neu / Gelesen / Beantwortet / Spam) mit Live-Zähler', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Direkter "Antworten"-Button öffnet Mail-Programm mit vorgefertigtem Betreff', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Status wird beim Klicken auf "Antworten" automatisch auf "Beantwortet" gesetzt (AJAX)', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Lösch-Funktion mit Nonce-Schutz', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Dashboard-Widget zeigt offene Anfragen-Zahl', 'immo-manager' ); ?></li>
+				</ul>
+			</div>
+
+			<!-- 8. OPENIMMO -->
+			<div class="immo-help-section" id="help-openimmo">
+				<h2>📦 <?php esc_html_e( '8. OpenImmo Import & Export', 'immo-manager' ); ?> <span class="immo-help-badge">OpenImmo 1.2.7</span></h2>
+				<p class="description"><?php esc_html_e( 'OpenImmo ist der etablierte XML-Standard für den Datenaustausch mit Immobilienportalen (ImmoScout24, willhaben, ImmoboerseAT etc.). Der Immo Manager unterstützt sowohl Import als auch Export, inklusive automatischer SFTP-Übertragung.', 'immo-manager' ); ?></p>
+
+				<h3><?php esc_html_e( 'Export', 'immo-manager' ); ?></h3>
+				<ul>
+					<li><?php esc_html_e( 'Mappt alle Plugin-Felder auf das OpenImmo-Schema (immobilie/objektkategorie/preise/freitexte/anhaenge/etc.)', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Verarbeitet Bilder lokal (Resize, Optimierung) bevor sie ins Paket wandern', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Validiert das XML gegen die offizielle OpenImmo XSD vor dem Versand', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'ZIP-Paket inkl. allen Bilddateien wird erzeugt und per SFTP an die konfigurierten Portal-Targets übertragen', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Manueller Trigger oder per Cron-Schedule (stündlich, täglich, wöchentlich)', 'immo-manager' ); ?></li>
+				</ul>
+
+				<h3><?php esc_html_e( 'Import', 'immo-manager' ); ?></h3>
+				<ul>
+					<li><?php esc_html_e( 'Periodisches SFTP-Pulling aus dem konfigurierten Eingangs-Verzeichnis', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'ZIP-Pakete werden automatisch entpackt, XML geparst, Bilder in die Mediathek importiert', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Reverse-Mapping zurück auf Plugin-Felder', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Konflikt-Erkennung: Wenn dieselbe Objektreferenz lokal verändert UND extern geändert wurde → Eintrag in der Konflikt-Liste, manuelle Auflösung', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Sync-Log mit allen Vorgängen (Erfolg/Fehler/Warnung)', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Retention-Cleaner löscht alte Sync-Logs und temporäre Dateien automatisch', 'immo-manager' ); ?></li>
+				</ul>
+
+				<h3><?php esc_html_e( 'Mail-Notifier', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Optional: Mail-Bericht nach jedem Sync-Lauf (alles ok / Konflikte vorhanden / Fehler aufgetreten).', 'immo-manager' ); ?></p>
+
+				<h3><?php esc_html_e( 'Konfiguration', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Alle Portal-Targets, SFTP-Zugangsdaten, Cron-Frequenzen und Retention-Regeln werden in einer dedizierten OpenImmo-Admin-Sektion gepflegt (', 'immo-manager' ); ?>
+					<code>Immo Manager → Einstellungen</code> bzw. <code>Immo Manager → OpenImmo Sync</code>).
+				</p>
+			</div>
+
+			<!-- 9. SCHEMA -->
+			<div class="immo-help-section" id="help-schema">
+				<h2>🔍 <?php esc_html_e( '9. SEO & Schema.org', 'immo-manager' ); ?></h2>
+				<p><?php esc_html_e( 'Auf jeder Property- und Projekt-Detailseite injiziert der Immo Manager automatisch JSON-LD Markup nach Schema.org-Spezifikation:', 'immo-manager' ); ?></p>
+				<ul>
+					<li><code>RealEstateListing</code> — <?php esc_html_e( 'Top-Level für die Anzeige', 'immo-manager' ); ?></li>
+					<li><code>Place / GeoCoordinates</code> — <?php esc_html_e( 'Adresse + Geo-Koordinaten', 'immo-manager' ); ?></li>
+					<li><code>Offer / PriceSpecification</code> — <?php esc_html_e( 'Preis, Währung, Verfügbarkeit', 'immo-manager' ); ?></li>
+					<li><code>Accommodation / Apartment / House</code> — <?php esc_html_e( 'Räume, Fläche, Etage', 'immo-manager' ); ?></li>
+					<li><code>Organization / Person</code> — <?php esc_html_e( 'Anbieter und Kontaktperson', 'immo-manager' ); ?></li>
+				</ul>
+				<p><?php esc_html_e( 'Vorteile: bessere Google-Rich-Results für Immobilien-Suchen, automatische Indexierung in Google for Real Estate (sofern aktiviert), strukturierte Daten für Voice-Search und KI-Suchmaschinen.', 'immo-manager' ); ?></p>
+				<div class="immo-help-callout immo-help-callout--info">
+					<?php esc_html_e( 'Prüfen lässt sich das Markup mit dem ', 'immo-manager' ); ?>
+					<a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener">Google Rich Results Test</a>.
+				</div>
+			</div>
+
+			<!-- 10. SETTINGS -->
+			<div class="immo-help-section" id="help-settings">
+				<h2>⚙️ <?php esc_html_e( '10. Einstellungs-Übersicht', 'immo-manager' ); ?></h2>
+				<p><?php esc_html_e( 'Die Einstellungs-Seite ist in Tabs gegliedert:', 'immo-manager' ); ?></p>
+				<table>
+					<thead><tr><th><?php esc_html_e( 'Tab', 'immo-manager' ); ?></th><th><?php esc_html_e( 'Zweck', 'immo-manager' ); ?></th></tr></thead>
+					<tbody>
+						<tr><td><strong>⚙️ <?php esc_html_e( 'Allgemein', 'immo-manager' ); ?></strong></td><td><?php esc_html_e( 'Währung, Symbol, Position, Dezimalen, Trennzeichen, Items pro Seite, Default-View (grid/list)', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>🎨 <?php esc_html_e( 'Design & Layout', 'immo-manager' ); ?></strong></td><td><?php esc_html_e( 'Farben, Schriften, Border-Radius, Card-Stil, Default-Detail-Layout, Default-Galerie, Hero-Stil', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>🧩 <?php esc_html_e( 'Module', 'immo-manager' ); ?></strong></td><td><?php esc_html_e( 'An-/Aus-Schalter für Anfragen, Karten, Galerie, Schema.org, Demo-Daten etc.', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>📧 <?php esc_html_e( 'Kontakt', 'immo-manager' ); ?></strong></td><td><?php esc_html_e( 'Globaler Empfänger für Anfragen, Mail-Template, Reply-To-Logik', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>🗺️ <?php esc_html_e( 'Karten', 'immo-manager' ); ?></strong></td><td><?php esc_html_e( 'Karten-Provider (Leaflet/OSM oder Google Maps), API-Keys, Default-Zoom', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>🧮 <?php esc_html_e( 'Rechner', 'immo-manager' ); ?></strong></td><td><?php esc_html_e( 'Alle Sätze (Grunderwerbsteuer/Grundbuch/Notar/Provision/USt), Posten-Toggles, Notar-Modus, Finanz-Defaults, Tilgungsplan-Toggle', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>🔌 <?php esc_html_e( 'API & Integration', 'immo-manager' ); ?></strong></td><td><?php esc_html_e( 'API-Key generieren, CORS-Origins, Webhook-URL, externe Tracking-IDs', 'immo-manager' ); ?></td></tr>
+					</tbody>
+				</table>
+			</div>
+
+			<!-- 11. API -->
+			<div class="immo-help-section" id="help-api">
+				<h2>🔌 <?php esc_html_e( '11. REST-API Referenz', 'immo-manager' ); ?></h2>
+				<p class="description"><?php esc_html_e( 'Alle Daten sind via JSON-API abrufbar — perfekt für Headless-Setups, mobile Apps oder externe Portale.', 'immo-manager' ); ?></p>
 
 				<h3><?php esc_html_e( 'Grundlagen', 'immo-manager' ); ?></h3>
 				<p><strong><?php esc_html_e( 'Basis-URL:', 'immo-manager' ); ?></strong> <code><?php echo esc_url( $api_url ); ?></code></p>
 
-				<h3><?php esc_html_e( 'Authentifizierung (API-Key)', 'immo-manager' ); ?></h3>
-				<p><?php esc_html_e( 'Alle Lese-Endpunkte (GET) sind öffentlich zugänglich. Für schreibende Aktionen, wie das Einreichen einer Anfrage (POST /inquiries), ist ein API-Key erforderlich, sofern einer in den Einstellungen generiert wurde.', 'immo-manager' ); ?></p>
-				<p><?php esc_html_e( 'Der Key muss als HTTP-Header mitgesendet werden:', 'immo-manager' ); ?></p>
+				<h4><?php esc_html_e( 'Authentifizierung', 'immo-manager' ); ?></h4>
+				<p><?php esc_html_e( 'Lese-Endpunkte (GET) sind öffentlich. Schreibende Endpunkte (POST /inquiries) verlangen einen API-Key, sofern in den Settings konfiguriert.', 'immo-manager' ); ?></p>
 				<pre><code>X-Immo-API-Key: DEIN_GENERIERTER_API_KEY</code></pre>
-				<p><a href="<?php echo esc_url( admin_url( 'admin.php?page=immo-manager-settings&tab=api' ) ); ?>"><?php esc_html_e( 'Hier kannst du einen API-Key generieren.', 'immo-manager' ); ?></a></p>
+				<p><a href="<?php echo esc_url( $settings_url . '#tab-api' ); ?>"><?php esc_html_e( '→ Hier API-Key generieren', 'immo-manager' ); ?></a></p>
 
-				<h3><?php esc_html_e( 'CORS (Cross-Origin Resource Sharing)', 'immo-manager' ); ?></h3>
-				<p><?php esc_html_e( 'Damit dein externes Frontend auf die API zugreifen darf, musst du dessen Domain in den Einstellungen unter "Erlaubte Origins (CORS)" eintragen. Für eine rein öffentliche API kann der Wert auf `*` belassen werden.', 'immo-manager' ); ?></p>
+				<h4><?php esc_html_e( 'CORS', 'immo-manager' ); ?></h4>
+				<p><?php esc_html_e( 'Erlaubte Frontend-Domains in den Settings unter "Erlaubte Origins (CORS)" eintragen. Wildcard ', 'immo-manager' ); ?><code>*</code><?php esc_html_e( ' für rein öffentliche APIs zulässig.', 'immo-manager' ); ?></p>
 
-				<h2 style="margin-top: 3rem;"><?php esc_html_e( 'Endpunkt-Referenz', 'immo-manager' ); ?></h2>
+				<h3 style="margin-top: 2.5rem;"><?php esc_html_e( 'Endpunkt-Übersicht', 'immo-manager' ); ?></h3>
+				<table>
+					<thead><tr><th><?php esc_html_e( 'Methode + Pfad', 'immo-manager' ); ?></th><th><?php esc_html_e( 'Beschreibung', 'immo-manager' ); ?></th></tr></thead>
+					<tbody>
+						<tr><td><code>GET /properties</code></td><td><?php esc_html_e( 'Paginierte, gefilterte Liste aller Immobilien', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>GET /properties/{id}</code></td><td><?php esc_html_e( 'Detail einer Immobilie inkl. Galerie + Beschreibung', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>GET /properties/{id}/similar</code></td><td><?php esc_html_e( 'Ähnliche Immobilien (gleiche Region/Preis-Range)', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>GET /projects</code></td><td><?php esc_html_e( 'Liste aller Bauprojekte', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>GET /projects/{id}</code></td><td><?php esc_html_e( 'Detail eines Bauprojekts', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>GET /projects/{id}/units</code></td><td><?php esc_html_e( 'Wohneinheiten eines Projekts inkl. Stats', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>GET /regions</code></td><td><?php esc_html_e( 'Alle Bundesländer (für Filter-Dropdowns)', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>GET /regions/{state}/districts</code></td><td><?php esc_html_e( 'Bezirke eines Bundeslandes', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>GET /features</code></td><td><?php esc_html_e( 'Ausstattungs-Tags gruppiert nach Kategorien', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>GET /settings/public</code></td><td><?php esc_html_e( 'Öffentliche Settings (Währung, Farben, Karten-Config)', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>GET /search</code></td><td><?php esc_html_e( 'Volltextsuche über Properties + Projects', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>POST /inquiries</code></td><td><?php esc_html_e( 'Anfrage einreichen (API-Key erforderlich)', 'immo-manager' ); ?></td></tr>
+					</tbody>
+				</table>
 
-				<!-- GET /properties -->
-				<h3><code>GET /properties</code></h3>
-				<p><?php esc_html_e( 'Gibt eine paginierte Liste von Immobilien zurück. Der Endpunkt ist umfangreich filter- und sortierbar.', 'immo-manager' ); ?></p>
-				<strong><?php esc_html_e( 'Parameter:', 'immo-manager' ); ?></strong>
+				<h3 style="margin-top: 2.5rem;"><code>GET /properties</code> — <?php esc_html_e( 'Filterparameter', 'immo-manager' ); ?></h3>
 				<table>
 					<thead><tr><th><?php esc_html_e( 'Parameter', 'immo-manager' ); ?></th><th><?php esc_html_e( 'Typ', 'immo-manager' ); ?></th><th><?php esc_html_e( 'Beschreibung', 'immo-manager' ); ?></th></tr></thead>
 					<tbody>
-						<tr><td><code>per_page</code></td><td>integer</td><td><?php esc_html_e( 'Anzahl pro Seite (1-50). Default: 12.', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>page</code></td><td>integer</td><td><?php esc_html_e( 'Seitenzahl. Default: 1.', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>orderby</code></td><td>string</td><td><?php esc_html_e( 'Sortierung: `newest` (default), `price_asc`, `price_desc`, `area_desc`.', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>status</code></td><td>string</td><td><?php esc_html_e( 'Filter nach Status: `available`, `reserved`, `sold`, `rented`.', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>mode</code></td><td>string</td><td><?php esc_html_e( 'Filter nach Modus: `sale` (Kauf), `rent` (Miete).', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>type</code></td><td>string</td><td><?php esc_html_e( 'Filter nach Immobilientyp (z.B. `Wohnung`).', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>region_state</code></td><td>string</td><td><?php esc_html_e( 'Filter nach Bundesland-Key (z.B. `wien`).', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>price_min</code> / <code>price_max</code></td><td>number</td><td><?php esc_html_e( 'Filter nach Preisspanne.', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>area_min</code> / <code>area_max</code></td><td>number</td><td><?php esc_html_e( 'Filter nach Flächengröße.', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>rooms</code></td><td>string</td><td><?php esc_html_e( 'Filter nach Zimmeranzahl (Komma-getrennt, z.B. `2,3`).', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>project_id</code></td><td>integer</td><td><?php esc_html_e( 'Zeige nur Immobilien, die zu einem bestimmten Projekt gehören.', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>per_page</code></td><td>integer</td><td><?php esc_html_e( '1–50, Default: 12', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>page</code></td><td>integer</td><td><?php esc_html_e( 'Seitenzahl, Default: 1', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>orderby</code></td><td>string</td><td><code>newest</code> | <code>price_asc</code> | <code>price_desc</code> | <code>area_desc</code></td></tr>
+						<tr><td><code>status</code></td><td>string</td><td><code>available</code> | <code>reserved</code> | <code>sold</code> | <code>rented</code></td></tr>
+						<tr><td><code>mode</code></td><td>string</td><td><code>sale</code> | <code>rent</code></td></tr>
+						<tr><td><code>type</code></td><td>string</td><td><?php esc_html_e( 'Immobilientyp, z. B. ', 'immo-manager' ); ?><code>Wohnung</code></td></tr>
+						<tr><td><code>region_state</code></td><td>string</td><td><?php esc_html_e( 'Bundesland-Key, z. B. ', 'immo-manager' ); ?><code>steiermark</code></td></tr>
+						<tr><td><code>region_district</code></td><td>string</td><td><?php esc_html_e( 'Bezirk-Key', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>price_min</code> / <code>price_max</code></td><td>number</td><td><?php esc_html_e( 'Preisspanne', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>area_min</code> / <code>area_max</code></td><td>number</td><td><?php esc_html_e( 'Flächenspanne (m²)', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>rooms</code></td><td>string</td><td><?php esc_html_e( 'Komma-Liste, z. B. ', 'immo-manager' ); ?><code>2,3</code></td></tr>
+						<tr><td><code>project_id</code></td><td>integer</td><td><?php esc_html_e( 'Nur Properties dieses Bauprojekts', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>search</code></td><td>string</td><td><?php esc_html_e( 'Volltextsuche in Titel/Beschreibung', 'immo-manager' ); ?></td></tr>
 					</tbody>
 				</table>
-				<strong><?php esc_html_e( 'Beispiel-Abfrage (JavaScript):', 'immo-manager' ); ?></strong>
-				<pre><code>fetch('<?php echo esc_url( $api_url ); ?>/properties?mode=sale&region_state=steiermark&price_max=500000')
-  .then(response => response.json())
-  .then(data => console.log(data.properties));</code></pre>
 
-				<!-- GET /properties/{id} -->
-				<h3 style="margin-top: 3rem;"><code>GET /properties/{id}</code></h3>
-				<p><?php esc_html_e( 'Gibt alle Details zu einer einzelnen Immobilie zurück, inklusive der vollständigen Beschreibung und Bildergalerie.', 'immo-manager' ); ?></p>
+				<h4><?php esc_html_e( 'Beispiel-Aufruf', 'immo-manager' ); ?></h4>
+				<pre><code>fetch('<?php echo esc_url( $api_url ); ?>/properties?mode=sale&region_state=steiermark&price_max=500000&orderby=price_asc')
+  .then( r =&gt; r.json() )
+  .then( data =&gt; {
+    console.log( data.properties );      // Array
+    console.log( data.pagination );      // { total, page, total_pages }
+  } );</code></pre>
 
-				<!-- GET /projects -->
-				<h3 style="margin-top: 3rem;"><code>GET /projects</code></h3>
-				<p><?php esc_html_e( 'Gibt eine Liste aller Bauprojekte zurück.', 'immo-manager' ); ?></p>
-
-				<!-- GET /projects/{id}/units -->
-				<h3 style="margin-top: 3rem;"><code>GET /projects/{id}/units</code></h3>
-				<p><?php esc_html_e( 'Gibt alle Wohneinheiten eines spezifischen Bauprojekts zurück.', 'immo-manager' ); ?></p>
-
-				<!-- GET /regions -->
-				<h3 style="margin-top: 3rem;"><code>GET /regions</code></h3>
-				<p><?php esc_html_e( 'Gibt eine Liste aller Bundesländer zurück. Nützlich, um Filter-Dropdowns dynamisch zu befüllen.', 'immo-manager' ); ?></p>
-
-				<!-- GET /features -->
-				<h3 style="margin-top: 3rem;"><code>GET /features</code></h3>
-				<p><?php esc_html_e( 'Gibt eine Liste aller verfügbaren Ausstattungsmerkmale, gruppiert nach Kategorien, zurück.', 'immo-manager' ); ?></p>
-
-				<!-- GET /settings/public -->
-				<h3 style="margin-top: 3rem;"><code>GET /settings/public</code></h3>
-				<p><?php esc_html_e( 'Gibt öffentliche Einstellungen wie Währungssymbol, Farben und Karten-Konfiguration zurück, damit das Frontend konsistent aussieht.', 'immo-manager' ); ?></p>
-
-				<!-- POST /inquiries -->
-				<h3 style="margin-top: 3rem;"><code>POST /inquiries</code></h3>
-				<p><?php esc_html_e( 'Sendet eine neue Kontaktanfrage für eine Immobilie oder eine Wohneinheit. Erfordert einen API-Key, falls konfiguriert.', 'immo-manager' ); ?></p>
-				<strong><?php esc_html_e( 'Body-Parameter (JSON):', 'immo-manager' ); ?></strong>
+				<h3 style="margin-top: 2.5rem;"><code>POST /inquiries</code></h3>
+				<p><?php esc_html_e( 'Anfrage einreichen. Erfordert API-Key, falls in Settings aktiviert.', 'immo-manager' ); ?></p>
 				<table>
-					<thead><tr><th><?php esc_html_e( 'Parameter', 'immo-manager' ); ?></th><th><?php esc_html_e( 'Typ', 'immo-manager' ); ?></th><th><?php esc_html_e( 'Pflichtfeld', 'immo-manager' ); ?></th></tr></thead>
+					<thead><tr><th><?php esc_html_e( 'Parameter', 'immo-manager' ); ?></th><th><?php esc_html_e( 'Typ', 'immo-manager' ); ?></th><th><?php esc_html_e( 'Pflicht', 'immo-manager' ); ?></th></tr></thead>
 					<tbody>
-						<tr><td><code>property_id</code></td><td>integer</td><td><?php esc_html_e( 'Ja', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>unit_id</code></td><td>integer</td><td><?php esc_html_e( 'Nein', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>inquirer_name</code></td><td>string</td><td><?php esc_html_e( 'Ja', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>inquirer_email</code></td><td>string</td><td><?php esc_html_e( 'Ja', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>inquirer_phone</code></td><td>string</td><td><?php esc_html_e( 'Nein', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>inquirer_message</code></td><td>string</td><td><?php esc_html_e( 'Nein', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>consent</code></td><td>boolean</td><td><?php esc_html_e( 'Ja', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>property_id</code></td><td>integer</td><td>✔️</td></tr>
+						<tr><td><code>unit_id</code></td><td>integer</td><td>—</td></tr>
+						<tr><td><code>inquirer_name</code></td><td>string</td><td>✔️</td></tr>
+						<tr><td><code>inquirer_email</code></td><td>string</td><td>✔️</td></tr>
+						<tr><td><code>inquirer_phone</code></td><td>string</td><td>—</td></tr>
+						<tr><td><code>inquirer_message</code></td><td>string</td><td>—</td></tr>
+						<tr><td><code>consent</code></td><td>boolean</td><td>✔️ (DSGVO)</td></tr>
 					</tbody>
 				</table>
-				<strong><?php esc_html_e( 'Beispiel-Anfrage (JavaScript):', 'immo-manager' ); ?></strong>
+
+				<h4><?php esc_html_e( 'Beispiel-Aufruf', 'immo-manager' ); ?></h4>
 				<pre><code>fetch('<?php echo esc_url( $api_url ); ?>/inquiries', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'X-Immo-API-Key': 'DEIN_API_KEY' // Nur falls konfiguriert
+    'X-Immo-API-Key': 'DEIN_API_KEY'
   },
   body: JSON.stringify({
-    property_id: 123,
-    inquirer_name: 'Max Mustermann',
-    inquirer_email: 'max@example.com',
+    property_id:      123,
+    inquirer_name:    'Max Mustermann',
+    inquirer_email:   'max@example.com',
     inquirer_message: 'Ich interessiere mich für das Objekt.',
-    consent: true
+    consent:          true
   })
-}).then(res => res.json()).then(data => console.log(data.message));</code></pre>
+}).then( r =&gt; r.json() ).then( data =&gt; console.log( data.message ) );</code></pre>
 
+				<div class="immo-help-callout immo-help-callout--info">
+					<strong>💡 <?php esc_html_e( 'Tipp:', 'immo-manager' ); ?></strong>
+					<?php esc_html_e( 'Alle Endpunkte liefern ein einheitliches JSON-Format: ', 'immo-manager' ); ?>
+					<code>{ properties: [...], pagination: {...} }</code>
+					<?php esc_html_e( ' bzw. einen einzelnen Datensatz. Fehlerantworten folgen dem WP-REST-Standard mit ', 'immo-manager' ); ?>
+					<code>{ code, message, data }</code>.
+				</div>
+			</div>
+
+			<div class="immo-help-section" style="background: #f9fafb; text-align: center;">
+				<p style="margin:0; font-size: 0.9em; color: #6b7280;">
+					<?php
+					/* translators: %s: plugin version */
+					printf( esc_html__( 'Immo Manager Version %s — bei Fragen oder Bugs schau in die Plugin-Repo oder kontaktiere den Entwickler.', 'immo-manager' ), esc_html( defined( 'IMMO_MANAGER_VERSION' ) ? IMMO_MANAGER_VERSION : '—' ) );
+					?>
+				</p>
 			</div>
 		</div>
 		<?php

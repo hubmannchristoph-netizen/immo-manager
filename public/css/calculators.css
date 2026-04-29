@@ -1,60 +1,133 @@
 /* ==========================================================================
-   Immo Manager – Finanzierungs- & Nebenkostenrechner
+   Immo Manager – Nebenkosten- & Finanzierungsrechner
+   Kantige, klare Darstellung. Zwei getrennte Akkordeons.
+   Wichtig: Theme-Buttons haben oft eigene border-radius / Schatten —
+   daher überschreiben wir hier hart mit !important.
    ========================================================================== */
+
+/* ---------- Calculator-Container im Accordion-Body ---------- */
+.immo-accordion--calculator .immo-accordion-body {
+	padding: 0 !important;
+}
 
 .immo-calculator {
 	border: 1px solid var(--immo-border);
-	border-radius: var(--immo-radius);
+	border-radius: 0;
 	background: var(--immo-surface);
-	overflow: hidden;
-	margin-top: 1rem;
-}
-
-.immo-calculator-tabs {
-	display: flex;
-	gap: 0;
-	border-bottom: 1px solid var(--immo-border);
-	background: var(--immo-bg);
-}
-
-.immo-calculator-tab {
-	flex: 1;
-	padding: 0.85rem 1rem;
-	background: transparent;
-	border: none;
-	border-bottom: 3px solid transparent;
-	color: var(--immo-text-muted);
-	font-weight: 600;
-	font-size: 0.95rem;
-	cursor: pointer;
-	transition: all 0.2s;
-}
-
-.immo-calculator-tab:hover {
 	color: var(--immo-text);
-	background: rgba(0, 0, 0, 0.03);
+	overflow: hidden;
 }
 
-.immo-calculator-tab.active {
-	color: var(--immo-accent);
-	border-bottom-color: var(--immo-accent);
+.immo-calculator,
+.immo-calculator * {
+	box-sizing: border-box;
+}
+
+/* ---------- Unit-Auswahl (Bauprojekt) ---------- */
+.immo-calculator .immo-calc-unit-wrap {
+	padding: 1rem 1.25rem;
+	background: var(--immo-bg);
+	border-bottom: 1px solid var(--immo-border);
+}
+
+.immo-calc-unit-select {
+	width: 100%;
+	padding: 0.55rem 0.75rem;
+	border: 1px solid var(--immo-border);
+	border-radius: 0 !important;
 	background: var(--immo-surface);
+	color: var(--immo-text);
+	font-size: 0.95rem;
+	margin-bottom: 0;
+	box-shadow: none;
 }
 
+/* ---------- Panel-Container ---------- */
 .immo-calculator-panel {
-	padding: 1.25rem;
+	padding: 0;
 }
 
 .immo-calculator-panel[hidden] {
 	display: none;
 }
 
+/* ---------- Sektionen: Eingabe vs. Ergebnis ---------- */
+.immo-calc-section {
+	padding: 1rem 1.25rem;
+}
+
+.immo-calc-section + .immo-calc-section {
+	border-top: 1px solid var(--immo-border);
+}
+
+.immo-calc-section--inputs {
+	background: var(--immo-bg);
+}
+
+.immo-calc-section--results {
+	background: var(--immo-surface);
+}
+
+.immo-calc-section-title {
+	font-size: 0.78rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--immo-text-muted);
+	margin: 0 0 0.65rem;
+	padding: 0;
+	border: none;
+}
+
+/* ---------- Eingabe-Zeile (Label / Input) ---------- */
+.immo-calc-input-row {
+	display: grid;
+	grid-template-columns: 1fr 200px;
+	gap: 0.5rem 1rem;
+	align-items: center;
+	padding: 0.4rem 0;
+}
+
+.immo-calc-input-row + .immo-calc-input-row {
+	border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.immo-calc-input-row label {
+	font-size: 0.95rem;
+	color: var(--immo-text);
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	flex-wrap: wrap;
+	margin: 0;
+}
+
+.immo-calc-input-row input[type="number"] {
+	width: 100%;
+	padding: 0.5rem 0.65rem;
+	border: 1px solid var(--immo-border);
+	border-radius: 0 !important;
+	background: var(--immo-surface);
+	font-size: 0.95rem;
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+	color: var(--immo-text);
+	box-shadow: none;
+}
+
+.immo-calc-input-row input[type="number"]:focus {
+	outline: none;
+	border-color: var(--immo-accent);
+	box-shadow: inset 0 0 0 1px var(--immo-accent);
+}
+
+/* ---------- Ergebnis-Zeile (Label / Wert) ---------- */
 .immo-calc-row {
 	display: grid;
 	grid-template-columns: 1fr auto;
 	gap: 0.75rem 1rem;
-	align-items: center;
-	padding: 0.5rem 0;
+	align-items: baseline;
+	padding: 0.45rem 0;
 }
 
 .immo-calc-row + .immo-calc-row {
@@ -62,13 +135,13 @@
 }
 
 .immo-calc-row-label {
-	font-size: 0.95rem;
+	font-size: 0.93rem;
 	color: var(--immo-text);
 }
 
 .immo-calc-row-rate {
 	color: var(--immo-text-muted);
-	font-size: 0.85rem;
+	font-size: 0.82rem;
 	margin-left: 0.4rem;
 }
 
@@ -76,64 +149,77 @@
 	font-weight: 600;
 	font-variant-numeric: tabular-nums;
 	white-space: nowrap;
+	color: var(--immo-text);
 }
 
-.immo-calc-input-row {
-	display: grid;
-	grid-template-columns: 1fr 180px;
-	gap: 0.75rem 1rem;
-	align-items: center;
-	padding: 0.5rem 0;
+/* ---------- Posten-Liste (Nebenkosten-Items) ---------- */
+.immo-calc-items {
+	margin: 0.25rem 0;
 }
 
-.immo-calc-input-row input[type="number"] {
-	width: 100%;
-	padding: 0.45rem 0.6rem;
-	border: 1px solid var(--immo-border);
-	border-radius: var(--immo-radius-sm);
-	font-size: 0.95rem;
-	font-variant-numeric: tabular-nums;
-	text-align: right;
+.immo-calc-items .immo-calc-row:first-child {
+	border-top: 1px solid var(--immo-border);
 }
 
+/* ---------- Summen ---------- */
 .immo-calc-total {
 	display: flex;
 	justify-content: space-between;
-	padding: 0.85rem 0;
+	align-items: baseline;
+	padding: 0.85rem 0 0.5rem;
 	border-top: 2px solid var(--immo-border);
-	margin-top: 0.5rem;
-	font-size: 1.05rem;
+	margin-top: 0.6rem;
+	font-size: 1rem;
 	font-weight: 700;
 }
 
 .immo-calc-grand-total {
 	display: flex;
 	justify-content: space-between;
-	padding: 0.85rem 1rem;
-	background: var(--immo-bg);
-	border-radius: var(--immo-radius-sm);
+	align-items: baseline;
+	padding: 0.9rem 1rem;
 	margin-top: 0.5rem;
-	font-size: 1.1rem;
+	background: var(--immo-accent);
+	color: #fff;
+	border-radius: 0 !important;
+	font-size: 1.05rem;
 	font-weight: 700;
-	color: var(--immo-accent);
 }
 
+.immo-calc-grand-total-value {
+	font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Eigenkapital-Toggle (€ / %) ---------- */
 .immo-calc-equity-toggle {
 	display: inline-flex;
 	border: 1px solid var(--immo-border);
-	border-radius: 999px;
-	padding: 2px;
-	background: var(--immo-bg);
+	border-radius: 0 !important;
+	background: var(--immo-surface);
+	overflow: hidden;
+	padding: 0;
+	box-shadow: none;
 }
 
 .immo-calc-equity-toggle button {
 	padding: 0.3rem 0.85rem;
-	border: none;
+	border: none !important;
 	background: transparent;
-	border-radius: 999px;
+	border-radius: 0 !important;
 	cursor: pointer;
 	font-size: 0.85rem;
 	color: var(--immo-text-muted);
+	font-weight: 600;
+	box-shadow: none !important;
+	text-transform: none;
+	letter-spacing: normal;
+	min-width: 0;
+	height: auto;
+	line-height: 1.4;
+}
+
+.immo-calc-equity-toggle button + button {
+	border-left: 1px solid var(--immo-border) !important;
 }
 
 .immo-calc-equity-toggle button.active {
@@ -142,39 +228,59 @@
 }
 
 .immo-calc-equity-display {
+	display: block;
 	color: var(--immo-text-muted);
-	font-size: 0.85rem;
-	margin-left: 0.5rem;
+	font-size: 0.82rem;
+	margin-top: 0.25rem;
+	text-align: right;
 }
 
+/* ---------- Disclaimer ---------- */
 .immo-calc-disclaimer {
-	margin-top: 1rem;
-	padding: 0.6rem 0.8rem;
-	background: rgba(0, 0, 0, 0.03);
-	border-radius: var(--immo-radius-sm);
+	margin: 0;
+	padding: 0.7rem 1.25rem;
+	background: rgba(0, 0, 0, 0.04);
+	border-top: 1px solid var(--immo-border);
+	border-radius: 0;
 	font-size: 0.8rem;
 	color: var(--immo-text-muted);
 	font-style: italic;
+	text-align: center;
 }
 
+/* ---------- Tilgungsplan-Toggle ---------- */
 .immo-amortization-toggle {
-	margin-top: 1rem;
+	margin-top: 0.75rem;
 	width: 100%;
-	padding: 0.7rem;
+	padding: 0.75rem;
 	background: var(--immo-bg);
-	border: 1px solid var(--immo-border);
-	border-radius: var(--immo-radius-sm);
+	border: 1px solid var(--immo-border) !important;
+	border-radius: 0 !important;
 	cursor: pointer;
 	font-weight: 600;
 	color: var(--immo-text);
+	box-shadow: none !important;
+	transition: background 0.15s;
+	text-align: center;
+	text-transform: none;
+	letter-spacing: normal;
+	font-size: 0.95rem;
+	height: auto;
+	line-height: 1.4;
 }
 
+.immo-amortization-toggle:hover {
+	background: rgba(0, 0, 0, 0.04);
+	color: var(--immo-text);
+}
+
+/* ---------- Tilgungsplan-Tabelle ---------- */
 .immo-amortization-table-wrap {
-	margin-top: 0.75rem;
+	margin-top: 0.5rem;
 	max-height: 400px;
 	overflow-y: auto;
 	border: 1px solid var(--immo-border);
-	border-radius: var(--immo-radius-sm);
+	border-radius: 0;
 }
 
 .immo-amortization-table {
@@ -182,49 +288,65 @@
 	border-collapse: collapse;
 	font-size: 0.88rem;
 	font-variant-numeric: tabular-nums;
+	margin: 0;
 }
 
 .immo-amortization-table th,
 .immo-amortization-table td {
-	padding: 0.45rem 0.7rem;
+	padding: 0.5rem 0.75rem;
 	text-align: right;
 	border-bottom: 1px solid var(--immo-border);
+}
+
+.immo-amortization-table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.immo-amortization-table tbody tr:nth-child(even) {
+	background: rgba(0, 0, 0, 0.02);
 }
 
 .immo-amortization-table th:first-child,
 .immo-amortization-table td:first-child {
 	text-align: left;
+	font-weight: 600;
 }
 
 .immo-amortization-table thead th {
 	background: var(--immo-bg);
 	position: sticky;
 	top: 0;
+	font-size: 0.78rem;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--immo-text-muted);
+	border-bottom: 2px solid var(--immo-border);
 }
 
-.immo-calc-unit-select {
-	width: 100%;
-	padding: 0.55rem 0.7rem;
-	border: 1px solid var(--immo-border);
-	border-radius: var(--immo-radius-sm);
-	font-size: 0.95rem;
-	margin-bottom: 1rem;
-}
-
+/* ---------- Sonderzustand: keine Finanzierung ---------- */
 .immo-calc-no-financing {
 	padding: 1rem;
 	background: var(--immo-bg);
-	border-radius: var(--immo-radius-sm);
+	border: 1px dashed var(--immo-border);
+	border-radius: 0;
 	color: var(--immo-text-muted);
 	text-align: center;
 	font-style: italic;
 }
 
+/* ---------- Mobile ---------- */
 @media ( max-width: 600px ) {
 	.immo-calc-input-row {
 		grid-template-columns: 1fr;
 	}
 	.immo-calc-input-row input[type="number"] {
 		width: 100%;
+	}
+	.immo-calc-section {
+		padding: 0.85rem 1rem;
+	}
+	.immo-calc-grand-total {
+		padding: 0.75rem 1rem;
+		font-size: 1rem;
 	}
 }
