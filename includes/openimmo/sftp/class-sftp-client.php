@@ -233,6 +233,31 @@ class SftpClient {
 	}
 
 	/**
+	 * Liefert mtime/size eines Remote-Files.
+	 *
+	 * @return array{size:int, mtime:int}|null
+	 */
+	public function stat( string $remote_path ): ?array {
+		if ( null === $this->sftp ) {
+			$this->error = 'not connected';
+			return null;
+		}
+		try {
+			$stat = $this->sftp->stat( $remote_path );
+			if ( ! is_array( $stat ) ) {
+				return null;
+			}
+			return array(
+				'size'  => (int) ( $stat['size'] ?? 0 ),
+				'mtime' => (int) ( $stat['mtime'] ?? 0 ),
+			);
+		} catch ( \Throwable $e ) {
+			$this->error = $e->getMessage();
+			return null;
+		}
+	}
+
+	/**
 	 * Letzte Fehlermeldung (auch nach disconnect verfügbar).
 	 */
 	public function last_error(): string {
