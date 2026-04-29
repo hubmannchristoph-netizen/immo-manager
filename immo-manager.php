@@ -30,6 +30,14 @@ define( 'IMMO_MANAGER_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 define( 'IMMO_MANAGER_MIN_PHP', '7.4' );
 define( 'IMMO_MANAGER_MIN_WP', '5.9' );
 
+// Composer-Autoloader (Vendor-Dependencies wie phpseclib für SFTP).
+// Conditional, damit das Plugin auch ohne installiertes vendor/ nicht fatal-fehlschlaegt.
+$immo_manager_composer_autoload = IMMO_MANAGER_PLUGIN_DIR . 'vendor/autoload.php';
+if ( file_exists( $immo_manager_composer_autoload ) ) {
+	require_once $immo_manager_composer_autoload;
+}
+unset( $immo_manager_composer_autoload );
+
 /**
  * Mindestanforderungen prüfen, bevor Plugin geladen wird
  *
@@ -106,6 +114,11 @@ register_activation_hook(
 		\ImmoManager\Database::install();
 		// Post Types registrieren & Permalinks flushen.
 		\ImmoManager\Plugin::instance()->activate();
+
+		// OpenImmo: täglichen Sync-Cron schedulen.
+		require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+		require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-cron-scheduler.php';
+		\ImmoManager\OpenImmo\CronScheduler::on_activation();
 	}
 );
 
@@ -118,5 +131,9 @@ register_deactivation_hook(
 		require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/Autoloader.php';
 		\ImmoManager\Autoloader::register();
 		\ImmoManager\Plugin::instance()->deactivate();
+
+		// OpenImmo: Cron-Hook entfernen.
+		require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-cron-scheduler.php';
+		\ImmoManager\OpenImmo\CronScheduler::on_deactivation();
 	}
 );

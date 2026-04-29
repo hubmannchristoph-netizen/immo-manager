@@ -94,6 +94,12 @@ class MetaFields {
 			'_immo_layout_type'       => array( 'type' => 'string',  'enum' => array( '', 'standard', 'compact' ), 'default' => '' ),
 			'_immo_gallery_type'      => array( 'type' => 'string',  'enum' => array( '', 'slider', 'grid' ), 'default' => '' ),
 			'_immo_hero_type'         => array( 'type' => 'string',  'enum' => array( '', 'full', 'contained' ), 'default' => '' ),
+
+			// OpenImmo-Export Opt-In (Phase 1).
+			'_immo_openimmo_willhaben'    => array( 'type' => 'boolean', 'default' => false ),
+			'_immo_openimmo_immoscout24'  => array( 'type' => 'boolean', 'default' => false ),
+			// OpenImmo-Import-Tracking (Phase 3).
+			'_immo_openimmo_external_id'  => array( 'type' => 'string',  'default' => '' ),
 		);
 	}
 
@@ -202,6 +208,9 @@ class MetaFields {
 					return Features::filter_valid( is_array( $value ) ? $value : array() );
 				}
 				return is_array( $value ) ? array_values( $value ) : array();
+
+			case 'boolean':
+				return ! empty( $value ) ? '1' : '0';
 
 			case 'string':
 			default:

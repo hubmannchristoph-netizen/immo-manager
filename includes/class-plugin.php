@@ -127,6 +127,69 @@ class Plugin {
 	private $schema = null;
 
 	/**
+	 * OpenImmo Admin-Page.
+	 *
+	 * @var \ImmoManager\OpenImmo\AdminPage|null
+	 */
+	private $openimmo_admin_page = null;
+
+	/**
+	 * OpenImmo Cron-Scheduler.
+	 *
+	 * @var \ImmoManager\OpenImmo\CronScheduler|null
+	 */
+	private $openimmo_cron = null;
+
+	/**
+	 * OpenImmo Export-Service.
+	 *
+	 * @var \ImmoManager\OpenImmo\Export\ExportService|null
+	 */
+	private $openimmo_export_service = null;
+
+	/**
+	 * OpenImmo SFTP-Uploader.
+	 *
+	 * @var \ImmoManager\OpenImmo\Sftp\SftpUploader|null
+	 */
+	private $openimmo_sftp_uploader = null;
+
+	/**
+	 * OpenImmo Import-Service.
+	 *
+	 * @var \ImmoManager\OpenImmo\Import\ImportService|null
+	 */
+	private $openimmo_import_service = null;
+
+	/**
+	 * OpenImmo SFTP-Puller.
+	 *
+	 * @var \ImmoManager\OpenImmo\Sftp\SftpPuller|null
+	 */
+	private $openimmo_sftp_puller = null;
+
+	/**
+	 * OpenImmo Konflikte-Page.
+	 *
+	 * @var \ImmoManager\OpenImmo\ConflictsAdminPage|null
+	 */
+	private $openimmo_conflicts_page = null;
+
+	/**
+	 * OpenImmo Retention-Cleaner.
+	 *
+	 * @var \ImmoManager\OpenImmo\RetentionCleaner|null
+	 */
+	private $openimmo_retention_cleaner = null;
+
+	/**
+	 * OpenImmo E-Mail-Notifier.
+	 *
+	 * @var \ImmoManager\OpenImmo\EmailNotifier|null
+	 */
+	private $openimmo_email_notifier = null;
+
+	/**
 	 * Singleton-Instanz zurückgeben.
 	 *
 	 * @return Plugin
@@ -200,6 +263,7 @@ class Plugin {
 		$this->get_templates();
 		$this->get_elementor();
 		$this->get_schema();
+		$this->get_openimmo_cron();
 	}
 
 	/**
@@ -216,6 +280,8 @@ class Plugin {
 		$this->get_metaboxes();
 		$this->get_admin_ajax();
 		$this->get_demo_data();
+		$this->get_openimmo_admin_page();
+		$this->get_openimmo_conflicts_page();
 	}
 
 	/**
@@ -450,5 +516,152 @@ class Plugin {
 			$this->schema = new Schema();
 		}
 		return $this->schema;
+	}
+
+	/**
+	 * OpenImmo Admin-Page abrufen (Lazy Loading).
+	 *
+	 * Sub-Namespace-Klassen werden manuell required, weil der bestehende
+	 * Autoloader nur den Top-Level-Namespace ImmoManager unterstützt
+	 * (analog zur Elementor-Integration).
+	 *
+	 * @return \ImmoManager\OpenImmo\AdminPage
+	 */
+	public function get_openimmo_admin_page(): \ImmoManager\OpenImmo\AdminPage {
+		if ( null === $this->openimmo_admin_page ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-admin-page.php';
+			$this->openimmo_admin_page = new \ImmoManager\OpenImmo\AdminPage();
+		}
+		return $this->openimmo_admin_page;
+	}
+
+	/**
+	 * OpenImmo Cron-Scheduler abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\CronScheduler
+	 */
+	public function get_openimmo_cron(): \ImmoManager\OpenImmo\CronScheduler {
+		if ( null === $this->openimmo_cron ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-cron-scheduler.php';
+			$this->openimmo_cron = new \ImmoManager\OpenImmo\CronScheduler();
+		}
+		return $this->openimmo_cron;
+	}
+
+	/**
+	 * OpenImmo Export-Service abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\Export\ExportService
+	 */
+	public function get_openimmo_export_service(): \ImmoManager\OpenImmo\Export\ExportService {
+		if ( null === $this->openimmo_export_service ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-sync-log.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-export-service.php';
+			\ImmoManager\OpenImmo\Export\ExportService::require_dependencies();
+			$this->openimmo_export_service = new \ImmoManager\OpenImmo\Export\ExportService();
+		}
+		return $this->openimmo_export_service;
+	}
+
+	/**
+	 * OpenImmo SFTP-Uploader abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\Sftp\SftpUploader
+	 */
+	public function get_openimmo_sftp_uploader(): \ImmoManager\OpenImmo\Sftp\SftpUploader {
+		if ( null === $this->openimmo_sftp_uploader ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-sync-log.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/sftp/class-sftp-client.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/sftp/class-sftp-uploader.php';
+			$this->openimmo_sftp_uploader = new \ImmoManager\OpenImmo\Sftp\SftpUploader();
+		}
+		return $this->openimmo_sftp_uploader;
+	}
+
+	/**
+	 * OpenImmo Import-Service abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\Import\ImportService
+	 */
+	public function get_openimmo_import_service(): \ImmoManager\OpenImmo\Import\ImportService {
+		if ( null === $this->openimmo_import_service ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-sync-log.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-conflicts.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/export/class-mapper.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/import/class-import-listing-dto.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/import/class-zip-extractor.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/import/class-import-mapper.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/import/class-image-importer.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/import/class-conflict-detector.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/import/class-import-service.php';
+			$this->openimmo_import_service = new \ImmoManager\OpenImmo\Import\ImportService();
+		}
+		return $this->openimmo_import_service;
+	}
+
+	/**
+	 * OpenImmo SFTP-Puller abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\Sftp\SftpPuller
+	 */
+	public function get_openimmo_sftp_puller(): \ImmoManager\OpenImmo\Sftp\SftpPuller {
+		if ( null === $this->openimmo_sftp_puller ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-sync-log.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/sftp/class-sftp-client.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/sftp/class-sftp-puller.php';
+			$this->openimmo_sftp_puller = new \ImmoManager\OpenImmo\Sftp\SftpPuller();
+		}
+		return $this->openimmo_sftp_puller;
+	}
+
+	/**
+	 * OpenImmo Konflikte-Page abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\ConflictsAdminPage
+	 */
+	public function get_openimmo_conflicts_page(): \ImmoManager\OpenImmo\ConflictsAdminPage {
+		if ( null === $this->openimmo_conflicts_page ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-conflicts.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-conflicts-resolver.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-conflicts-list-table.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-conflicts-admin-page.php';
+			$this->openimmo_conflicts_page = new \ImmoManager\OpenImmo\ConflictsAdminPage();
+		}
+		return $this->openimmo_conflicts_page;
+	}
+
+	/**
+	 * OpenImmo Retention-Cleaner abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\RetentionCleaner
+	 */
+	public function get_openimmo_retention_cleaner(): \ImmoManager\OpenImmo\RetentionCleaner {
+		if ( null === $this->openimmo_retention_cleaner ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/sftp/class-sftp-client.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-retention-cleaner.php';
+			$this->openimmo_retention_cleaner = new \ImmoManager\OpenImmo\RetentionCleaner();
+		}
+		return $this->openimmo_retention_cleaner;
+	}
+
+	/**
+	 * OpenImmo E-Mail-Notifier abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\EmailNotifier
+	 */
+	public function get_openimmo_email_notifier(): \ImmoManager\OpenImmo\EmailNotifier {
+		if ( null === $this->openimmo_email_notifier ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-email-notifier.php';
+			$this->openimmo_email_notifier = new \ImmoManager\OpenImmo\EmailNotifier();
+		}
+		return $this->openimmo_email_notifier;
 	}
 }
