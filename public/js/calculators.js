@@ -102,6 +102,47 @@
 		return data;
 	}
 
+	function buildAmortization( principal, annualRate, termYears, extraPerYear ) {
+		var K = Math.max( 0, principal );
+		var n = Math.max( 1, termYears * 12 );
+		var i = ( annualRate / 12 ) / 100;
+		var m = i === 0 ? K / n : ( K * i ) / ( 1 - Math.pow( 1 + i, -n ) );
+		extraPerYear = Math.max( 0, extraPerYear || 0 );
+
+		var rows = [];
+		var balance = K;
+		var totalInterest = 0;
+		var startYear = new Date().getFullYear();
+
+		for ( var year = 1; year <= termYears; year++ ) {
+			var yearInterest = 0;
+			var yearPrincipal = 0;
+			for ( var month = 1; month <= 12; month++ ) {
+				if ( balance <= 0.01 ) { break; }
+				var interestPart = balance * i;
+				var principalPart = m - interestPart;
+				if ( principalPart > balance ) { principalPart = balance; }
+				balance -= principalPart;
+				yearInterest += interestPart;
+				yearPrincipal += principalPart;
+			}
+			if ( extraPerYear > 0 && balance > 0 ) {
+				var extra = Math.min( extraPerYear, balance );
+				balance -= extra;
+				yearPrincipal += extra;
+			}
+			totalInterest += yearInterest;
+			rows.push( {
+				year: startYear + year - 1,
+				interest: yearInterest,
+				principal: yearPrincipal,
+				balance: Math.max( 0, balance ),
+			} );
+			if ( balance <= 0.01 ) { break; }
+		}
+		return { rate: m, rows: rows, totalInterest: totalInterest, totalPayments: K + totalInterest };
+	}
+
 	function $( sel, root ) { return ( root || document ).querySelector( sel ); }
 	function $$( sel, root ) { return Array.prototype.slice.call( ( root || document ).querySelectorAll( sel ) ); }
 
@@ -171,4 +212,5 @@
 	// Public API erweitern.
 	window.immoCalculators.formatMoney = formatMoney;
 	window.immoCalculators.calcCosts = calcCosts;
+	window.immoCalculators.buildAmortization = buildAmortization;
 } )();
