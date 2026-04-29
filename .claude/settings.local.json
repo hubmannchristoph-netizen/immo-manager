@@ -9,7 +9,62 @@
       "Bash(php -l \"C:\\\\Users\\\\ch\\\\Desktop\\\\Projekte\\\\immo-manager\\\\includes\\\\class-plugin.php\")",
       "PowerShell(php -l \"C:\\\\Users\\\\ch\\\\Desktop\\\\Projekte\\\\immo-manager\\\\includes\\\\class-schema.php\"; php -l \"C:\\\\Users\\\\ch\\\\Desktop\\\\Projekte\\\\immo-manager\\\\includes\\\\class-plugin.php\")",
       "PowerShell(Get-Command *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(php *)",
+      "Bash(awk END {print NR} *)",
+      "Bash(git merge *)",
+      "Bash(git push *)",
+      "Bash(git branch *)",
+      "Bash(mkdir -p '/c/Users/ch/Meine Ablage/AI Knowledge \\(2nd Brain\\)/2nd Brain/Projekte/ImmoManager/specs' '/c/Users/ch/Meine Ablage/AI Knowledge \\(2nd Brain\\)/2nd Brain/Projekte/ImmoManager/plans' '/c/Users/ch/Meine Ablage/AI Knowledge \\(2nd Brain\\)/2nd Brain/Projekte/ImmoManager/docs' '/c/Users/ch/Meine Ablage/AI Knowledge \\(2nd Brain\\)/2nd Brain/Projekte/ImmoManager/docs/templates')",
+      "Bash(cp /c/Users/ch/Desktop/Projekte/immo-manager/docs/superpowers/specs/2026-04-27-schema-org-design.md '/c/Users/ch/Meine Ablage/AI Knowledge \\(2nd Brain\\)/2nd Brain/Projekte/ImmoManager/specs/')",
+      "Bash(cp /c/Users/ch/Desktop/Projekte/immo-manager/docs/superpowers/plans/2026-04-27-schema-org.md '/c/Users/ch/Meine Ablage/AI Knowledge \\(2nd Brain\\)/2nd Brain/Projekte/ImmoManager/plans/')",
+      "Bash(cp /c/Users/ch/Desktop/Projekte/immo-manager/DOCUMENTATION.md '/c/Users/ch/Meine Ablage/AI Knowledge \\(2nd Brain\\)/2nd Brain/Projekte/ImmoManager/docs/')",
+      "Bash(cp /c/Users/ch/Desktop/Projekte/immo-manager/readme.txt '/c/Users/ch/Meine Ablage/AI Knowledge \\(2nd Brain\\)/2nd Brain/Projekte/ImmoManager/docs/')",
+      "Skill(update-config)",
+      "Bash(echo '{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"C:\\\\\\\\Users\\\\\\\\ch\\\\\\\\Desktop\\\\\\\\Projekte\\\\\\\\immo-manager\\\\\\\\DOCUMENTATION.md\"}}')",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File \".claude/scripts/sync-obsidian-vault.ps1\")",
+      "Bash(echo \"---exit code: $?---\")",
+      "Bash(echo \"--- nach sync \\(exit $?\\) ---\")",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -NoProfile -File \".claude/scripts/debug-sync.ps1\")",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -NoProfile -File \".claude/scripts/sync-obsidian-vault.ps1\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(powershell.exe *)",
+      "Bash(composer --version)",
+      "PowerShell(composer *)",
+      "PowerShell(Test-Path *)",
+      "Bash(composer install *)",
+      "Bash(gh repo *)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(git -C \"C:/Users/ch/Desktop/Projekte/immo-manager\" add includes/openimmo/export/class-listing-dto.php includes/openimmo/export/class-collector.php)",
+      "Bash(git -C \"C:/Users/ch/Desktop/Projekte/immo-manager\" commit -m \"fix\\(openimmo\\): address code-review issues for phase 1 task 3\")",
+      "Bash(git -C \"C:/Users/ch/Desktop/Projekte/immo-manager\" add includes/openimmo/export/class-xml-builder.php includes/openimmo/export/class-xsd-validator.php)",
+      "Bash(git -C \"C:/Users/ch/Desktop/Projekte/immo-manager\" commit -m \"feat\\(openimmo\\): add XmlBuilder wrapper and XsdValidator\")",
+      "Bash(grep -n \"ImmoManager\\\\\\\\\\\\\\\\Plugin\\\\|get_instance\" includes/class-plugin.php)",
+      "Bash(git check-ignore *)",
+      "Bash(git worktree *)",
+      "Bash(grep -n 'foreach.*toggle\\\\|foreach.*Toggle\\\\|$toggle')",
+      "Bash(git *)",
+      "Bash(node --check /c/Users/ch/Desktop/Projekte/immo-manager/.worktrees/feat-calculator/public/js/calculators.js)",
+      "Bash(node *)",
+      "Bash(gh pr create --base main --head feat/calculator --title 'feat\\(calculator+openimmo\\): Finanzierungs-/Nebenkostenrechner + OpenImmo Phase 1' --body ' *)",
+      "Bash(gh pr create --title 'feat\\(openimmo\\): Phase 0-7 – complete OpenImmo interface \\(without portal-specific Phase 6\\)' --body ' *)",
+      "Bash(gh pr create --head feat/openimmo --base main --title 'feat\\(openimmo\\): Phase 0-7 – complete OpenImmo interface \\(without portal-specific Phase 6\\)' --body ' *)",
+      "Bash(gh pr *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -ExecutionPolicy Bypass -NoProfile -File \".claude/scripts/sync-obsidian-vault.ps1\"",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }

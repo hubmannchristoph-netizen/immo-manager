@@ -13,6 +13,7 @@ $tabs = array(
 	'features'    => array( 'label' => __( 'Module', 'immo-manager' ), 'icon' => '🧩', 'section' => 'immo_features' ),
 	'contact'     => array( 'label' => __( 'Kontakt', 'immo-manager' ), 'icon' => '📧', 'section' => 'immo_contact' ),
 	'maps'        => array( 'label' => __( 'Karten', 'immo-manager' ), 'icon' => '🗺️', 'section' => 'immo_maps' ),
+	'calculator'  => array( 'label' => __( 'Rechner', 'immo-manager' ), 'icon' => '🧮', 'section' => 'immo_calculator' ),
 	'api'         => array( 'label' => __( 'API & Integration', 'immo-manager' ), 'icon' => '🔌', 'section' => 'immo_api' ),
 );
 ?>
