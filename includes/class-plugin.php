@@ -169,6 +169,13 @@ class Plugin {
 	private $openimmo_sftp_puller = null;
 
 	/**
+	 * OpenImmo Konflikte-Page.
+	 *
+	 * @var \ImmoManager\OpenImmo\ConflictsAdminPage|null
+	 */
+	private $openimmo_conflicts_page = null;
+
+	/**
 	 * Singleton-Instanz zurückgeben.
 	 *
 	 * @return Plugin
@@ -260,6 +267,7 @@ class Plugin {
 		$this->get_admin_ajax();
 		$this->get_demo_data();
 		$this->get_openimmo_admin_page();
+		$this->get_openimmo_conflicts_page();
 	}
 
 	/**
@@ -596,5 +604,21 @@ class Plugin {
 			$this->openimmo_sftp_puller = new \ImmoManager\OpenImmo\Sftp\SftpPuller();
 		}
 		return $this->openimmo_sftp_puller;
+	}
+
+	/**
+	 * OpenImmo Konflikte-Page abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\ConflictsAdminPage
+	 */
+	public function get_openimmo_conflicts_page(): \ImmoManager\OpenImmo\ConflictsAdminPage {
+		if ( null === $this->openimmo_conflicts_page ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-conflicts.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-conflicts-resolver.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-conflicts-list-table.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-conflicts-admin-page.php';
+			$this->openimmo_conflicts_page = new \ImmoManager\OpenImmo\ConflictsAdminPage();
+		}
+		return $this->openimmo_conflicts_page;
 	}
 }
