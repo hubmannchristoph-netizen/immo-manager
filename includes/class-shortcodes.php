@@ -189,94 +189,103 @@ class Shortcodes {
 			wp_enqueue_script( 'leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', array(), '1.9.4', true );
 		}
 
-		// Rechner.
-		wp_enqueue_style(
-			'immo-manager-calculators',
-			IMMO_MANAGER_PLUGIN_URL . 'public/css/calculators.css',
-			array( 'immo-manager-frontend' ),
-			IMMO_MANAGER_VERSION
-		);
-		wp_enqueue_script(
-			'immo-manager-calculators',
-			IMMO_MANAGER_PLUGIN_URL . 'public/js/calculators.js',
-			array( 'immo-manager-filters' ),
-			IMMO_MANAGER_VERSION,
-			true
-		);
+		// Rechner — nur auf Property/Project-Detailseiten laden.
+		$is_calc_page = is_singular( PostTypes::POST_TYPE_PROPERTY ) || is_singular( PostTypes::POST_TYPE_PROJECT );
+		if ( $is_calc_page ) {
+			wp_enqueue_style(
+				'immo-manager-calculators',
+				IMMO_MANAGER_PLUGIN_URL . 'public/css/calculators.css',
+				array( 'immo-manager-frontend' ),
+				IMMO_MANAGER_VERSION
+			);
+			wp_enqueue_script(
+				'immo-manager-calculators',
+				IMMO_MANAGER_PLUGIN_URL . 'public/js/calculators.js',
+				array( 'immo-manager-filters' ),
+				IMMO_MANAGER_VERSION,
+				true
+			);
+		}
 
 		// Konfiguration für JS.
+		$localize_data = array(
+			'apiBase'        => rest_url( RestApi::NAMESPACE ),
+			'nonce'          => wp_create_nonce( 'wp_rest' ),
+			'mapEnabled'     => (bool) Settings::get( 'map_enabled', 1 ),
+			'mapTileUrl'     => Settings::get( 'map_tile_url', 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' ),
+			'mapAttrib'      => Settings::get( 'map_attribution', '' ),
+			'mapDefaultLat'  => (float) Settings::get( 'map_default_lat', 47.5162 ),
+			'mapDefaultLng'  => (float) Settings::get( 'map_default_lng', 14.5501 ),
+			'mapDefaultZoom' => (int) Settings::get( 'map_default_zoom', 7 ),
+		);
+
+		if ( $is_calc_page ) {
+			$localize_data['calc'] = array(
+				'enabled'  => array(
+					'costs'     => (bool) Settings::get( 'calc_enable_costs', 1 ),
+					'financing' => (bool) Settings::get( 'calc_enable_financing', 1 ),
+				),
+				'rates'    => array(
+					'grest'     => (float) Settings::get( 'calc_grest_rate', 3.5 ),
+					'grundbuch' => (float) Settings::get( 'calc_grundbuch_rate', 1.1 ),
+					'notar'     => (float) Settings::get( 'calc_notar_rate', 2.5 ),
+					'provision' => (float) Settings::get( 'calc_provision_rate', 3.0 ),
+					'ust'       => (float) Settings::get( 'calc_ust_rate', 20.0 ),
+				),
+				'show'     => array(
+					'grest'     => (bool) Settings::get( 'calc_show_grest', 1 ),
+					'grundbuch' => (bool) Settings::get( 'calc_show_grundbuch', 1 ),
+					'notar'     => (bool) Settings::get( 'calc_show_notar', 1 ),
+					'provision' => (bool) Settings::get( 'calc_show_provision', 1 ),
+					'ust'       => (bool) Settings::get( 'calc_show_ust_on_provision', 1 ),
+				),
+				'notar'    => array(
+					'mode' => (string) Settings::get( 'calc_notar_mode', 'percent' ),
+					'flat' => (int)    Settings::get( 'calc_notar_flat', 1500 ),
+				),
+				'finance'  => array(
+					'equityPct'        => (int)   Settings::get( 'calc_default_equity_pct', 20 ),
+					'interestRate'     => (float) Settings::get( 'calc_default_interest_rate', 3.5 ),
+					'termYears'        => (int)   Settings::get( 'calc_default_term_years', 25 ),
+					'extraPayment'     => (int)   Settings::get( 'calc_default_extra_payment', 0 ),
+					'showAmortization' => (bool)  Settings::get( 'calc_show_amortization_table', 1 ),
+				),
+				'currency' => array(
+					'symbol'    => (string) Settings::get( 'currency_symbol', '€' ),
+					'position'  => (string) Settings::get( 'currency_position', 'after' ),
+					'decimals'  => (int)    Settings::get( 'price_decimals', 0 ),
+					'thousands' => (string) Settings::get( 'thousands_separator', '.' ),
+					'decimal'   => (string) Settings::get( 'decimal_separator', ',' ),
+				),
+				'i18n'     => array(
+					'noFinancing' => __( 'Keine Finanzierung nötig (Eigenkapital ≥ Bedarf).', 'immo-manager' ),
+					'showTable'   => __( 'Tilgungsplan anzeigen', 'immo-manager' ),
+					'hideTable'   => __( 'Tilgungsplan ausblenden', 'immo-manager' ),
+				),
+			);
+		}
+
+		$localize_data['i18n'] = array(
+			'loading'         => __( 'Lädt…', 'immo-manager' ),
+			'noResults'       => __( 'Keine Immobilien gefunden.', 'immo-manager' ),
+			'filterToggle'    => __( 'Filter', 'immo-manager' ),
+			'filterClose'     => __( 'Schließen', 'immo-manager' ),
+			'filterReset'     => __( 'Zurücksetzen', 'immo-manager' ),
+			'activeFilters'   => __( 'Aktive Filter', 'immo-manager' ),
+			'results'         => __( 'Ergebnisse', 'immo-manager' ),
+			'district'        => __( '— Bezirk —', 'immo-manager' ),
+			'inquirySent'     => __( 'Anfrage gesendet! Wir melden uns in Kürze.', 'immo-manager' ),
+			'inquiryError'    => __( 'Fehler beim Senden. Bitte versuche es erneut.', 'immo-manager' ),
+			'required'        => __( 'Pflichtfeld.', 'immo-manager' ),
+			'invalidEmail'    => __( 'Gültige E-Mail-Adresse erforderlich.', 'immo-manager' ),
+			'consentRequired' => __( 'Bitte bestätige die Datenschutzerklärung.', 'immo-manager' ),
+			'copied'          => __( 'Kopiert!', 'immo-manager' ),
+		);
+
 		wp_localize_script(
 			'immo-manager-filters',
 			'immoManager',
-			array(
-				'apiBase'      => rest_url( RestApi::NAMESPACE ),
-				'nonce'        => wp_create_nonce( 'wp_rest' ),
-				'mapEnabled'   => (bool) Settings::get( 'map_enabled', 1 ),
-				'mapTileUrl'   => Settings::get( 'map_tile_url', 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' ),
-				'mapAttrib'    => Settings::get( 'map_attribution', '' ),
-				'mapDefaultLat' => (float) Settings::get( 'map_default_lat', 47.5162 ),
-				'mapDefaultLng' => (float) Settings::get( 'map_default_lng', 14.5501 ),
-				'mapDefaultZoom' => (int) Settings::get( 'map_default_zoom', 7 ),
-				'calc'         => array(
-					'enabled'  => array(
-						'costs'     => (bool) Settings::get( 'calc_enable_costs', 1 ),
-						'financing' => (bool) Settings::get( 'calc_enable_financing', 1 ),
-					),
-					'rates'    => array(
-						'grest'     => (float) Settings::get( 'calc_grest_rate', 3.5 ),
-						'grundbuch' => (float) Settings::get( 'calc_grundbuch_rate', 1.1 ),
-						'notar'     => (float) Settings::get( 'calc_notar_rate', 2.5 ),
-						'provision' => (float) Settings::get( 'calc_provision_rate', 3.0 ),
-						'ust'       => (float) Settings::get( 'calc_ust_rate', 20.0 ),
-					),
-					'show'     => array(
-						'grest'     => (bool) Settings::get( 'calc_show_grest', 1 ),
-						'grundbuch' => (bool) Settings::get( 'calc_show_grundbuch', 1 ),
-						'notar'     => (bool) Settings::get( 'calc_show_notar', 1 ),
-						'provision' => (bool) Settings::get( 'calc_show_provision', 1 ),
-						'ust'       => (bool) Settings::get( 'calc_show_ust_on_provision', 1 ),
-					),
-					'notar'    => array(
-						'mode' => (string) Settings::get( 'calc_notar_mode', 'percent' ),
-						'flat' => (int)    Settings::get( 'calc_notar_flat', 1500 ),
-					),
-					'finance'  => array(
-						'equityPct'        => (int)   Settings::get( 'calc_default_equity_pct', 20 ),
-						'interestRate'     => (float) Settings::get( 'calc_default_interest_rate', 3.5 ),
-						'termYears'        => (int)   Settings::get( 'calc_default_term_years', 25 ),
-						'extraPayment'     => (int)   Settings::get( 'calc_default_extra_payment', 0 ),
-						'showAmortization' => (bool)  Settings::get( 'calc_show_amortization_table', 1 ),
-					),
-					'currency' => array(
-						'symbol'    => (string) Settings::get( 'currency_symbol', '€' ),
-						'position'  => (string) Settings::get( 'currency_position', 'after' ),
-						'decimals'  => (int)    Settings::get( 'price_decimals', 0 ),
-						'thousands' => (string) Settings::get( 'thousands_separator', '.' ),
-						'decimal'   => (string) Settings::get( 'decimal_separator', ',' ),
-					),
-					'i18n'     => array(
-						'noFinancing' => __( 'Keine Finanzierung nötig (Eigenkapital ≥ Bedarf).', 'immo-manager' ),
-						'showTable'   => __( 'Tilgungsplan anzeigen', 'immo-manager' ),
-						'hideTable'   => __( 'Tilgungsplan ausblenden', 'immo-manager' ),
-					),
-				),
-				'i18n'         => array(
-					'loading'       => __( 'Lädt…', 'immo-manager' ),
-					'noResults'     => __( 'Keine Immobilien gefunden.', 'immo-manager' ),
-					'filterToggle'  => __( 'Filter', 'immo-manager' ),
-					'filterClose'   => __( 'Schließen', 'immo-manager' ),
-					'filterReset'   => __( 'Zurücksetzen', 'immo-manager' ),
-					'activeFilters' => __( 'Aktive Filter', 'immo-manager' ),
-					'results'       => __( 'Ergebnisse', 'immo-manager' ),
-					'district'      => __( '— Bezirk —', 'immo-manager' ),
-					'inquirySent'   => __( 'Anfrage gesendet! Wir melden uns in Kürze.', 'immo-manager' ),
-					'inquiryError'  => __( 'Fehler beim Senden. Bitte versuche es erneut.', 'immo-manager' ),
-					'required'      => __( 'Pflichtfeld.', 'immo-manager' ),
-					'invalidEmail'  => __( 'Gültige E-Mail-Adresse erforderlich.', 'immo-manager' ),
-					'consentRequired' => __( 'Bitte bestätige die Datenschutzerklärung.', 'immo-manager' ),
-					'copied'        => __( 'Kopiert!', 'immo-manager' ),
-				),
-			)
+			$localize_data
 		);
 	}
 
