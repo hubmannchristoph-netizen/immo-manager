@@ -46,6 +46,7 @@ class Settings {
 			'sftp_user'      => '',
 			'sftp_password'  => '',
 			'remote_path'    => '/',
+			'inbox_path'     => '',
 			'last_sync'      => '',
 			// Anbieter-Block (Phase 1).
 			'anbieternr'     => '',

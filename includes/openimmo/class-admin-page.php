@@ -83,6 +83,7 @@ class AdminPage {
 				'sftp_user'     => sanitize_text_field( $portal['sftp_user'] ?? '' ),
 				'sftp_password' => (string) ( $portal['sftp_password'] ?? '' ),
 				'remote_path'   => sanitize_text_field( $portal['remote_path'] ?? '/' ),
+				'inbox_path'    => sanitize_text_field( $portal['inbox_path'] ?? '' ),
 				'last_sync'     => (string) ( $existing['portals'][ $key ]['last_sync'] ?? '' ),
 				// Anbieter-Block.
 				'anbieternr'    => sanitize_text_field( $portal['anbieternr']    ?? '' ),
@@ -374,6 +375,18 @@ class AdminPage {
 								<input type="text" class="regular-text"
 									name="portals[<?php echo esc_attr( $key ); ?>][remote_path]"
 									value="<?php echo esc_attr( $portal['remote_path'] ); ?>">
+							</td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Inbox-Pfad (für Pull)', 'immo-manager' ); ?></th>
+							<td>
+								<input type="text" class="regular-text"
+									name="portals[<?php echo esc_attr( $key ); ?>][inbox_path]"
+									value="<?php echo esc_attr( $portal['inbox_path'] ?? '' ); ?>"
+									placeholder="/inbox/">
+								<p class="description">
+									<?php esc_html_e( 'Leer lassen = kein Pull. Cron prüft dieses Verzeichnis stündlich.', 'immo-manager' ); ?>
+								</p>
 							</td>
 						</tr>
 					</table>
