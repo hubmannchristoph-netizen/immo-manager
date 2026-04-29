@@ -121,13 +121,42 @@ class SftpUploader {
 		}
 
 		$client->delete( $test_path );  // best-effort
-		$client->disconnect();
 
+		// Phase 4: Inbox-Pfad-Test (nur wenn konfiguriert).
+		if ( ! empty( $portal['inbox_path'] ) ) {
+			if ( ! $client->mkdir_p( $portal['inbox_path'] ) ) {
+				$err = $client->last_error();
+				$client->disconnect();
+				return array(
+					'ok'      => false,
+					'message' => 'inbox mkdir failed: ' . $err,
+					'mkdir'   => true,
+					'write'   => true,
+					'inbox'   => false,
+				);
+			}
+			// Listdir-Test (Erfolg auch wenn leer).
+			$client->list_directory( $portal['inbox_path'] );
+			if ( '' !== $client->last_error() ) {
+				$err = $client->last_error();
+				$client->disconnect();
+				return array(
+					'ok'      => false,
+					'message' => 'inbox list failed: ' . $err,
+					'mkdir'   => true,
+					'write'   => true,
+					'inbox'   => false,
+				);
+			}
+		}
+
+		$client->disconnect();
 		return array(
 			'ok'      => true,
-			'message' => 'OK',
+			'message' => empty( $portal['inbox_path'] ) ? 'OK' : 'OK (inkl. Inbox-Pfad)',
 			'mkdir'   => true,
 			'write'   => true,
+			'inbox'   => ! empty( $portal['inbox_path'] ),
 		);
 	}
 
