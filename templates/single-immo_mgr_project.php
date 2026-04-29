@@ -301,9 +301,9 @@ $hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoM
 						'label'           => sprintf(
 							/* translators: 1: Wohneinheits-Nummer, 2: Fläche in m², 3: formatierter Preis */
 							__( '%1$s — %2$s m² — %3$s', 'immo-manager' ),
-							$u['unit_number'],
+							esc_html( (string) $u['unit_number'] ),
 							number_format_i18n( (float) $u['area'], 0 ),
-							$u['price_formatted']
+							esc_html( (string) $u['price_formatted'] )
 						),
 					);
 				}
