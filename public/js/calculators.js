@@ -187,7 +187,11 @@
 					'<span class="immo-calc-row-amount">' + ( amort.rows.length ? amort.rows[ amort.rows.length - 1 ].year : '–' ) + '</span></div>';
 		}
 
-		if ( tableToggle ) { tableToggle.style.display = ''; }
+		if ( tableToggle ) {
+			tableToggle.style.display = '';
+			tableToggle.setAttribute( 'aria-expanded', 'false' );
+		}
+		if ( tableWrap ) { tableWrap.hidden = true; }
 		var tbody = $( '.immo-amortization-rows', calc );
 		if ( tbody ) {
 			tbody.innerHTML = amort.rows.map( function ( r ) {
@@ -241,13 +245,20 @@
 			price: parseFloat( calc.getAttribute( 'data-base-price' ) ) || 0,
 			commissionFree: calc.getAttribute( 'data-commission-free' ) === '1',
 		};
+		var finCfg = settings.finance || {};
+		function readNum( sel, def, isInt ) {
+			var el = $( sel, calc );
+			var raw = el ? el.value : '';
+			var p = isInt ? parseInt( raw, 10 ) : parseFloat( raw );
+			return isNaN( p ) ? def : p;
+		}
 		var finance = {
 			price: state.price,
-			equity:   parseFloat( ( $( '#immo-calc-equity', calc )   || { value: settings.finance.equityPct } ).value )    || settings.finance.equityPct,
+			equity:     readNum( '#immo-calc-equity',   ( finCfg.equityPct    || 20 ),  false ),
 			equityMode: 'pct',
-			interest: parseFloat( ( $( '#immo-calc-interest', calc ) || { value: settings.finance.interestRate } ).value ) || settings.finance.interestRate,
-			term:     parseInt(   ( $( '#immo-calc-term', calc )     || { value: settings.finance.termYears } ).value, 10 ) || settings.finance.termYears,
-			extra:    parseFloat( ( $( '#immo-calc-extra', calc )    || { value: settings.finance.extraPayment } ).value ) || settings.finance.extraPayment,
+			interest:   readNum( '#immo-calc-interest', ( finCfg.interestRate || 3.5 ), false ),
+			term:       readNum( '#immo-calc-term',     ( finCfg.termYears    || 25 ),  true ),
+			extra:      readNum( '#immo-calc-extra',    ( finCfg.extraPayment || 0 ),   false ),
 		};
 
 		initTabs( calc );
