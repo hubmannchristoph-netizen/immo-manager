@@ -176,6 +176,20 @@ class Plugin {
 	private $openimmo_conflicts_page = null;
 
 	/**
+	 * OpenImmo Retention-Cleaner.
+	 *
+	 * @var \ImmoManager\OpenImmo\RetentionCleaner|null
+	 */
+	private $openimmo_retention_cleaner = null;
+
+	/**
+	 * OpenImmo E-Mail-Notifier.
+	 *
+	 * @var \ImmoManager\OpenImmo\EmailNotifier|null
+	 */
+	private $openimmo_email_notifier = null;
+
+	/**
 	 * Singleton-Instanz zurückgeben.
 	 *
 	 * @return Plugin
@@ -620,5 +634,34 @@ class Plugin {
 			$this->openimmo_conflicts_page = new \ImmoManager\OpenImmo\ConflictsAdminPage();
 		}
 		return $this->openimmo_conflicts_page;
+	}
+
+	/**
+	 * OpenImmo Retention-Cleaner abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\RetentionCleaner
+	 */
+	public function get_openimmo_retention_cleaner(): \ImmoManager\OpenImmo\RetentionCleaner {
+		if ( null === $this->openimmo_retention_cleaner ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/sftp/class-sftp-client.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-retention-cleaner.php';
+			$this->openimmo_retention_cleaner = new \ImmoManager\OpenImmo\RetentionCleaner();
+		}
+		return $this->openimmo_retention_cleaner;
+	}
+
+	/**
+	 * OpenImmo E-Mail-Notifier abrufen (Lazy Loading).
+	 *
+	 * @return \ImmoManager\OpenImmo\EmailNotifier
+	 */
+	public function get_openimmo_email_notifier(): \ImmoManager\OpenImmo\EmailNotifier {
+		if ( null === $this->openimmo_email_notifier ) {
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-settings.php';
+			require_once IMMO_MANAGER_PLUGIN_DIR . 'includes/openimmo/class-email-notifier.php';
+			$this->openimmo_email_notifier = new \ImmoManager\OpenImmo\EmailNotifier();
+		}
+		return $this->openimmo_email_notifier;
 	}
 }

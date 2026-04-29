@@ -14,15 +14,17 @@ defined( 'ABSPATH' ) || exit;
  */
 class CronScheduler {
 
-	public const HOOK_DAILY_SYNC  = 'immo_manager_openimmo_daily_sync';
-	public const HOOK_HOURLY_PULL = 'immo_manager_openimmo_hourly_pull';
+	public const HOOK_DAILY_SYNC    = 'immo_manager_openimmo_daily_sync';
+	public const HOOK_HOURLY_PULL   = 'immo_manager_openimmo_hourly_pull';
+	public const HOOK_DAILY_CLEANUP = 'immo_manager_openimmo_daily_cleanup';
 
 	/**
 	 * Konstruktor – Hook-Callbacks registrieren.
 	 */
 	public function __construct() {
-		add_action( self::HOOK_DAILY_SYNC,  array( $this, 'run_daily_sync' ) );
-		add_action( self::HOOK_HOURLY_PULL, array( $this, 'run_hourly_pull' ) );
+		add_action( self::HOOK_DAILY_SYNC,    array( $this, 'run_daily_sync' ) );
+		add_action( self::HOOK_HOURLY_PULL,   array( $this, 'run_hourly_pull' ) );
+		add_action( self::HOOK_DAILY_CLEANUP, array( $this, 'run_daily_cleanup' ) );
 	}
 
 	/**
@@ -48,6 +50,14 @@ class CronScheduler {
 		if ( ! wp_next_scheduled( self::HOOK_HOURLY_PULL ) ) {
 			wp_schedule_event( time() + 60, 'hourly', self::HOOK_HOURLY_PULL );
 		}
+
+		if ( ! wp_next_scheduled( self::HOOK_DAILY_CLEANUP ) ) {
+			$first = strtotime( 'tomorrow 04:00:00' );
+			if ( false === $first ) {
+				$first = time() + DAY_IN_SECONDS;
+			}
+			wp_schedule_event( $first, 'daily', self::HOOK_DAILY_CLEANUP );
+		}
 	}
 
 	/**
@@ -67,6 +77,12 @@ class CronScheduler {
 			wp_unschedule_event( $timestamp_pull, self::HOOK_HOURLY_PULL );
 		}
 		wp_clear_scheduled_hook( self::HOOK_HOURLY_PULL );
+
+		$timestamp_cleanup = wp_next_scheduled( self::HOOK_DAILY_CLEANUP );
+		if ( $timestamp_cleanup ) {
+			wp_unschedule_event( $timestamp_cleanup, self::HOOK_DAILY_CLEANUP );
+		}
+		wp_clear_scheduled_hook( self::HOOK_DAILY_CLEANUP );
 	}
 
 	/**
@@ -105,5 +121,14 @@ class CronScheduler {
 				$puller->pull( $portal_key );
 			}
 		}
+	}
+
+	/**
+	 * Daily-Cleanup-Callback. Räumt lokale ZIPs, SFTP-Dirs, verwaiste Attachments und alte Conflicts auf.
+	 *
+	 * @return void
+	 */
+	public function run_daily_cleanup(): void {
+		\ImmoManager\Plugin::instance()->get_openimmo_retention_cleaner()->run_all();
 	}
 }
