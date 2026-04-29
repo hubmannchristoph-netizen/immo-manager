@@ -291,6 +291,21 @@
 			}
 		} );
 
+		var unitSelect = $( '#immo-calc-unit-select', calc );
+		if ( unitSelect ) {
+			unitSelect.addEventListener( 'change', function () {
+				var opt = unitSelect.options[ unitSelect.selectedIndex ];
+				if ( ! opt ) { return; }
+				var newPrice = parseFloat( opt.getAttribute( 'data-price' ) ) || 0;
+				state.price = newPrice;
+				finance.price = newPrice;
+				state.commissionFree = opt.getAttribute( 'data-commission-free' ) === '1';
+				var priceInput = $( '#immo-calc-price', calc );
+				if ( priceInput ) { priceInput.value = String( Math.round( newPrice ) ); }
+				render();
+			} );
+		}
+
 		function render() {
 			var costs = renderCostsPanel( calc, state.price, state.commissionFree );
 			renderFinancingPanel( calc, costs, finance );

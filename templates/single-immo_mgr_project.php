@@ -288,6 +288,37 @@ $hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoM
 				</div>
 			<?php endif; ?>
 
+			<?php
+			// === Finanzierungs- & Nebenkostenrechner ===
+			$calc_units = array();
+			foreach ( $units as $u ) {
+				if ( ! empty( $u['price'] ) && (float) $u['price'] > 0 ) {
+					$prop = $u['property'] ?? array();
+					$calc_units[] = array(
+						'id'              => (int) $u['id'],
+						'price'           => (float) $u['price'],
+						'commission_free' => (bool) ( $prop['commission_free'] ?? false ),
+						'label'           => sprintf(
+							/* translators: 1: Wohneinheits-Nummer, 2: Fläche in m², 3: formatierter Preis */
+							__( '%1$s — %2$s m² — %3$s', 'immo-manager' ),
+							$u['unit_number'],
+							number_format_i18n( (float) $u['area'], 0 ),
+							$u['price_formatted']
+						),
+					);
+				}
+			}
+			if ( ! empty( $calc_units ) ) {
+				$first = $calc_units[0];
+				$calc_context = array(
+					'base_price'      => $first['price'],
+					'commission_free' => $first['commission_free'],
+					'units'           => $calc_units,
+				);
+				include IMMO_MANAGER_PLUGIN_DIR . 'templates/parts/calculator.php';
+			}
+			?>
+
 			<!-- Ausstattung -->
 			<?php $feat = $meta['features_detail'] ?? array(); if ( ! empty( $feat ) ) : ?>
 				<div class="immo-accordion">
