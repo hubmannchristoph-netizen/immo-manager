@@ -66,8 +66,9 @@ class AdminPage {
 
 		$data = array(
 			'enabled'   => ! empty( $post['enabled'] ),
-			'cron_time' => sanitize_text_field( $post['cron_time'] ?? '03:00' ),
-			'portals'   => array(),
+			'cron_time'          => sanitize_text_field( $post['cron_time'] ?? '03:00' ),
+			'notification_email' => sanitize_email( $post['notification_email'] ?? '' ),
+			'portals'            => array(),
 		);
 
 		$existing = Settings::get();
@@ -348,6 +349,18 @@ class AdminPage {
 					<tr>
 						<th scope="row"><label for="cron_time"><?php esc_html_e( 'Tägliche Sync-Zeit (HH:MM)', 'immo-manager' ); ?></label></th>
 						<td><input type="time" id="cron_time" name="cron_time" value="<?php echo esc_attr( $settings['cron_time'] ); ?>"></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="notification_email"><?php esc_html_e( 'Notification-E-Mail', 'immo-manager' ); ?></label></th>
+						<td>
+							<input type="email" id="notification_email" class="regular-text"
+									name="notification_email"
+									value="<?php echo esc_attr( $settings['notification_email'] ?? '' ); ?>"
+									placeholder="<?php echo esc_attr( get_option( 'admin_email' ) ); ?>">
+							<p class="description">
+								<?php esc_html_e( 'Bei Sync-Fehlern. Leer = WP-Admin-E-Mail.', 'immo-manager' ); ?>
+							</p>
+						</td>
 					</tr>
 				</table>
 

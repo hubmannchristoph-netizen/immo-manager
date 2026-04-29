@@ -23,9 +23,10 @@ class Settings {
 	 */
 	public static function defaults(): array {
 		return array(
-			'enabled'   => false,
-			'cron_time' => '03:00',
-			'portals'   => array(
+			'enabled'            => false,
+			'cron_time'          => '03:00',
+			'notification_email' => '',
+			'portals'            => array(
 				'willhaben'      => self::portal_defaults(),
 				'immoscout24_at' => self::portal_defaults(),
 			),
