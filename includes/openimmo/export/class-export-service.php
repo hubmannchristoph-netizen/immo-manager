@@ -44,13 +44,13 @@ class ExportService {
 			$settings = Settings::get();
 			$portal   = $settings['portals'][ $portal_key ] ?? null;
 			if ( null === $portal ) {
-				return $this->finish( $sync_id, 'error', 'unknown portal: ' . $portal_key, '-', 0, array() );
+				return $this->dispatch_finish( $portal_key, $sync_id, 'error', 'unknown portal: ' . $portal_key, '-', 0, array() );
 			}
 
 			$collector = new Collector();
 			$listings  = $collector->gather( $portal_key );
 			if ( empty( $listings ) ) {
-				return $this->finish( $sync_id, 'skipped', 'no listings opted in', '-', 0, array() );
+				return $this->dispatch_finish( $portal_key, $sync_id, 'skipped', 'no listings opted in', '-', 0, array() );
 			}
 
 			// XML-Skelett.
@@ -92,7 +92,7 @@ class ExportService {
 					$debug_path = $upload_dir['basedir'] . '/openimmo/exports/' . $portal_key . '/' . gmdate( 'Y-m-d-His' ) . '.invalid.xml';
 					wp_mkdir_p( dirname( $debug_path ) );
 					file_put_contents( $debug_path, $builder->to_string() );
-					return $this->finish( $sync_id, 'error', 'XSD invalid', '-', 0, array(
+					return $this->dispatch_finish( $portal_key, $sync_id, 'error', 'XSD invalid', '-', 0, array(
 						'errors'       => $errors,
 						'image_errors' => $img_errors,
 						'xsd_errors'   => $check['errors'],
@@ -112,7 +112,7 @@ class ExportService {
 				$written = $packer->write( $builder->dom(), $all_images, $target );
 
 				if ( ! $written ) {
-					return $this->finish( $sync_id, 'error', 'ZIP write failed', $target, 0, array(
+					return $this->dispatch_finish( $portal_key, $sync_id, 'error', 'ZIP write failed', $target, 0, array(
 						'errors' => $errors,
 					) );
 				}
@@ -142,7 +142,7 @@ class ExportService {
 					$summary .= ' (SFTP-Upload übersprungen: ' . ( $upload_result['summary'] ?? 'lock held' ) . ')';
 				}
 
-				return $this->finish( $sync_id, $status, $summary, $target, $exported, array(
+				return $this->dispatch_finish( $portal_key, $sync_id, $status, $summary, $target, $exported, array(
 					'errors'              => $errors,
 					'image_errors'        => $img_errors,
 					'zip_path'            => $target,
@@ -155,7 +155,7 @@ class ExportService {
 			}
 
 		} catch ( \Throwable $e ) {
-			return $this->finish( $sync_id, 'error', $e->getMessage(), '-', 0, array(
+			return $this->dispatch_finish( $portal_key, $sync_id, 'error', $e->getMessage(), '-', 0, array(
 				'exception' => $e->getMessage(),
 				'trace'     => $e->getTraceAsString(),
 			) );
@@ -202,6 +202,18 @@ class ExportService {
 	 * @param array<string,mixed> $details
 	 * @return array{status:string, summary:string, zip_path:string, count:int}
 	 */
+	/**
+	 * Wrapper um finish(), triggert bei status='error' eine E-Mail.
+	 */
+	private function dispatch_finish( string $portal_key, int $sync_id, string $status, string $summary, string $zip_path, int $count, array $details ): array {
+		$result = $this->finish( $sync_id, $status, $summary, $zip_path, $count, $details );
+		if ( 'error' === $status ) {
+			\ImmoManager\Plugin::instance()->get_openimmo_email_notifier()
+				->notify_sync_error( $portal_key, 'export', $summary, $details );
+		}
+		return $result;
+	}
+
 	private function finish( int $sync_id, string $status, string $summary, string $zip_path, int $count, array $details ): array {
 		if ( 0 !== $sync_id ) {
 			SyncLog::finish( $sync_id, $status, $summary, $details, $count );

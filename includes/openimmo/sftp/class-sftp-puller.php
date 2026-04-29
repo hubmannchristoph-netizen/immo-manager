@@ -36,17 +36,17 @@ class SftpPuller {
 		$portal   = $settings['portals'][ $portal_key ] ?? null;
 
 		if ( null === $portal || empty( $portal['enabled'] ) ) {
-			return $this->result( 'skipped', 'portal disabled', $counts, 0 );
+			return $this->dispatch_result( $portal_key, 'skipped', 'portal disabled', $counts, 0 );
 		}
 		if ( empty( $portal['inbox_path'] ) ) {
-			return $this->result( 'skipped', 'no inbox_path configured', $counts, 0 );
+			return $this->dispatch_result( $portal_key, 'skipped', 'no inbox_path configured', $counts, 0 );
 		}
 		if ( empty( $portal['sftp_host'] ) || empty( $portal['sftp_user'] ) ) {
-			return $this->result( 'error', 'sftp credentials incomplete', $counts, 0 );
+			return $this->dispatch_result( $portal_key, 'error', 'sftp credentials incomplete', $counts, 0 );
 		}
 
 		if ( ! $this->acquire_lock( $portal_key ) ) {
-			return $this->result( 'skipped', 'lock held — another pull running', $counts, 0 );
+			return $this->dispatch_result( $portal_key, 'skipped', 'lock held — another pull running', $counts, 0 );
 		}
 
 		$sync_id = SyncLog::start( $portal_key, 'pull' );
@@ -61,10 +61,10 @@ class SftpPuller {
 		$client = new SftpClient();
 		try {
 			if ( ! $client->connect( $portal['sftp_host'], (int) $portal['sftp_port'] ) ) {
-				return $this->finish( $sync_id, 'error', 'connect failed: ' . $client->last_error(), $counts, $errors );
+				return $this->dispatch_finish( $portal_key, $sync_id, 'error', 'connect failed: ' . $client->last_error(), $counts, $errors );
 			}
 			if ( ! $client->login( $portal['sftp_user'], $portal['sftp_password'] ) ) {
-				return $this->finish( $sync_id, 'error', 'login failed: ' . $client->last_error(), $counts, $errors );
+				return $this->dispatch_finish( $portal_key, $sync_id, 'error', 'login failed: ' . $client->last_error(), $counts, $errors );
 			}
 
 			$inbox     = rtrim( $portal['inbox_path'], '/' );
@@ -72,7 +72,7 @@ class SftpPuller {
 			$error_dir = $inbox . '/error';
 
 			if ( ! $client->mkdir_p( $inbox ) ) {
-				return $this->finish( $sync_id, 'error', 'inbox mkdir failed: ' . $client->last_error(), $counts, $errors );
+				return $this->dispatch_finish( $portal_key, $sync_id, 'error', 'inbox mkdir failed: ' . $client->last_error(), $counts, $errors );
 			}
 			$client->mkdir_p( $processed );  // best-effort
 			$client->mkdir_p( $error_dir );  // best-effort
@@ -86,7 +86,7 @@ class SftpPuller {
 			}
 
 			if ( empty( $zips ) ) {
-				return $this->finish( $sync_id, 'skipped', 'no files in inbox', $counts, $errors );
+				return $this->dispatch_finish( $portal_key, $sync_id, 'skipped', 'no files in inbox', $counts, $errors );
 			}
 
 			$importer = \ImmoManager\Plugin::instance()->get_openimmo_import_service();
@@ -145,10 +145,10 @@ class SftpPuller {
 				$counts['conflicts'],
 				$counts['errors']
 			);
-			return $this->finish( $sync_id, $status, $summary, $counts, $errors );
+			return $this->dispatch_finish( $portal_key, $sync_id, $status, $summary, $counts, $errors );
 
 		} catch ( \Throwable $e ) {
-			return $this->finish( $sync_id, 'error', 'unexpected: ' . $e->getMessage(), $counts, $errors );
+			return $this->dispatch_finish( $portal_key, $sync_id, 'error', 'unexpected: ' . $e->getMessage(), $counts, $errors );
 		} finally {
 			$client->disconnect();
 			$this->rrmdir( $stage_dir );
@@ -194,6 +194,33 @@ class SftpPuller {
 	/**
 	 * Result-Helper für early-returns ohne Sync-Log.
 	 */
+	/**
+	 * Wrapper um result(), triggert bei status='error' eine E-Mail.
+	 */
+	private function dispatch_result( string $portal_key, string $status, string $summary, array $counts, int $sync_id ): array {
+		$result = $this->result( $status, $summary, $counts, $sync_id );
+		if ( 'error' === $status ) {
+			\ImmoManager\Plugin::instance()->get_openimmo_email_notifier()
+				->notify_sync_error( $portal_key, 'pull', $summary, array( 'counts' => $counts ) );
+		}
+		return $result;
+	}
+
+	/**
+	 * Wrapper um finish(), triggert bei status='error' eine E-Mail.
+	 */
+	private function dispatch_finish( string $portal_key, int $sync_id, string $status, string $summary, array $counts, array $errors ): array {
+		$result = $this->finish( $sync_id, $status, $summary, $counts, $errors );
+		if ( 'error' === $status ) {
+			\ImmoManager\Plugin::instance()->get_openimmo_email_notifier()
+				->notify_sync_error( $portal_key, 'pull', $summary, array(
+					'counts' => $counts,
+					'errors' => $errors,
+				) );
+		}
+		return $result;
+	}
+
 	private function result( string $status, string $summary, array $counts, int $sync_id ): array {
 		return array(
 			'status'  => $status,
