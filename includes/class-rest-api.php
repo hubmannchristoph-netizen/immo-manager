@@ -985,7 +985,8 @@ class RestApi {
 					'type'      => (string) ( $prop_meta['_immo_property_type'][0] ?? '' ),
 					'floor'     => isset( $prop_meta['_immo_floor'][0] ) ? (int) $prop_meta['_immo_floor'][0] : null,
 					'built_year' => (int) ( $prop_meta['_immo_built_year'][0] ?? 0 ),
-					'energy_class' => (string) ( $prop_meta['_immo_energy_class'][0] ?? '' ),
+					'energy_class'    => (string) ( $prop_meta['_immo_energy_class'][0] ?? '' ),
+					'commission_free' => '1' === (string) ( $prop_meta['_immo_commission_free'][0] ?? '0' ),
 				);
 			}
 		}
