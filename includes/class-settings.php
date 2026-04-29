@@ -133,6 +133,27 @@ class Settings {
 			'map_default_lat'     => 47.5162,
 			'map_default_lng'     => 14.5501,
 			'map_default_zoom'    => 7,
+
+			// === RECHNER ===
+			'calc_enable_costs'            => 1,
+			'calc_enable_financing'        => 1,
+			'calc_grest_rate'              => 3.5,
+			'calc_grundbuch_rate'          => 1.1,
+			'calc_notar_rate'              => 2.5,
+			'calc_provision_rate'          => 3,
+			'calc_ust_rate'                => 20,
+			'calc_show_grest'              => 1,
+			'calc_show_grundbuch'          => 1,
+			'calc_show_notar'              => 1,
+			'calc_show_provision'          => 1,
+			'calc_show_ust_on_provision'   => 1,
+			'calc_notar_mode'              => 'percent', // percent | flat
+			'calc_notar_flat'              => 1500,     // EUR-Pauschale
+			'calc_default_equity_pct'      => 20,
+			'calc_default_interest_rate'   => 3.5,
+			'calc_default_term_years'      => 25,
+			'calc_default_extra_payment'   => 0,
+			'calc_show_amortization_table' => 1,
 		);
 	}
 
@@ -206,6 +227,7 @@ class Settings {
 		$this->register_contact_section();
 		$this->register_api_section();
 		$this->register_integrations_section();
+		$this->register_calculator_section();
 	}
 
 	/**
@@ -1105,6 +1127,206 @@ class Settings {
 		);
 	}
 
+	/**
+	 * Section: Rechner (Finanzierung & Nebenkosten).
+	 *
+	 * @return void
+	 */
+	private function register_calculator_section(): void {
+		$section = 'immo_calculator';
+
+		add_settings_section(
+			$section,
+			__( '🧮 Rechner (Finanzierung & Nebenkosten)', 'immo-manager' ),
+			function () {
+				echo '<p>' . esc_html__( 'AT-Defaults für Kauf-Nebenkosten und Annuitätendarlehen. Werte sind je Posten ein-/ausschaltbar.', 'immo-manager' ) . '</p>';
+			},
+			self::MENU_SLUG
+		);
+
+		// Allgemeine Toggles.
+		add_settings_field(
+			'calc_enable_costs',
+			__( 'Nebenkostenrechner', 'immo-manager' ),
+			array( $this, 'render_checkbox_field' ),
+			self::MENU_SLUG,
+			$section,
+			array(
+				'key'   => 'calc_enable_costs',
+				'label' => __( 'Aktivieren', 'immo-manager' ),
+			)
+		);
+
+		add_settings_field(
+			'calc_enable_financing',
+			__( 'Finanzierungsrechner', 'immo-manager' ),
+			array( $this, 'render_checkbox_field' ),
+			self::MENU_SLUG,
+			$section,
+			array(
+				'key'   => 'calc_enable_financing',
+				'label' => __( 'Aktivieren', 'immo-manager' ),
+			)
+		);
+
+		// Nebenkosten-Sätze.
+		$rate_fields = array(
+			'calc_grest_rate'     => array( 'label' => __( 'Grunderwerbsteuer (%)', 'immo-manager' ), 'show' => 'calc_show_grest' ),
+			'calc_grundbuch_rate' => array( 'label' => __( 'Grundbucheintragung (%)', 'immo-manager' ), 'show' => 'calc_show_grundbuch' ),
+			'calc_notar_rate'     => array( 'label' => __( 'Notar/Treuhand (%)', 'immo-manager' ), 'show' => 'calc_show_notar' ),
+			'calc_provision_rate' => array( 'label' => __( 'Maklerprovision (%)', 'immo-manager' ), 'show' => 'calc_show_provision' ),
+			'calc_ust_rate'       => array( 'label' => __( 'USt auf Provision (%)', 'immo-manager' ), 'show' => 'calc_show_ust_on_provision', 'max' => 30 ),
+		);
+		foreach ( $rate_fields as $key => $cfg ) {
+			$args = array( 'key' => $key, 'show_key' => $cfg['show'] );
+			if ( isset( $cfg['max'] ) ) {
+				$args['max'] = $cfg['max'];
+			}
+			add_settings_field(
+				$key,
+				$cfg['label'],
+				array( $this, 'render_calc_rate_with_toggle' ),
+				self::MENU_SLUG,
+				$section,
+				$args
+			);
+		}
+
+		// Notar-Modus.
+		add_settings_field(
+			'calc_notar_mode',
+			__( 'Notar-Berechnung', 'immo-manager' ),
+			array( $this, 'render_select_field' ),
+			self::MENU_SLUG,
+			$section,
+			array(
+				'key'     => 'calc_notar_mode',
+				'options' => array(
+					'percent' => __( 'Prozent vom Kaufpreis', 'immo-manager' ),
+					'flat'    => __( 'Pauschalbetrag', 'immo-manager' ),
+				),
+			)
+		);
+		add_settings_field(
+			'calc_notar_flat',
+			__( 'Notar Pauschalbetrag (€)', 'immo-manager' ),
+			array( $this, 'render_number_field' ),
+			self::MENU_SLUG,
+			$section,
+			array(
+				'key'         => 'calc_notar_flat',
+				'min'         => 0,
+				'max'         => 100000,
+				'step'        => 1,
+				'class'       => 'regular-text',
+				'description' => __( 'Nur aktiv wenn Notar-Berechnung = "Pauschalbetrag".', 'immo-manager' ),
+			)
+		);
+
+		// Finanzierung.
+		add_settings_field(
+			'calc_default_equity_pct',
+			__( 'Standard-Eigenkapital (%)', 'immo-manager' ),
+			array( $this, 'render_number_field' ),
+			self::MENU_SLUG,
+			$section,
+			array(
+				'key'   => 'calc_default_equity_pct',
+				'min'   => 0,
+				'max'   => 100,
+				'step'  => 1,
+				'class' => 'small-text',
+			)
+		);
+
+		add_settings_field(
+			'calc_default_interest_rate',
+			__( 'Standard-Zinssatz (%)', 'immo-manager' ),
+			array( $this, 'render_number_field' ),
+			self::MENU_SLUG,
+			$section,
+			array(
+				'key'   => 'calc_default_interest_rate',
+				'min'   => 0,
+				'max'   => 20,
+				'step'  => '0.1',
+				'class' => 'small-text',
+			)
+		);
+
+		add_settings_field(
+			'calc_default_term_years',
+			__( 'Standard-Laufzeit (Jahre)', 'immo-manager' ),
+			array( $this, 'render_number_field' ),
+			self::MENU_SLUG,
+			$section,
+			array(
+				'key'   => 'calc_default_term_years',
+				'min'   => 1,
+				'max'   => 50,
+				'step'  => 1,
+				'class' => 'small-text',
+			)
+		);
+
+		add_settings_field(
+			'calc_default_extra_payment',
+			__( 'Standard-Sondertilgung (€/Jahr)', 'immo-manager' ),
+			array( $this, 'render_number_field' ),
+			self::MENU_SLUG,
+			$section,
+			array(
+				'key'   => 'calc_default_extra_payment',
+				'min'   => 0,
+				'max'   => 1000000,
+				'step'  => 1,
+				'class' => 'regular-text',
+			)
+		);
+
+		add_settings_field(
+			'calc_show_amortization_table',
+			__( 'Tilgungsplan-Tabelle', 'immo-manager' ),
+			array( $this, 'render_checkbox_field' ),
+			self::MENU_SLUG,
+			$section,
+			array(
+				'key'   => 'calc_show_amortization_table',
+				'label' => __( 'Anzeigen', 'immo-manager' ),
+			)
+		);
+	}
+
+	/**
+	 * Custom Renderer: Prozentsatz + "anzeigen"-Toggle in einer Zeile.
+	 *
+	 * @param array<string, mixed> $args Args.
+	 *
+	 * @return void
+	 */
+	public function render_calc_rate_with_toggle( array $args ): void {
+		$key      = (string) $args['key'];
+		$show_key = (string) $args['show_key'];
+		$max      = isset( $args['max'] ) ? (float) $args['max'] : 50;
+		$value    = self::get( $key, 0 );
+		$show     = (int) self::get( $show_key, 1 );
+
+		printf(
+			'<input type="number" id="%1$s" name="%2$s[%1$s]" value="%3$s" min="0" max="%4$s" step="0.1" class="small-text" />',
+			esc_attr( $key ),
+			esc_attr( self::OPTION_NAME ),
+			esc_attr( (string) $value ),
+			esc_attr( (string) $max )
+		);
+		printf(
+			' &nbsp; <label><input type="checkbox" name="%1$s[%2$s]" value="1"%3$s /> %4$s</label>',
+			esc_attr( self::OPTION_NAME ),
+			esc_attr( $show_key ),
+			checked( $show, 1, false ),
+			esc_html__( 'anzeigen', 'immo-manager' )
+		);
+	}
+
 	// =========================================================================
 	// Field Renderers
 	// =========================================================================
@@ -1477,6 +1699,42 @@ class Settings {
 		// nicht über das normale Settings-Formular.
 		$sanitized['api_key_hash']    = self::get( 'api_key_hash', '' );
 		$sanitized['api_key_preview'] = self::get( 'api_key_preview', '' );
+
+		// === RECHNER ===
+		// Toggles (0/1).
+		foreach ( array(
+			'calc_enable_costs', 'calc_enable_financing',
+			'calc_show_grest', 'calc_show_grundbuch', 'calc_show_notar',
+			'calc_show_provision', 'calc_show_ust_on_provision',
+			'calc_show_amortization_table',
+		) as $toggle ) {
+			$sanitized[ $toggle ] = ! empty( $input[ $toggle ] ) ? 1 : 0;
+		}
+
+		// Prozentsätze (float, gekappt).
+		$rate_caps = array(
+			'calc_grest_rate'             => 50.0,
+			'calc_grundbuch_rate'         => 50.0,
+			'calc_notar_rate'             => 50.0,
+			'calc_provision_rate'         => 50.0,
+			'calc_ust_rate'               => 30.0,
+			'calc_default_interest_rate'  => 20.0,
+		);
+		foreach ( $rate_caps as $key => $max ) {
+			$val               = isset( $input[ $key ] ) ? (float) $input[ $key ] : (float) $defaults[ $key ];
+			$sanitized[ $key ] = max( 0.0, min( $max, $val ) );
+		}
+
+		// Integer-Felder.
+		$sanitized['calc_default_equity_pct']    = max( 0, min( 100, (int) ( $input['calc_default_equity_pct']    ?? $defaults['calc_default_equity_pct'] ) ) );
+		$sanitized['calc_default_term_years']    = max( 1, min( 50,  (int) ( $input['calc_default_term_years']    ?? $defaults['calc_default_term_years'] ) ) );
+		$sanitized['calc_default_extra_payment'] = max( 0, min( 1000000, (int) ( $input['calc_default_extra_payment'] ?? $defaults['calc_default_extra_payment'] ) ) );
+		$sanitized['calc_notar_flat']            = max( 0, min( 100000,  (int) ( $input['calc_notar_flat']            ?? $defaults['calc_notar_flat'] ) ) );
+
+		// Notar-Modus (enum).
+		$sanitized['calc_notar_mode'] = in_array( (string) ( $input['calc_notar_mode'] ?? '' ), array( 'percent', 'flat' ), true )
+			? (string) $input['calc_notar_mode']
+			: $defaults['calc_notar_mode'];
 
 		return $sanitized;
 	}

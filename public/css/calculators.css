@@ -1,0 +1,230 @@
+/* ==========================================================================
+   Immo Manager – Finanzierungs- & Nebenkostenrechner
+   ========================================================================== */
+
+.immo-calculator {
+	border: 1px solid var(--immo-border);
+	border-radius: var(--immo-radius);
+	background: var(--immo-surface);
+	overflow: hidden;
+	margin-top: 1rem;
+}
+
+.immo-calculator-tabs {
+	display: flex;
+	gap: 0;
+	border-bottom: 1px solid var(--immo-border);
+	background: var(--immo-bg);
+}
+
+.immo-calculator-tab {
+	flex: 1;
+	padding: 0.85rem 1rem;
+	background: transparent;
+	border: none;
+	border-bottom: 3px solid transparent;
+	color: var(--immo-text-muted);
+	font-weight: 600;
+	font-size: 0.95rem;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.immo-calculator-tab:hover {
+	color: var(--immo-text);
+	background: rgba(0, 0, 0, 0.03);
+}
+
+.immo-calculator-tab.active {
+	color: var(--immo-accent);
+	border-bottom-color: var(--immo-accent);
+	background: var(--immo-surface);
+}
+
+.immo-calculator-panel {
+	padding: 1.25rem;
+}
+
+.immo-calculator-panel[hidden] {
+	display: none;
+}
+
+.immo-calc-row {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: 0.75rem 1rem;
+	align-items: center;
+	padding: 0.5rem 0;
+}
+
+.immo-calc-row + .immo-calc-row {
+	border-top: 1px dashed var(--immo-border);
+}
+
+.immo-calc-row-label {
+	font-size: 0.95rem;
+	color: var(--immo-text);
+}
+
+.immo-calc-row-rate {
+	color: var(--immo-text-muted);
+	font-size: 0.85rem;
+	margin-left: 0.4rem;
+}
+
+.immo-calc-row-amount {
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.immo-calc-input-row {
+	display: grid;
+	grid-template-columns: 1fr 180px;
+	gap: 0.75rem 1rem;
+	align-items: center;
+	padding: 0.5rem 0;
+}
+
+.immo-calc-input-row input[type="number"] {
+	width: 100%;
+	padding: 0.45rem 0.6rem;
+	border: 1px solid var(--immo-border);
+	border-radius: var(--immo-radius-sm);
+	font-size: 0.95rem;
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
+
+.immo-calc-total {
+	display: flex;
+	justify-content: space-between;
+	padding: 0.85rem 0;
+	border-top: 2px solid var(--immo-border);
+	margin-top: 0.5rem;
+	font-size: 1.05rem;
+	font-weight: 700;
+}
+
+.immo-calc-grand-total {
+	display: flex;
+	justify-content: space-between;
+	padding: 0.85rem 1rem;
+	background: var(--immo-bg);
+	border-radius: var(--immo-radius-sm);
+	margin-top: 0.5rem;
+	font-size: 1.1rem;
+	font-weight: 700;
+	color: var(--immo-accent);
+}
+
+.immo-calc-equity-toggle {
+	display: inline-flex;
+	border: 1px solid var(--immo-border);
+	border-radius: 999px;
+	padding: 2px;
+	background: var(--immo-bg);
+}
+
+.immo-calc-equity-toggle button {
+	padding: 0.3rem 0.85rem;
+	border: none;
+	background: transparent;
+	border-radius: 999px;
+	cursor: pointer;
+	font-size: 0.85rem;
+	color: var(--immo-text-muted);
+}
+
+.immo-calc-equity-toggle button.active {
+	background: var(--immo-accent);
+	color: #fff;
+}
+
+.immo-calc-equity-display {
+	color: var(--immo-text-muted);
+	font-size: 0.85rem;
+	margin-left: 0.5rem;
+}
+
+.immo-calc-disclaimer {
+	margin-top: 1rem;
+	padding: 0.6rem 0.8rem;
+	background: rgba(0, 0, 0, 0.03);
+	border-radius: var(--immo-radius-sm);
+	font-size: 0.8rem;
+	color: var(--immo-text-muted);
+	font-style: italic;
+}
+
+.immo-amortization-toggle {
+	margin-top: 1rem;
+	width: 100%;
+	padding: 0.7rem;
+	background: var(--immo-bg);
+	border: 1px solid var(--immo-border);
+	border-radius: var(--immo-radius-sm);
+	cursor: pointer;
+	font-weight: 600;
+	color: var(--immo-text);
+}
+
+.immo-amortization-table-wrap {
+	margin-top: 0.75rem;
+	max-height: 400px;
+	overflow-y: auto;
+	border: 1px solid var(--immo-border);
+	border-radius: var(--immo-radius-sm);
+}
+
+.immo-amortization-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.88rem;
+	font-variant-numeric: tabular-nums;
+}
+
+.immo-amortization-table th,
+.immo-amortization-table td {
+	padding: 0.45rem 0.7rem;
+	text-align: right;
+	border-bottom: 1px solid var(--immo-border);
+}
+
+.immo-amortization-table th:first-child,
+.immo-amortization-table td:first-child {
+	text-align: left;
+}
+
+.immo-amortization-table thead th {
+	background: var(--immo-bg);
+	position: sticky;
+	top: 0;
+}
+
+.immo-calc-unit-select {
+	width: 100%;
+	padding: 0.55rem 0.7rem;
+	border: 1px solid var(--immo-border);
+	border-radius: var(--immo-radius-sm);
+	font-size: 0.95rem;
+	margin-bottom: 1rem;
+}
+
+.immo-calc-no-financing {
+	padding: 1rem;
+	background: var(--immo-bg);
+	border-radius: var(--immo-radius-sm);
+	color: var(--immo-text-muted);
+	text-align: center;
+	font-style: italic;
+}
+
+@media ( max-width: 600px ) {
+	.immo-calc-input-row {
+		grid-template-columns: 1fr;
+	}
+	.immo-calc-input-row input[type="number"] {
+		width: 100%;
+	}
+}

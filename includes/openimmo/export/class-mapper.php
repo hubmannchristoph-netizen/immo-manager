@@ -167,7 +167,12 @@ class Mapper {
 		if ( ! empty( $l->meta['_immo_deposit'] ) ) {
 			$this->text( $el, 'kaution', $this->float_str( $l->meta['_immo_deposit'] ) );
 		}
-		if ( ! empty( $l->meta['_immo_commission'] ) ) {
+		$commission_free = '1' === (string) ( $l->meta['_immo_commission_free'] ?? '0' );
+		if ( $commission_free ) {
+			// "provisionsfrei" is accepted as free-text by willhaben and ImmoScout24.at.
+			// Formal XSD conformance (xs:decimal) may be revisited in a later phase.
+			$this->text( $el, 'aussen_courtage', 'provisionsfrei' );
+		} elseif ( ! empty( $l->meta['_immo_commission'] ) ) {
 			$val = $l->meta['_immo_commission'];
 			if ( is_numeric( $val ) ) {
 				$this->text( $el, 'aussen_courtage', $this->float_str( $val ) );

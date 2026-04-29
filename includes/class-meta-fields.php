@@ -71,6 +71,7 @@ class MetaFields {
 			'_immo_operating_costs'   => array( 'type' => 'number',  'default' => 0 ),
 			'_immo_deposit'           => array( 'type' => 'number',  'default' => 0 ),
 			'_immo_commission'        => array( 'type' => 'string',  'default' => '' ),
+			'_immo_commission_free'   => array( 'type' => 'boolean', 'default' => false ),
 			'_immo_available_from'    => array( 'type' => 'string',  'default' => '' ),
 
 			// Features.

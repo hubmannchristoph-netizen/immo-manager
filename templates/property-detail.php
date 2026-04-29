@@ -325,6 +325,19 @@ $key_facts = array_filter( array(
 				</div>
 			<?php endif; ?>
 
+			<?php
+			// === Finanzierungs- & Nebenkostenrechner ===
+			// $show_sale (Zeile ~32) prüft bereits: mode in (sale|both) UND price > 0.
+			if ( $show_sale ) {
+				$calc_context = array(
+					'base_price'      => (float) ( $meta['price'] ?? 0 ),
+					'commission_free' => (bool) ( $meta['commission_free'] ?? false ),
+					'units'           => array(),
+				);
+				include IMMO_MANAGER_PLUGIN_DIR . 'templates/parts/calculator.php';
+			}
+			?>
+
 			<?php if ( $has_map || $meta['address'] ) : ?>
 				<div class="immo-accordion">
 					<button class="immo-accordion-header" aria-expanded="false"><?php esc_html_e( 'Lage', 'immo-manager' ); ?><span class="immo-accordion-icon" aria-hidden="true"></span></button>

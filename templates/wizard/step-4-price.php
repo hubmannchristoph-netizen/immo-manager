@@ -28,6 +28,14 @@ $p = $prefill;
 				placeholder="<?php esc_attr_e( 'z. B. 3 % + 20 % USt.', 'immo-manager' ); ?>">
 		</div>
 	</div>
+	<div class="immo-field" style="margin-top: 0.75rem;">
+		<label class="immo-checkbox-label">
+			<input type="checkbox" id="wiz_commission_free" name="_immo_commission_free" value="1"
+				class="immo-wizard-input"
+				<?php checked( (int) ( $p['_immo_commission_free'] ?? 0 ), 1 ); ?>>
+			<?php esc_html_e( 'Provisionsfrei (Maklerprovision wird im Rechner ausgeblendet)', 'immo-manager' ); ?>
+		</label>
+	</div>
 </div>
 
 <!-- Vermietung -->
