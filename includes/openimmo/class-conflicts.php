@@ -94,4 +94,14 @@ class Conflicts {
 
 		return false !== $result;
 	}
+
+	/**
+	 * Anzahl pending Konflikte (für Menü-Badge).
+	 */
+	public static function pending_count(): int {
+		global $wpdb;
+		$table = Database::conflicts_table();
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE status = 'pending'" );
+	}
 }
