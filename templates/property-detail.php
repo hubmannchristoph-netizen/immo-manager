@@ -325,6 +325,21 @@ $key_facts = array_filter( array(
 				</div>
 			<?php endif; ?>
 
+			<?php
+			// === Finanzierungs- & Nebenkostenrechner ===
+			$dt    = (string) ( $meta['mode'] ?? '' );
+			$is_sale = ( 'sale' === $dt || 'both' === $dt );
+			$base_price_calc = (float) ( $meta['price'] ?? 0 );
+			if ( $is_sale && $base_price_calc > 0 ) {
+				$calc_context = array(
+					'base_price'      => $base_price_calc,
+					'commission_free' => (bool) ( $meta['commission_free'] ?? false ),
+					'units'           => array(),
+				);
+				include IMMO_MANAGER_PLUGIN_DIR . 'templates/parts/calculator.php';
+			}
+			?>
+
 			<?php if ( $has_map || $meta['address'] ) : ?>
 				<div class="immo-accordion">
 					<button class="immo-accordion-header" aria-expanded="false"><?php esc_html_e( 'Lage', 'immo-manager' ); ?><span class="immo-accordion-icon" aria-hidden="true"></span></button>
