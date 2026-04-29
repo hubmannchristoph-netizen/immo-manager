@@ -143,6 +143,64 @@
 		return { rate: m, rows: rows, totalInterest: totalInterest, totalPayments: K + totalInterest };
 	}
 
+	function renderFinancingPanel( calc, costs, financeState ) {
+		var need = costs.grandTotal;
+
+		var equityValue;
+		if ( financeState.equityMode === 'pct' ) {
+			equityValue = ( financeState.price * financeState.equity ) / 100;
+		} else {
+			equityValue = financeState.equity;
+		}
+		equityValue = Math.max( 0, equityValue );
+
+		var loan = Math.max( 0, need - equityValue );
+
+		var needEl = $( '.immo-calc-need', calc );
+		if ( needEl ) { needEl.textContent = formatMoney( need ); }
+		var equityEurEl = $( '.immo-calc-equity-eur', calc );
+		if ( equityEurEl ) { equityEurEl.textContent = formatMoney( equityValue ); }
+		var loanEl = $( '.immo-calc-loan', calc );
+		if ( loanEl ) { loanEl.textContent = formatMoney( loan ); }
+
+		var resultsEl = $( '.immo-calc-results', calc );
+		var tableWrap = $( '.immo-amortization-table-wrap', calc );
+		var tableToggle = $( '.immo-amortization-toggle', calc );
+
+		if ( loan <= 0.5 ) {
+			if ( resultsEl ) { resultsEl.innerHTML = '<div class="immo-calc-no-financing">' + ( settings.i18n.noFinancing || '' ) + '</div>'; }
+			if ( tableToggle ) { tableToggle.style.display = 'none'; }
+			if ( tableWrap ) { tableWrap.hidden = true; }
+			return;
+		}
+
+		var amort = buildAmortization( loan, financeState.interest, financeState.term, financeState.extra );
+		if ( resultsEl ) {
+			resultsEl.innerHTML =
+				'<div class="immo-calc-row"><span class="immo-calc-row-label">Monatliche Rate</span>' +
+					'<span class="immo-calc-row-amount">' + formatMoney( amort.rate ) + '</span></div>' +
+				'<div class="immo-calc-row"><span class="immo-calc-row-label">Gesamt-Zinsen</span>' +
+					'<span class="immo-calc-row-amount">' + formatMoney( amort.totalInterest ) + '</span></div>' +
+				'<div class="immo-calc-row"><span class="immo-calc-row-label">Gesamtaufwand</span>' +
+					'<span class="immo-calc-row-amount">' + formatMoney( amort.totalPayments ) + '</span></div>' +
+				'<div class="immo-calc-row"><span class="immo-calc-row-label">Tilgung-Ende</span>' +
+					'<span class="immo-calc-row-amount">' + ( amort.rows.length ? amort.rows[ amort.rows.length - 1 ].year : '–' ) + '</span></div>';
+		}
+
+		if ( tableToggle ) { tableToggle.style.display = ''; }
+		var tbody = $( '.immo-amortization-rows', calc );
+		if ( tbody ) {
+			tbody.innerHTML = amort.rows.map( function ( r ) {
+				return '<tr>' +
+					'<td>' + r.year + '</td>' +
+					'<td>' + formatMoney( r.interest ) + '</td>' +
+					'<td>' + formatMoney( r.principal ) + '</td>' +
+					'<td>' + formatMoney( r.balance ) + '</td>' +
+					'</tr>';
+			} ).join( '' );
+		}
+	}
+
 	function $( sel, root ) { return ( root || document ).querySelector( sel ); }
 	function $$( sel, root ) { return Array.prototype.slice.call( ( root || document ).querySelectorAll( sel ) ); }
 
@@ -183,25 +241,53 @@
 			price: parseFloat( calc.getAttribute( 'data-base-price' ) ) || 0,
 			commissionFree: calc.getAttribute( 'data-commission-free' ) === '1',
 		};
+		var finance = {
+			price: state.price,
+			equity:   parseFloat( ( $( '#immo-calc-equity', calc )   || { value: settings.finance.equityPct } ).value )    || settings.finance.equityPct,
+			equityMode: 'pct',
+			interest: parseFloat( ( $( '#immo-calc-interest', calc ) || { value: settings.finance.interestRate } ).value ) || settings.finance.interestRate,
+			term:     parseInt(   ( $( '#immo-calc-term', calc )     || { value: settings.finance.termYears } ).value, 10 ) || settings.finance.termYears,
+			extra:    parseFloat( ( $( '#immo-calc-extra', calc )    || { value: settings.finance.extraPayment } ).value ) || settings.finance.extraPayment,
+		};
 
 		initTabs( calc );
 		initAmortizationToggle( calc );
 
-		var priceInput = $( '#immo-calc-price', calc );
-		if ( priceInput ) {
-			priceInput.addEventListener( 'input', function () {
-				state.price = Math.max( 0, parseFloat( priceInput.value ) || 0 );
+		// Equity-Mode-Toggle.
+		$$( '.immo-calc-equity-toggle button', calc ).forEach( function ( btn ) {
+			btn.addEventListener( 'click', function () {
+				$$( '.immo-calc-equity-toggle button', calc ).forEach( function ( b ) { b.classList.toggle( 'active', b === btn ); } );
+				finance.equityMode = btn.getAttribute( 'data-mode' );
 				render();
 			} );
-		}
+		} );
+
+		// Input-Bindings.
+		var bindings = {
+			'#immo-calc-price':    function ( v ) { state.price = Math.max( 0, parseFloat( v ) || 0 ); finance.price = state.price; },
+			'#immo-calc-equity':   function ( v ) { finance.equity = Math.max( 0, parseFloat( v ) || 0 ); },
+			'#immo-calc-interest': function ( v ) { finance.interest = Math.max( 0, Math.min( 20, parseFloat( v ) || 0 ) ); },
+			'#immo-calc-term':     function ( v ) { finance.term = Math.max( 1, Math.min( 50, parseInt( v, 10 ) || 1 ) ); },
+			'#immo-calc-extra':    function ( v ) { finance.extra = Math.max( 0, parseFloat( v ) || 0 ); },
+		};
+		Object.keys( bindings ).forEach( function ( sel ) {
+			var input = $( sel, calc );
+			if ( input ) {
+				input.addEventListener( 'input', function () {
+					bindings[ sel ]( input.value );
+					render();
+				} );
+			}
+		} );
 
 		function render() {
-			renderCostsPanel( calc, state.price, state.commissionFree );
-			// renderFinancingPanel kommt in Phase 5
+			var costs = renderCostsPanel( calc, state.price, state.commissionFree );
+			renderFinancingPanel( calc, costs, finance );
 		}
 		render();
 
 		calc._state = state;
+		calc._finance = finance;
 		calc._render = render;
 	}
 
