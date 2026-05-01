@@ -244,81 +244,10 @@
 			if (e.key === 'Escape' && !lb.hidden) { closeLb(); }
 		});
 
-		// Formular absenden
-		var form = lb.querySelector('.immo-inquiry-form');
-		if (!form) { return; }
-
-		var submitBtn = form.querySelector('.immo-inquiry-submit');
-		var successEl = lb.querySelector('.immo-inquiry-success');
-		var errorEl   = lb.querySelector('.immo-inquiry-error');
-		var apiBase   = cfg.apiBase || '';
-		var nonce     = cfg.nonce || '';
-
-		if (!submitBtn) { return; }
-
-		submitBtn.addEventListener('click', function () {
-			clearErrors(form);
-			var nameEl  = form.querySelector('[name="inquirer_name"]');
-			var emailEl = form.querySelector('[name="inquirer_email"]');
-			var consent = form.querySelector('[name="consent"]');
-			var errors  = [];
-
-			if (nameEl && !nameEl.value.trim()) { setError(nameEl, 'Pflichtfeld.'); errors.push('name'); }
-			if (emailEl && !validEmail(emailEl.value)) { setError(emailEl, 'Gültige E-Mail erforderlich.'); errors.push('email'); }
-			if (consent && !consent.checked) { setError(consent, 'Bitte bestätige die Datenschutzerklärung.'); errors.push('consent'); }
-			if (errors.length) { return; }
-
-			submitBtn.disabled = true;
-			var spinner = submitBtn.querySelector('.immo-btn-spinner');
-			if (spinner) { spinner.hidden = false; }
-			if (errorEl) { errorEl.hidden = true; }
-
-			var pid = parseInt(form.dataset.propertyId, 10) || 0;
-			var unitField = form.querySelector('[name="unit_id"]');
-			fetch(apiBase + '/inquiries', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
-				body: JSON.stringify({
-					property_id:      pid,
-					unit_id:          unitField && unitField.value ? parseInt(unitField.value, 10) : null,
-					inquirer_name:    nameEl ? nameEl.value.trim() : '',
-					inquirer_email:   emailEl ? emailEl.value.trim() : '',
-					inquirer_phone:   (form.querySelector('[name="inquirer_phone"]') || {}).value || '',
-					inquirer_message: (form.querySelector('[name="inquirer_message"]') || {}).value || '',
-					consent: true,
-				}),
-			})
-			.then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
-			.then(function (res) {
-				if (res.ok) {
-					form.hidden = true;
-					if (successEl) { successEl.hidden = false; }
-					setTimeout(closeLb, 3000);
-				} else {
-					var msg = (res.data && res.data.message) || 'Fehler beim Senden.';
-					if (errorEl) { errorEl.textContent = msg; errorEl.hidden = false; }
-				}
-			})
-			.catch(function () {
-				if (errorEl) { errorEl.textContent = 'Netzwerkfehler.'; errorEl.hidden = false; }
-			})
-			.finally(function () {
-				submitBtn.disabled = false;
-				if (spinner) { spinner.hidden = true; }
-			});
-		});
+		// Hinweis: Das Absenden des Formulars erfolgt zentral in filters.js
+		// (initInquiryForms). Frueher gab es hier einen zweiten Submit-Handler,
+		// der zu doppelten Anfragen und doppelten E-Mails gefuehrt hat.
 	}
-
-	function clearErrors(form) {
-		form.querySelectorAll('.immo-field-error').forEach(function (el) { el.textContent = ''; el.hidden = true; });
-		form.querySelectorAll('.has-error').forEach(function (el) { el.classList.remove('has-error'); });
-	}
-	function setError(input, msg) {
-		input.classList.add('has-error');
-		var err = input.closest('.immo-form-field') && input.closest('.immo-form-field').querySelector('.immo-field-error');
-		if (err) { err.textContent = msg; err.hidden = false; }
-	}
-	function validEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 
 	/* ─────────────────────────────────────────────
 	 * 5. LEAFLET-KARTE

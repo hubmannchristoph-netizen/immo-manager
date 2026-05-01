@@ -170,6 +170,33 @@ class Units {
 	}
 
 	/**
+	 * Min-/Max-Wohnfläche der Units eines Projekts.
+	 *
+	 * Berücksichtigt alle Units mit area > 0, unabhängig vom Status.
+	 *
+	 * @param int $project_id Projekt-ID.
+	 *
+	 * @return array{min: float, max: float} Min/Max in m². 0/0 wenn keine Units mit Fläche.
+	 */
+	public static function area_range( int $project_id ): array {
+		global $wpdb;
+		$table = Database::units_table();
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT MIN(area) AS area_min, MAX(area) AS area_max FROM {$table} WHERE project_id = %d AND area > 0",
+				$project_id
+			),
+			ARRAY_A
+		);
+
+		return array(
+			'min' => (float) ( $row['area_min'] ?? 0 ),
+			'max' => (float) ( $row['area_max'] ?? 0 ),
+		);
+	}
+
+	/**
 	 * Gesamt-Count aller Units (für Dashboard).
 	 *
 	 * @return int

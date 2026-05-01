@@ -235,7 +235,10 @@
 			+ (price ? '<p class="immo-card-price"><strong>' + escHtml(price + suffix) + '</strong></p>' : '')
 			+ '<ul class="immo-card-facts">'
 			+ (meta.rooms ? '<li>🛏️ ' + escHtml(String(meta.rooms)) + ' Zi.</li>' : '')
-			+ (meta.area  ? '<li>📐 ' + escHtml(Number(meta.area).toLocaleString('de-AT')) + ' m²</li>' : '')
+			+ (function () {
+				var a = parseFloat(meta.area) > 0 ? parseFloat(meta.area) : parseFloat(meta.usable_area || 0);
+				return a > 0 ? '<li>📐 ' + escHtml(a.toLocaleString('de-AT')) + ' m²</li>' : '';
+			})()
 			+ (meta.energy_class ? '<li>⚡ ' + escHtml(meta.energy_class) + '</li>' : '')
 			+ '</ul>'
 			+ (topFeat ? '<ul class="immo-card-features">' + topFeat + '</ul>' : '')

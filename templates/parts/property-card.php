@@ -32,6 +32,12 @@ $top_features    = array_slice( $meta['features_detail'] ?? array(), 0, 3 );
 $location_parts  = array_filter( array( $meta['postal_code'] ?? '', $meta['city'] ?? '' ) );
 $location        = implode( ' ', $location_parts );
 $image           = $property['featured_image'] ?? null;
+
+// Flaechenanzeige: bevorzugt Gesamtflaeche, sonst Wohnflaeche.
+$display_area = (float) ( $meta['area'] ?? 0 );
+if ( $display_area <= 0 ) {
+	$display_area = (float) ( $meta['usable_area'] ?? 0 );
+}
 ?>
 <article class="immo-property-card" role="listitem" data-property-id="<?php echo esc_attr( (string) $property['id'] ); ?>">
 	<a href="<?php echo esc_url( $property['permalink'] ?? '#' ); ?>" class="immo-card-link" tabindex="-1" aria-hidden="true">
@@ -83,8 +89,8 @@ $image           = $property['featured_image'] ?? null;
 			<?php if ( $meta['rooms'] ) : ?>
 				<li><span aria-hidden="true">🛏️</span> <?php echo esc_html( $meta['rooms'] . ' ' . _n( 'Zimmer', 'Zimmer', (int) $meta['rooms'], 'immo-manager' ) ); ?></li>
 			<?php endif; ?>
-			<?php if ( $meta['area'] ) : ?>
-				<li><span aria-hidden="true">📐</span> <?php echo esc_html( number_format_i18n( (float) $meta['area'], 0 ) . ' m²' ); ?></li>
+			<?php if ( $display_area > 0 ) : ?>
+				<li><span aria-hidden="true">📐</span> <?php echo esc_html( number_format_i18n( $display_area, 0 ) . ' m²' ); ?></li>
 			<?php endif; ?>
 			<?php if ( $meta['energy_class'] ) : ?>
 				<li><span aria-hidden="true">⚡</span> <?php echo esc_html( $meta['energy_class'] ); ?></li>

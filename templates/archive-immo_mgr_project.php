@@ -63,6 +63,16 @@ $currency = \ImmoManager\Settings::get( 'currency_symbol', '€' );
 							<?php if ( ! empty( $stats['total'] ) ) : ?>
 								<ul class="immo-card-facts">
 									<li>🏘️ <?php printf( esc_html__( '%d Einheiten', 'immo-manager' ), (int) $stats['total'] ); ?></li>
+									<?php
+									$amin = (float) ( $stats['area_min'] ?? 0 );
+									$amax = (float) ( $stats['area_max'] ?? 0 );
+									if ( $amin > 0 && $amax > 0 ) :
+										$area_label = ( abs( $amax - $amin ) < 0.5 )
+											? number_format_i18n( $amin, 0 ) . ' m²'
+											: number_format_i18n( $amin, 0 ) . ' – ' . number_format_i18n( $amax, 0 ) . ' m²';
+									?>
+										<li>📐 <?php echo esc_html( $area_label ); ?></li>
+									<?php endif; ?>
 									<?php if ( $stats['available'] ) : ?>
 										<li>✅ <?php printf( esc_html__( '%d verfügbar', 'immo-manager' ), (int) $stats['available'] ); ?></li>
 									<?php endif; ?>

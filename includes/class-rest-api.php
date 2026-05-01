@@ -895,8 +895,9 @@ class RestApi {
 			}
 		}
 
-		$counts    = Units::count_by_status( $id );
-		$state_key = (string) $m( '_immo_region_state', '' );
+		$counts     = Units::count_by_status( $id );
+		$area_range = Units::area_range( $id );
+		$state_key  = (string) $m( '_immo_region_state', '' );
 
 		$result = array(
 			'id'             => $id,
@@ -924,7 +925,14 @@ class RestApi {
 				'video_file_url'     => (int) $m( '_immo_video_id', 0 ) > 0 ? wp_get_attachment_url( (int) $m( '_immo_video_id', 0 ) ) : '',
 				'documents'          => $documents,
 			),
-			'unit_stats'  => array_merge( $counts, array( 'total' => array_sum( $counts ) ) ),
+			'unit_stats'  => array_merge(
+				$counts,
+				array(
+					'total'    => array_sum( $counts ),
+					'area_min' => $area_range['min'],
+					'area_max' => $area_range['max'],
+				)
+			),
 			'created_at'  => get_the_date( 'c', $post ),
 			'modified_at' => get_the_modified_date( 'c', $post ),
 		);
