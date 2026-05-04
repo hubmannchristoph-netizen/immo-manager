@@ -66,7 +66,8 @@ class Collector {
 			  WHERE u.status = 'available'
 			    AND u.{$col} = 1
 			    AND p.post_type = %s
-			    AND p.post_status = 'publish'",
+			    AND p.post_status = 'publish'
+		   ORDER BY p.ID ASC, LENGTH(u.unit_number) ASC, u.unit_number ASC, u.id ASC",
 			PostTypes::POST_TYPE_PROJECT
 		);
 

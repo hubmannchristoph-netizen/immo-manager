@@ -20,7 +20,7 @@ class Database {
 	/**
 	 * Aktuelle DB-Schema-Version.
 	 */
-	public const DB_VERSION = '1.5.0';
+	public const DB_VERSION = '1.6.0';
 
 	/**
 	 * Option-Key für die gespeicherte DB-Version.
@@ -170,6 +170,7 @@ class Database {
 			replied_at DATETIME NULL DEFAULT NULL,
 			ip_address VARCHAR(45) NOT NULL DEFAULT '',
 			user_agent VARCHAR(255) NOT NULL DEFAULT '',
+			source_url VARCHAR(255) NOT NULL DEFAULT '',
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),
 			KEY property_id (property_id),

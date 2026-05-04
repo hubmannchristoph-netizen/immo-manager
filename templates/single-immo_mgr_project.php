@@ -155,21 +155,6 @@ $hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoM
 				<?php endif; ?>
 			</div>
 
-			<!-- Projekt-Status Kacheln -->
-			<?php if ( ! empty( $unit_stats['total'] ) ) : ?>
-				<div class="immo-proj-stats">
-					<?php foreach ( array( 'available' => '✅', 'reserved' => '⏳', 'sold' => '🔴', 'rented' => '📋', 'total' => '🏘️' ) as $key => $icon ) :
-						if ( empty( $unit_stats[ $key ] ) ) { continue; }
-						?>
-						<div class="immo-proj-stat">
-							<span><?php echo esc_html( $icon ); ?></span>
-							<strong><?php echo (int) $unit_stats[ $key ]; ?></strong>
-							<small><?php echo esc_html( $unit_status_labels[ $key ] ?? __( 'Gesamt', 'immo-manager' ) ); ?></small>
-						</div>
-					<?php endforeach; ?>
-				</div>
-			<?php endif; ?>
-
 			<!-- Fertigstellung -->
 			<?php if ( $meta['project_completion'] || $meta['project_start_date'] ) : ?>
 				<ul class="immo-keyfacts">
@@ -236,7 +221,15 @@ $hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoM
 			<?php endif; ?>
 
 			<!-- Wohneinheiten-Tabelle -->
-			<?php if ( ! empty( $units ) ) : ?>
+			<?php if ( ! empty( $units ) ) :
+				// Filter-Pills nur für tatsächlich vorhandene Status anzeigen.
+				$pill_statuses = array();
+				foreach ( array( 'available', 'reserved', 'sold', 'rented' ) as $st_key ) {
+					if ( ! empty( $unit_stats[ $st_key ] ) ) {
+						$pill_statuses[ $st_key ] = (int) $unit_stats[ $st_key ];
+					}
+				}
+				?>
 				<div class="immo-accordion">
 					<button class="immo-accordion-header" aria-expanded="true">
 						<?php esc_html_e( 'Wohneinheiten', 'immo-manager' ); ?>
@@ -244,7 +237,34 @@ $hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoM
 						<span class="immo-accordion-icon" aria-hidden="true"></span>
 					</button>
 					<div class="immo-accordion-body">
-						<div class="immo-units-grid">
+						<div class="immo-units-filter" role="tablist" aria-label="<?php esc_attr_e( 'Wohneinheiten filtern', 'immo-manager' ); ?>">
+							<button type="button" class="immo-units-filter-pill is-active" data-filter="all" role="tab" aria-selected="true">
+								<?php esc_html_e( 'Alle', 'immo-manager' ); ?>
+								<span class="immo-units-filter-count"><?php echo (int) count( $units ); ?></span>
+							</button>
+							<?php foreach ( $pill_statuses as $st_key => $st_count ) :
+								$sc_pill = $unit_status_class[ $st_key ] ?? '';
+								?>
+								<button type="button" class="immo-units-filter-pill <?php echo esc_attr( $sc_pill ); ?>" data-filter="<?php echo esc_attr( $st_key ); ?>" role="tab" aria-selected="false">
+									<?php echo esc_html( $unit_status_labels[ $st_key ] ?? $st_key ); ?>
+									<span class="immo-units-filter-count"><?php echo (int) $st_count; ?></span>
+								</button>
+							<?php endforeach; ?>
+						</div>
+						<div class="immo-units-table-wrap">
+						<table class="immo-units-table">
+							<thead>
+								<tr>
+									<th scope="col"><?php esc_html_e( 'Nr.', 'immo-manager' ); ?></th>
+									<th scope="col"><?php esc_html_e( 'Etage', 'immo-manager' ); ?></th>
+									<th scope="col"><?php esc_html_e( 'Fläche', 'immo-manager' ); ?></th>
+									<th scope="col"><?php esc_html_e( 'Zi.', 'immo-manager' ); ?></th>
+									<th scope="col"><?php esc_html_e( 'Preis', 'immo-manager' ); ?></th>
+									<th scope="col"><?php esc_html_e( 'Status', 'immo-manager' ); ?></th>
+									<th scope="col" class="immo-units-table-action"><span class="screen-reader-text"><?php esc_html_e( 'Aktion', 'immo-manager' ); ?></span></th>
+								</tr>
+							</thead>
+							<tbody>
 							<?php foreach ( $units as $unit ) :
 								$sc = $unit_status_class[ $unit['status'] ] ?? '';
 								$sl = $unit_status_labels[ $unit['status'] ] ?? $unit['status'];
@@ -252,38 +272,38 @@ $hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoM
 								if ( (float) $unit['price'] > 0 ) { $price_display = $unit['price_formatted']; }
 								elseif ( (float) $unit['rent'] > 0 ) { $price_display = $unit['rent_formatted'] . '/Mo'; }
 								?>
-								<div class="immo-unit-card">
-									<?php if ( ! empty( $unit['floor_plan'] ) ) : ?>
-										<div class="immo-unit-card-img">
-											<button type="button" class="immo-unit-image-trigger" data-full="<?php echo esc_url( $unit['floor_plan']['url'] ); ?>" data-alt="<?php printf( esc_attr__( 'Grundriss %s', 'immo-manager' ), $unit['unit_number'] ); ?>" aria-label="<?php esc_attr_e( 'Wohneinheit-Bild vergrößern', 'immo-manager' ); ?>">
-										<img src="<?php echo esc_url( $unit['floor_plan']['url_thumbnail'] ); ?>"
-												alt="<?php printf( esc_attr__( 'Grundriss %s', 'immo-manager' ), $unit['unit_number'] ); ?>"
-												loading="lazy">
-											</button>
-										</div>
-									<?php endif; ?>
-									<div class="immo-unit-card-body">
-										<div class="immo-unit-card-header">
-											<strong class="immo-unit-number"><?php echo esc_html( $unit['unit_number'] ); ?></strong>
-											<span class="immo-unit-status-pill <?php echo esc_attr( $sc ); ?>"><?php echo esc_html( $sl ); ?></span>
-										</div>
-										<ul class="immo-unit-facts">
-											<?php if ( $unit['floor'] ) : ?><li>🏢 <?php printf( esc_html__( '%d. Etage', 'immo-manager' ), (int) $unit['floor'] ); ?></li><?php endif; ?>
-											<?php if ( $unit['area'] ) : ?><li>📐 <?php echo esc_html( number_format_i18n( (float) $unit['area'], 0 ) . ' m²' ); ?></li><?php endif; ?>
-											<?php if ( $unit['rooms'] ) : ?><li>🛏️ <?php echo esc_html( $unit['rooms'] ); ?> Zi.</li><?php endif; ?>
-										</ul>
-										<?php if ( $price_display ) : ?>
-											<p class="immo-unit-price"><?php echo esc_html( $price_display ); ?></p>
-										<?php endif; ?>
+								<?php
+								$row_classes = array( 'immo-units-row' );
+								if ( ! empty( $unit['property'] ) || ! empty( $unit['floor_plan'] ) ) {
+									$row_classes[] = 'is-clickable';
+								}
+								$floor_val     = isset( $unit['floor'] ) ? (int) $unit['floor'] : 0;
+								$floor_display = 0 === $floor_val ? __( 'EG', 'immo-manager' ) : $floor_val . '.';
+								?>
+								<tr class="<?php echo esc_attr( implode( ' ', $row_classes ) ); ?>" data-status="<?php echo esc_attr( $unit['status'] ); ?>">
+									<td class="immo-units-cell-number"><strong><?php echo esc_html( $unit['unit_number'] ); ?></strong></td>
+									<td><?php echo esc_html( $floor_display ); ?></td>
+									<td><?php echo $unit['area'] ? esc_html( number_format_i18n( (float) $unit['area'], 0 ) . ' m²' ) : '—'; ?></td>
+									<td><?php echo $unit['rooms'] ? esc_html( (int) $unit['rooms'] ) : '—'; ?></td>
+									<td class="immo-units-cell-price"><?php echo $price_display ? esc_html( $price_display ) : '—'; ?></td>
+									<td><span class="immo-unit-status-pill <?php echo esc_attr( $sc ); ?>"><?php echo esc_html( $sl ); ?></span></td>
+									<td class="immo-units-table-action">
 										<?php if ( ! empty( $unit['property'] ) ) : ?>
-											<button type="button" class="immo-btn immo-btn-secondary immo-quick-info-btn" style="width: 100%; margin-top: 15px; padding: 0.4rem; font-size: 0.85em; display: flex; justify-content: center; gap: 6px; align-items: center;" data-property="<?php echo esc_attr( wp_json_encode( $unit['property'] ) ); ?>">
-												🔍 <?php esc_html_e( 'Immobilien-Details', 'immo-manager' ); ?>
+											<button type="button" class="immo-units-action-btn immo-quick-info-btn" data-property="<?php echo esc_attr( wp_json_encode( $unit['property'] ) ); ?>" aria-label="<?php esc_attr_e( 'Quick-Info anzeigen', 'immo-manager' ); ?>" title="<?php esc_attr_e( 'Quick-Info anzeigen', 'immo-manager' ); ?>">
+												🔍
+											</button>
+										<?php elseif ( ! empty( $unit['floor_plan'] ) ) : ?>
+											<button type="button" class="immo-units-action-btn immo-unit-image-trigger" data-full="<?php echo esc_url( $unit['floor_plan']['url'] ); ?>" data-alt="<?php printf( esc_attr__( 'Grundriss %s', 'immo-manager' ), $unit['unit_number'] ); ?>" aria-label="<?php esc_attr_e( 'Grundriss ansehen', 'immo-manager' ); ?>" title="<?php esc_attr_e( 'Grundriss ansehen', 'immo-manager' ); ?>">
+												📐
 											</button>
 										<?php endif; ?>
-									</div>
-								</div>
+									</td>
+								</tr>
 							<?php endforeach; ?>
+							</tbody>
+						</table>
 						</div>
+						<p class="immo-units-empty" hidden><?php esc_html_e( 'Keine Wohneinheiten in dieser Auswahl.', 'immo-manager' ); ?></p>
 					</div>
 				</div>
 			<?php endif; ?>
@@ -486,8 +506,9 @@ $hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoM
 	<div class="immo-inquiry-lightbox-backdrop" id="immo-quick-info-backdrop"></div>
 	<div class="immo-inquiry-lightbox-panel" style="max-width: 450px; text-align: center; padding: 2rem;">
 		<button class="immo-inquiry-lightbox-close" id="immo-quick-info-close" aria-label="<?php esc_attr_e( 'Schließen', 'immo-manager' ); ?>">✕</button>
-		<h2 class="immo-inquiry-lightbox-title" style="margin-bottom: 1.5rem; font-size: 1.4em;"><?php esc_html_e( 'Quick-Info zur Immobilie', 'immo-manager' ); ?></h2>
-		
+		<h2 class="immo-inquiry-lightbox-title" style="margin-bottom: 0.5rem; font-size: 1.4em;"><?php esc_html_e( 'Quick-Info zur Immobilie', 'immo-manager' ); ?></h2>
+		<p id="immo-qi-intro" style="margin: 0 0 1.25rem; color: var(--immo-text-muted); font-size: 0.9em; line-height: 1.5; text-align: left;"><?php esc_html_e( 'Die wichtigsten Eckdaten dieser Wohneinheit auf einen Blick.', 'immo-manager' ); ?></p>
+
 		<img id="immo-qi-img" src="" alt="" style="width: 100%; height: 220px; object-fit: cover; border-radius: 8px; margin-bottom: 1.25rem; display: none; box-shadow: var(--immo-shadow-sm);">
 		
 		<h3 id="immo-qi-title" style="font-size: 1.2em; margin-bottom: 1rem; color: #111827; line-height: 1.4;"></h3>
@@ -503,9 +524,11 @@ $hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoM
 		
 		<strong id="immo-qi-price" style="color: var(--immo-accent); font-size: 1.4em; display: block; margin-bottom: 1.5rem;"></strong>
 
-		<a id="immo-qi-link" href="#" class="immo-btn immo-btn-primary" style="width: 100%; box-sizing: border-box; padding: 0.6rem 1rem; font-size: 0.95em;">
-			<?php esc_html_e( 'Zum vollständigen Exposé', 'immo-manager' ); ?> →
-		</a>
+		<?php if ( (int) \ImmoManager\Settings::get( 'quick_info_show_details_button', 1 ) ) : ?>
+			<a id="immo-qi-link" href="#" class="immo-btn immo-btn-primary" style="width: 100%; box-sizing: border-box; padding: 0.6rem 1rem; font-size: 0.95em;">
+				<?php esc_html_e( 'Zum vollständigen Exposé', 'immo-manager' ); ?> →
+			</a>
+		<?php endif; ?>
 	</div>
 </div>
 
@@ -520,9 +543,15 @@ document.addEventListener('DOMContentLoaded', function() {
 			e.preventDefault();
 			const data = JSON.parse(this.getAttribute('data-property'));
 			document.getElementById('immo-qi-title').textContent = data.title;
-			document.getElementById('immo-qi-link').href = data.permalink;
+			const qiLink = document.getElementById('immo-qi-link');
+			if (qiLink) { qiLink.href = data.permalink; }
 			document.getElementById('immo-qi-img').src = data.image || '';
 			document.getElementById('immo-qi-img').style.display = data.image ? 'block' : 'none';
+			const qiIntro = document.getElementById('immo-qi-intro');
+			if (qiIntro) {
+				const excerpt = (data.excerpt || '').trim();
+				qiIntro.textContent = excerpt || <?php echo wp_json_encode( __( 'Die wichtigsten Eckdaten dieser Wohneinheit auf einen Blick.', 'immo-manager' ) ); ?>;
+			}
 
 			document.getElementById('immo-qi-type').innerHTML = data.type ? '🏠 ' + data.type : '';
 			document.getElementById('immo-qi-area').innerHTML = data.area > 0 ? '📐 ' + data.area + ' m²' : '';
@@ -547,6 +576,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	qiCloseBtns.forEach(btn => {
 		btn.addEventListener('click', e => { e.preventDefault(); qiLightbox.hidden = true; });
+	});
+
+	// === Wohneinheiten-Filter (Status-Pills oberhalb der Tabelle) ===
+	const filterPills = document.querySelectorAll('.immo-units-filter-pill');
+	const unitRows    = document.querySelectorAll('.immo-units-row');
+	const emptyMsg    = document.querySelector('.immo-units-empty');
+	if (filterPills.length && unitRows.length) {
+		filterPills.forEach(pill => {
+			pill.addEventListener('click', function() {
+				const filter = this.getAttribute('data-filter');
+				filterPills.forEach(p => {
+					p.classList.toggle('is-active', p === this);
+					p.setAttribute('aria-selected', p === this ? 'true' : 'false');
+				});
+				let visible = 0;
+				unitRows.forEach(row => {
+					const match = filter === 'all' || row.getAttribute('data-status') === filter;
+					row.hidden = !match;
+					if (match) visible++;
+				});
+				if (emptyMsg) emptyMsg.hidden = visible !== 0;
+			});
+		});
+	}
+
+	// === Ganze Zeile klickbar (delegiert auf Action-Button) ===
+	unitRows.forEach(row => {
+		if (!row.classList.contains('is-clickable')) return;
+		row.addEventListener('click', function(e) {
+			// Wenn direkt auf den Action-Button geklickt wurde, nichts tun (der hat eigenen Handler).
+			if (e.target.closest('.immo-units-action-btn')) return;
+			const trigger = row.querySelector('.immo-units-action-btn');
+			if (trigger) trigger.click();
+		});
 	});
 });
 </script>

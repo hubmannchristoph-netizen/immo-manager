@@ -216,6 +216,10 @@ class Inquiries {
 		if ( isset( $data['user_agent'] ) ) {
 			$out['user_agent'] = substr( sanitize_text_field( (string) $data['user_agent'] ), 0, 255 );
 		}
+		if ( isset( $data['source_url'] ) ) {
+			$src = esc_url_raw( (string) $data['source_url'] );
+			$out['source_url'] = substr( $src, 0, 255 );
+		}
 
 		return $out;
 	}
@@ -241,6 +245,7 @@ class Inquiries {
 			'replied_at'       => '%s',
 			'ip_address'       => '%s',
 			'user_agent'       => '%s',
+			'source_url'       => '%s',
 			'created_at'       => '%s',
 		);
 		$formats = array();

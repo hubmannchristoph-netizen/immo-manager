@@ -112,6 +112,7 @@ class Settings {
 			'enable_filter'       => 1,
 			'enable_projects'     => 1,
 			'enable_inquiries'    => 1,
+			'quick_info_show_details_button' => 1,
 			// Kontakt.
 			'contact_email'       => '',
 			'sender_name'         => '',
@@ -755,10 +756,11 @@ class Settings {
 		);
 
 		$toggles = array(
-			'enable_wizard'    => __( 'Wizard für Immobilien-Eingabe aktivieren', 'immo-manager' ),
-			'enable_filter'    => __( 'Filter-Sidebar im Frontend aktivieren', 'immo-manager' ),
-			'enable_projects'  => __( 'Bauprojekte mit Wohneinheiten aktivieren', 'immo-manager' ),
-			'enable_inquiries' => __( 'Anfragen-System aktivieren', 'immo-manager' ),
+			'enable_wizard'                  => __( 'Wizard für Immobilien-Eingabe aktivieren', 'immo-manager' ),
+			'enable_filter'                  => __( 'Filter-Sidebar im Frontend aktivieren', 'immo-manager' ),
+			'enable_projects'                => __( 'Bauprojekte mit Wohneinheiten aktivieren', 'immo-manager' ),
+			'enable_inquiries'               => __( 'Anfragen-System aktivieren', 'immo-manager' ),
+			'quick_info_show_details_button' => __( 'Details-Button in Quick-Info-Lightbox anzeigen', 'immo-manager' ),
 		);
 
 		foreach ( $toggles as $key => $label ) {
@@ -1637,7 +1639,7 @@ class Settings {
 			: $defaults['default_hero_type'];
 
 		// Feature-Toggles (Checkboxes).
-		foreach ( array( 'enable_wizard', 'enable_filter', 'enable_projects', 'enable_inquiries', 'admin_notifications', 'map_enabled' ) as $toggle ) {
+		foreach ( array( 'enable_wizard', 'enable_filter', 'enable_projects', 'enable_inquiries', 'quick_info_show_details_button', 'admin_notifications', 'map_enabled' ) as $toggle ) {
 			$sanitized[ $toggle ] = ! empty( $input[ $toggle ] ) ? 1 : 0;
 		}
 
@@ -1696,9 +1698,12 @@ class Settings {
 		$sanitized['api_rate_limit']        = max( 0, min( 600, (int) ( $input['api_rate_limit'] ?? $defaults['api_rate_limit'] ) ) );
 
 		// api_key_hash und api_key_preview werden via AJAX-Handler gesetzt,
-		// nicht über das normale Settings-Formular.
-		$sanitized['api_key_hash']    = self::get( 'api_key_hash', '' );
-		$sanitized['api_key_preview'] = self::get( 'api_key_preview', '' );
+		// nicht über das normale Settings-Formular. Beim AJAX-Pfad reicht
+		// update_option() die neuen Werte als $input durch — diese müssen
+		// übernommen werden, sonst überschreibt der Sanitize-Callback sie
+		// sofort wieder mit dem alten DB-Wert.
+		$sanitized['api_key_hash']    = isset( $input['api_key_hash'] )    ? (string) $input['api_key_hash']    : self::get( 'api_key_hash', '' );
+		$sanitized['api_key_preview'] = isset( $input['api_key_preview'] ) ? (string) $input['api_key_preview'] : self::get( 'api_key_preview', '' );
 
 		// === RECHNER ===
 		// Toggles (0/1).

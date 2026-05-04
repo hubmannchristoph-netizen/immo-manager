@@ -813,6 +813,115 @@
 }
 
 /* ============================================================
+   UNITS TABLE (kompakte Tabelle mit Status-Filter)
+   ============================================================ */
+.immo-units-filter {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+.immo-units-filter-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 14px;
+	border: 1px solid var(--immo-border);
+	border-radius: 999px;
+	background: var(--immo-bg);
+	color: var(--immo-text);
+	font-size: .85rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background var(--immo-transition), border-color var(--immo-transition), color var(--immo-transition);
+}
+.immo-units-filter-pill:hover { border-color: var(--immo-accent); }
+.immo-units-filter-pill.is-active {
+	background: var(--immo-accent);
+	border-color: var(--immo-accent);
+	color: #fff;
+}
+.immo-units-filter-pill.is-active .immo-units-filter-count { background: rgba(255,255,255,.25); color: #fff; }
+.immo-units-filter-count {
+	display: inline-block;
+	min-width: 20px;
+	padding: 0 6px;
+	border-radius: 999px;
+	background: rgba(0,0,0,.06);
+	color: var(--immo-text-muted);
+	font-size: .7rem;
+	font-weight: 700;
+	text-align: center;
+	line-height: 1.5;
+}
+.immo-units-table-wrap {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	border: 1px solid var(--immo-border);
+	border-radius: var(--immo-radius-sm);
+}
+.immo-units-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: .9rem;
+	background: var(--immo-bg);
+	color: var(--immo-text);
+}
+.immo-units-table thead th {
+	padding: 10px 12px;
+	text-align: left;
+	font-weight: 700;
+	font-size: .75rem;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	color: var(--immo-text-muted);
+	background: var(--immo-bg);
+	border-bottom: 1px solid var(--immo-border);
+	white-space: nowrap;
+}
+.immo-units-table tbody td {
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--immo-border);
+	white-space: nowrap;
+	vertical-align: middle;
+}
+.immo-units-table tbody tr:last-child td { border-bottom: none; }
+.immo-units-table tbody tr:hover { background: rgba(0,0,0,.04); }
+.immo-units-table tbody tr.is-clickable { cursor: pointer; }
+.immo-units-table tbody tr.is-clickable:hover { background: rgba(var(--immo-accent-rgb, 0,0,0), .07); }
+.immo-units-table tbody tr.is-clickable:hover .immo-units-action-btn { background: var(--immo-accent); border-color: var(--immo-accent); color: #fff; }
+.immo-units-cell-number strong { font-weight: 700; }
+.immo-units-cell-price { color: var(--immo-accent); font-weight: 700; }
+.immo-units-table-action { width: 1%; text-align: right; }
+.immo-units-action-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border: 1px solid var(--immo-border);
+	border-radius: 6px;
+	background: var(--immo-bg);
+	color: var(--immo-text);
+	font-size: 1rem;
+	line-height: 1;
+	cursor: pointer;
+	transition: background var(--immo-transition), border-color var(--immo-transition);
+}
+.immo-units-action-btn:hover { background: var(--immo-accent); border-color: var(--immo-accent); color: #fff; }
+.immo-units-empty {
+	margin: 12px 0 0;
+	padding: 16px;
+	text-align: center;
+	color: var(--immo-text-muted);
+	font-size: .9rem;
+	background: var(--immo-bg);
+	border: 1px dashed var(--immo-border);
+	border-radius: var(--immo-radius-sm);
+}
+
+/* ============================================================
    PROJEKT-STATS (Wohneinheiten-Übersicht im Hero)
    ============================================================ */
 .immo-proj-stats {

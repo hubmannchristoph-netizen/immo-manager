@@ -381,6 +381,7 @@ class AdminPages {
 			__( 'Telefon', 'immo-manager' ),
 			__( 'Immobilie', 'immo-manager' ),
 			__( 'Nachricht', 'immo-manager' ),
+			__( 'Quelle', 'immo-manager' ),
 			__( 'Datum', 'immo-manager' ),
 			__( 'Status', 'immo-manager' ),
 			__( 'Aktionen', 'immo-manager' ),
@@ -390,17 +391,26 @@ class AdminPages {
 		echo '</tr></thead><tbody>';
 
 		if ( empty( $inquiries ) ) {
-			echo '<tr><td colspan="8">' . esc_html__( 'Keine Anfragen gefunden.', 'immo-manager' ) . '</td></tr>';
+			echo '<tr><td colspan="9">' . esc_html__( 'Keine Anfragen gefunden.', 'immo-manager' ) . '</td></tr>';
 		} else {
 			foreach ( $inquiries as $inq ) {
 				$property_title = get_the_title( (int) $inq['property_id'] );
 				$property_link  = get_edit_post_link( (int) $inq['property_id'] );
-				echo '<tr>';
+				$source_url     = isset( $inq['source_url'] ) ? (string) $inq['source_url'] : '';
+				$source_host    = $source_url ? wp_parse_url( $source_url, PHP_URL_HOST ) : '';
+				echo '<tr' . ( $source_host ? ' class="immo-inquiry-external"' : '' ) . '>';
 				echo '<td><strong>' . esc_html( $inq['inquirer_name'] ) . '</strong></td>';
 				echo '<td><a href="mailto:' . esc_attr( $inq['inquirer_email'] ) . '">' . esc_html( $inq['inquirer_email'] ) . '</a></td>';
 				echo '<td>' . esc_html( $inq['inquirer_phone'] ?: '–' ) . '</td>';
 				echo '<td><a href="' . esc_url( (string) $property_link ) . '">' . esc_html( $property_title ?: '–' ) . '</a></td>';
 				echo '<td><span title="' . esc_attr( (string) $inq['inquirer_message'] ) . '">' . esc_html( wp_trim_words( (string) $inq['inquirer_message'], 10 ) ) . '</span></td>';
+				echo '<td>';
+				if ( $source_host ) {
+					echo '<a href="' . esc_url( $source_url ) . '" target="_blank" rel="noopener" title="' . esc_attr( $source_url ) . '" style="display:inline-block;background:#fef3c7;color:#92400e;padding:2px 10px;border-radius:999px;font-size:12px;text-decoration:none;font-weight:600;">&#x2197; ' . esc_html( $source_host ) . '</a>';
+				} else {
+					echo '<span style="color:#9ca3af;font-size:12px;">' . esc_html__( 'eigene Seite', 'immo-manager' ) . '</span>';
+				}
+				echo '</td>';
 				echo '<td>' . esc_html( date_i18n( get_option( 'date_format' ), strtotime( (string) $inq['created_at'] ) ) ) . '</td>';
 				echo '<td>' . esc_html( $status_labels[ $inq['status'] ] ?? $inq['status'] ) . '</td>';
 				echo '<td>';

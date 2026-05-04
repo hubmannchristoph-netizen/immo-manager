@@ -63,6 +63,12 @@ class RestApi {
 			'permission_callback' => '__return_true',
 		) );
 
+		register_rest_route( self::NAMESPACE, '/properties/by-slug/(?P<slug>[a-z0-9-]+)', array(
+			'methods'             => \WP_REST_Server::READABLE,
+			'callback'            => array( $this, 'get_property_by_slug' ),
+			'permission_callback' => '__return_true',
+		) );
+
 		// Bauprojekte.
 		register_rest_route( self::NAMESPACE, '/projects', array(
 			'methods'             => \WP_REST_Server::READABLE,
@@ -73,6 +79,12 @@ class RestApi {
 		register_rest_route( self::NAMESPACE, '/projects/(?P<id>\d+)', array(
 			'methods'             => \WP_REST_Server::READABLE,
 			'callback'            => array( $this, 'get_project' ),
+			'permission_callback' => '__return_true',
+		) );
+
+		register_rest_route( self::NAMESPACE, '/projects/by-slug/(?P<slug>[a-z0-9-]+)', array(
+			'methods'             => \WP_REST_Server::READABLE,
+			'callback'            => array( $this, 'get_project_by_slug' ),
 			'permission_callback' => '__return_true',
 		) );
 
@@ -167,6 +179,30 @@ class RestApi {
 			return new \WP_Error( 'not_found', __( 'Immobilie nicht gefunden.', 'immo-manager' ), array( 'status' => 404 ) );
 		}
 		return rest_ensure_response( $this->format_property( $post, true ) );
+	}
+
+	/**
+	 * GET /properties/by-slug/{slug}
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function get_property_by_slug( \WP_REST_Request $request ) {
+		$slug = sanitize_title( (string) $request->get_param( 'slug' ) );
+		if ( '' === $slug ) {
+			return new \WP_Error( 'not_found', __( 'Immobilie nicht gefunden.', 'immo-manager' ), array( 'status' => 404 ) );
+		}
+		$posts = get_posts( array(
+			'name'           => $slug,
+			'post_type'      => PostTypes::POST_TYPE_PROPERTY,
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+		) );
+		if ( empty( $posts ) ) {
+			return new \WP_Error( 'not_found', __( 'Immobilie nicht gefunden.', 'immo-manager' ), array( 'status' => 404 ) );
+		}
+		return rest_ensure_response( $this->format_property( $posts[0], true ) );
 	}
 
 	/**
@@ -315,6 +351,30 @@ class RestApi {
 	}
 
 	/**
+	 * GET /projects/by-slug/{slug}
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function get_project_by_slug( \WP_REST_Request $request ) {
+		$slug = sanitize_title( (string) $request->get_param( 'slug' ) );
+		if ( '' === $slug ) {
+			return new \WP_Error( 'not_found', __( 'Bauprojekt nicht gefunden.', 'immo-manager' ), array( 'status' => 404 ) );
+		}
+		$posts = get_posts( array(
+			'name'           => $slug,
+			'post_type'      => PostTypes::POST_TYPE_PROJECT,
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+		) );
+		if ( empty( $posts ) ) {
+			return new \WP_Error( 'not_found', __( 'Bauprojekt nicht gefunden.', 'immo-manager' ), array( 'status' => 404 ) );
+		}
+		return rest_ensure_response( $this->format_project( $posts[0], true ) );
+	}
+
+	/**
 	 * GET /projects/{id}/units
 	 *
 	 * @param \WP_REST_Request $request Request.
@@ -324,7 +384,7 @@ class RestApi {
 	public function get_project_units( \WP_REST_Request $request ): \WP_REST_Response {
 		$id     = (int) $request->get_param( 'id' );
 		$status = $request->get_param( 'status' );
-		$orderby = sanitize_key( (string) ( $request->get_param( 'orderby' ) ?? 'floor' ) );
+		$orderby = sanitize_key( (string) ( $request->get_param( 'orderby' ) ?? 'unit_number' ) );
 
 		$units    = Units::get_by_project( $id, $orderby );
 		$filtered = $units;
@@ -474,6 +534,21 @@ class RestApi {
 			) );
 		}
 
+		// Optionaler Override-Empfänger (vom Client-Plugin gesteuert).
+		$notify_email = '';
+		if ( ! empty( $body['notify_email'] ) && is_email( $body['notify_email'] ) ) {
+			$notify_email = sanitize_email( (string) $body['notify_email'] );
+		}
+
+		// Wenn ein verbundener Client-Site die Mails selbst versendet.
+		$skip_notifications = ! empty( $body['skip_notifications'] );
+
+		// Quelle (Client-Site, falls die Anfrage von einem ImmoClient kommt).
+		$source_url = '';
+		if ( ! empty( $body['source_url'] ) ) {
+			$source_url = esc_url_raw( (string) $body['source_url'] );
+		}
+
 		// Speichern.
 		$data = array(
 			'property_id'      => absint( $body['property_id'] ),
@@ -485,6 +560,7 @@ class RestApi {
 			'status'           => 'new',
 			'ip_address'       => $this->get_client_ip(),
 			'user_agent'       => isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 255 ) : '',
+			'source_url'       => $source_url,
 		);
 
 		$id = Inquiries::create( $data );
@@ -492,11 +568,11 @@ class RestApi {
 			return new \WP_Error( 'db_error', __( 'Anfrage konnte nicht gespeichert werden.', 'immo-manager' ), array( 'status' => 500 ) );
 		}
 
-		// Admin-Benachrichtigung.
-		$this->notify_admin( $id, $data );
-		
-		// Auto-Responder an den Interessenten.
-		$this->notify_inquirer( $id, $data );
+		// Wenn der Client die Mails selbst versendet, hier nicht doppelt benachrichtigen.
+		if ( ! $skip_notifications ) {
+			$this->notify_admin( $id, $data, $notify_email );
+			$this->notify_inquirer( $id, $data );
+		}
 
 		$response = rest_ensure_response( array(
 			'success' => true,
@@ -752,11 +828,16 @@ class RestApi {
 		$raw_features    = $m( '_immo_features', array() );
 		$features        = is_array( $raw_features ) ? $raw_features : array();
 		$features_detail = array();
+		$all_features    = Features::get_all();
+		$cat_labels      = Features::get_categories();
 		foreach ( $features as $fkey ) {
+			$cat_key = isset( $all_features[ $fkey ]['category'] ) ? (string) $all_features[ $fkey ]['category'] : '';
 			$features_detail[] = array(
-				'key'   => $fkey,
-				'label' => Features::get_label( $fkey ),
-				'icon'  => Features::get_icon( $fkey ),
+				'key'            => $fkey,
+				'label'          => Features::get_label( $fkey ),
+				'icon'           => Features::get_icon( $fkey ),
+				'category'       => $cat_key,
+				'category_label' => $cat_key && isset( $cat_labels[ $cat_key ] ) ? (string) $cat_labels[ $cat_key ] : '',
 			);
 		}
 
@@ -986,6 +1067,7 @@ class RestApi {
 					'title'     => get_the_title( $prop_post ),
 					'permalink' => get_permalink( $prop_post ),
 					'image'     => $img_id ? wp_get_attachment_image_url( $img_id, 'large' ) : '',
+					'excerpt'   => wp_trim_words( get_the_excerpt( $prop_post ), 30 ),
 					'price'     => $prop_price > 0 ? $this->format_price( $prop_price ) : '',
 					'rent'      => $prop_rent > 0 ? $this->format_price( $prop_rent ) : '',
 					'area'      => (float) ( $prop_meta['_immo_area'][0] ?? 0 ),
@@ -1144,13 +1226,16 @@ class RestApi {
 	 */
 	private function inquiry_args(): array {
 		return array(
-			'property_id'      => array( 'type' => 'integer', 'required' => true ),
-			'unit_id'          => array( 'type' => array( 'integer', 'null' ) ),
-			'inquirer_name'    => array( 'type' => 'string',  'required' => true ),
-			'inquirer_email'   => array( 'type' => 'string',  'required' => true, 'format' => 'email' ),
-			'inquirer_phone'   => array( 'type' => 'string' ),
-			'inquirer_message' => array( 'type' => 'string' ),
-			'consent'          => array( 'type' => 'boolean', 'required' => true ),
+			'property_id'        => array( 'type' => 'integer', 'required' => true ),
+			'unit_id'            => array( 'type' => array( 'integer', 'null' ) ),
+			'inquirer_name'      => array( 'type' => 'string',  'required' => true ),
+			'inquirer_email'     => array( 'type' => 'string',  'required' => true, 'format' => 'email' ),
+			'inquirer_phone'     => array( 'type' => 'string' ),
+			'inquirer_message'   => array( 'type' => 'string' ),
+			'consent'            => array( 'type' => 'boolean', 'required' => true ),
+			'notify_email'       => array( 'type' => 'string', 'format' => 'email' ),
+			'skip_notifications' => array( 'type' => 'boolean' ),
+			'source_url'         => array( 'type' => 'string', 'format' => 'uri' ),
 		);
 	}
 
@@ -1180,7 +1265,7 @@ class RestApi {
 	 *
 	 * @return void
 	 */
-	private function notify_admin( int $inquiry_id, array $data ): void {
+	private function notify_admin( int $inquiry_id, array $data, string $notify_email = '' ): void {
 		if ( ! Settings::get( 'admin_notifications', 1 ) ) {
 			return;
 		}
@@ -1202,8 +1287,12 @@ class RestApi {
 			}
 		}
 
-		// Wenn Agenten-E-Mail existiert, diese nutzen. Sonst Fallback auf globale Settings.
-		$to = ( ! empty( $agent_email ) && is_email( $agent_email ) ) ? $agent_email : ( Settings::get( 'contact_email' ) ?: get_option( 'admin_email' ) );
+		// Empfänger-Priorität: Override aus Client > Makler-Mail > Settings > admin_email.
+		if ( ! empty( $notify_email ) && is_email( $notify_email ) ) {
+			$to = $notify_email;
+		} else {
+			$to = ( ! empty( $agent_email ) && is_email( $agent_email ) ) ? $agent_email : ( Settings::get( 'contact_email' ) ?: get_option( 'admin_email' ) );
+		}
 
 		$date = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), current_time( 'timestamp' ) );
 

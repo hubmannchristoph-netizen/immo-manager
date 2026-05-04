@@ -30,16 +30,23 @@ class Units {
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	public static function get_by_project( int $project_id, string $orderby = 'floor', string $order = 'ASC' ): array {
+	public static function get_by_project( int $project_id, string $orderby = 'unit_number', string $order = 'ASC' ): array {
 		global $wpdb;
 		$table    = Database::units_table();
 		$allowed  = array( 'id', 'unit_number', 'floor', 'price', 'area', 'rooms', 'status', 'created_at' );
-		$orderby  = in_array( $orderby, $allowed, true ) ? $orderby : 'floor';
+		$orderby  = in_array( $orderby, $allowed, true ) ? $orderby : 'unit_number';
 		$order    = strtoupper( $order ) === 'DESC' ? 'DESC' : 'ASC';
+
+		// Bei unit_number natürliche Sortierung erzwingen (1, 2, 10 statt 1, 10, 2).
+		if ( 'unit_number' === $orderby ) {
+			$order_clause = "LENGTH(unit_number) {$order}, unit_number {$order}";
+		} else {
+			$order_clause = "{$orderby} {$order}";
+		}
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$sql = $wpdb->prepare(
-			"SELECT * FROM {$table} WHERE project_id = %d ORDER BY {$orderby} {$order}, id ASC",
+			"SELECT * FROM {$table} WHERE project_id = %d ORDER BY {$order_clause}, id ASC",
 			$project_id
 		);
 
