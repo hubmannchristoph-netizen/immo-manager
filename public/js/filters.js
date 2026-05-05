@@ -222,12 +222,20 @@
 			return '<li title="' + escHtml(f.label) + '"><span aria-hidden="true">' + f.icon + '</span></li>';
 		}).join('');
 
+		// „Provisionsfrei"-Badge: nur bei Kauf-Modus (sale|both) UND Flag gesetzt.
+		var cfShow  = !!meta.commission_free && (mode === 'sale' || mode === 'both');
+		var cfLabel = meta.commission_free_label || 'Provisionsfrei';
+		var cfHtml  = cfShow
+			? '<span class="immo-cf-badge immo-cf-patch" aria-label="' + escHtml(cfLabel) + '" title="' + escHtml(cfLabel) + '">' + escHtml(cfLabel) + '</span>'
+			: '';
+
 		return '<article class="immo-property-card" role="listitem" data-property-id="' + p.id + '">'
 			+ '<a href="' + escHtml(p.permalink) + '" class="immo-card-link" tabindex="-1" aria-hidden="true">'
 			+ '<div class="immo-card-image">'
 			+ (img ? '<img src="' + escHtml(img.url_large || img.url_medium || img.url) + '" alt="' + escHtml(img.alt || p.title) + '" loading="lazy" width="800" height="600">' : '<div class="immo-card-no-image">🏠</div>')
 			+ '<span class="immo-status-badge status-' + escHtml(statusClass[status] || 'available') + '">' + escHtml(statusMap[status] || status) + '</span>'
 			+ (meta.property_type ? '<span class="immo-type-badge">' + escHtml(meta.property_type) + '</span>' : '')
+			+ cfHtml
 			+ '</div></a>'
 			+ '<div class="immo-card-body">'
 			+ '<h3 class="immo-card-title"><a href="' + escHtml(p.permalink) + '">' + escHtml(p.title) + '</a></h3>'

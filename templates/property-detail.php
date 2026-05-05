@@ -73,6 +73,7 @@ $key_facts = array_filter( array(
 								echo esc_html( $sl[ $status ] ?? '' ); ?>
 							</span>
 						<?php endif; ?>
+						<?php \ImmoManager\Templates::commission_free_badge( $meta, 'patch' ); ?>
 
 						<div class="immo-slider-main">
 							<div class="immo-slider-track">
@@ -107,6 +108,7 @@ $key_facts = array_filter( array(
 				<?php else : ?>
 					<!-- GRID-ANSICHT -->
 					<div class="immo-grid-gallery">
+						<?php \ImmoManager\Templates::commission_free_badge( $meta, 'patch' ); ?>
 						<?php foreach ( array_slice( $all_images, 0, 5 ) as $i => $img ) : ?>
 							<div class="immo-grid-item immo-grid-item-<?php echo $i; ?>">
 								<img src="<?php echo esc_url( $img['url_large'] ); ?>"
@@ -127,6 +129,7 @@ $key_facts = array_filter( array(
 		<?php else : ?>
 			<!-- Platzhalter für fehlende Bilder -->
 			<div class="immo-slider immo-slider-placeholder">
+				<?php \ImmoManager\Templates::commission_free_badge( $meta, 'patch' ); ?>
 				<div class="immo-slider-main">
 					<div class="immo-slider-track">
 						<div class="immo-slide active" aria-hidden="false">

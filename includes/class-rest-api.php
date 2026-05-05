@@ -924,6 +924,7 @@ class RestApi {
 				'deposit'               => (float) $m( '_immo_deposit', 0 ),
 				'commission'            => (string) $m( '_immo_commission', '' ),
 				'commission_free'       => '1' === (string) $m( '_immo_commission_free', '0' ),
+				'commission_free_label' => (string) Settings::get( 'commission_free_label', __( 'Provisionsfrei', 'immo-manager' ) ),
 				'available_from'        => (string) $m( '_immo_available_from', '' ),
 				'features'              => $features,
 				'features_detail'       => $features_detail,
@@ -1077,6 +1078,7 @@ class RestApi {
 					'built_year' => (int) ( $prop_meta['_immo_built_year'][0] ?? 0 ),
 					'energy_class'    => (string) ( $prop_meta['_immo_energy_class'][0] ?? '' ),
 					'commission_free' => '1' === (string) ( $prop_meta['_immo_commission_free'][0] ?? '0' ),
+					'commission_free_label' => (string) Settings::get( 'commission_free_label', __( 'Provisionsfrei', 'immo-manager' ) ),
 				);
 			}
 		}

@@ -59,6 +59,7 @@ if ( $display_area <= 0 ) {
 			<?php if ( $meta['property_type'] ) : ?>
 				<span class="immo-type-badge"><?php echo esc_html( $meta['property_type'] ); ?></span>
 			<?php endif; ?>
+			<?php \ImmoManager\Templates::commission_free_badge( $meta, 'patch' ); ?>
 		</div>
 	</a>
 

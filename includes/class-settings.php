@@ -155,6 +155,12 @@ class Settings {
 			'calc_default_term_years'      => 25,
 			'calc_default_extra_payment'   => 0,
 			'calc_show_amortization_table' => 1,
+
+			// === PROVISIONSFREI-BADGE ===
+			// Default ist absichtlich ohne __() — get_defaults() wird auch früh
+			// (vor init) aufgerufen, und WP 6.7+ warnt vor zu früher Übersetzung.
+			// Echte i18n passiert beim Auslesen via Settings::get( ..., __( ... ) ).
+			'commission_free_label'        => 'Provisionsfrei',
 		);
 	}
 
@@ -1297,6 +1303,19 @@ class Settings {
 				'label' => __( 'Anzeigen', 'immo-manager' ),
 			)
 		);
+
+		add_settings_field(
+			'commission_free_label',
+			__( 'Provisionsfrei-Badge: Beschriftung', 'immo-manager' ),
+			array( $this, 'render_text_field' ),
+			self::MENU_SLUG,
+			$section,
+			array(
+				'key'         => 'commission_free_label',
+				'class'       => 'regular-text',
+				'description' => __( 'Text auf dem Patch/Sticker, der bei provisionsfreien Kauf-Immobilien angezeigt wird. Leer = Default „Provisionsfrei".', 'immo-manager' ),
+			)
+		);
 	}
 
 	/**
@@ -1740,6 +1759,10 @@ class Settings {
 		$sanitized['calc_notar_mode'] = in_array( (string) ( $input['calc_notar_mode'] ?? '' ), array( 'percent', 'flat' ), true )
 			? (string) $input['calc_notar_mode']
 			: $defaults['calc_notar_mode'];
+
+		// Provisionsfrei-Badge.
+		$cf_label                            = sanitize_text_field( (string) ( $input['commission_free_label'] ?? '' ) );
+		$sanitized['commission_free_label']  = '' !== $cf_label ? $cf_label : (string) $defaults['commission_free_label'];
 
 		return $sanitized;
 	}

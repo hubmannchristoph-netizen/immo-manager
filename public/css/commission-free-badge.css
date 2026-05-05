@@ -1,0 +1,95 @@
+/**
+ * „Provisionsfrei"-Badge — gelb/orange Sticker.
+ *
+ * Variante "patch":
+ *   - absolut positioniert oben-rechts auf einem Bild-Container
+ *   - Container muss `position: relative` haben (bei .immo-slider, .immo-card-image bereits gegeben)
+ *
+ * Variante "icon":
+ *   - Inline-Pill für Tabellenzeilen / Listen ohne Hero-Bild
+ */
+
+.immo-cf-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25em;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	line-height: 1;
+	white-space: nowrap;
+	font-family: inherit;
+}
+
+/* Sicherstellen, dass typische Bild-Container das Badge positionieren können. */
+.immo-grid-gallery,
+.immo-card-image,
+.immo-card-thumb,
+.immo-property-card .immo-card-img {
+	position: relative;
+}
+
+/* PATCH: Sticker auf Hero/Card-Bild ----------------------------------------- */
+.immo-cf-patch {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	z-index: 5;
+	padding: 0.6em 0.95em;
+	background: #ffd60a;
+	color: #1a1a1a;
+	border: 2px solid #1a1a1a;
+	border-radius: 999px;
+	font-size: 0.85rem;
+	box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+	transform: rotate(-4deg);
+	pointer-events: none;
+}
+
+.immo-cf-patch::before {
+	content: "✓";
+	font-size: 0.95em;
+	margin-right: 0.15em;
+}
+
+/* Bei sehr kleinen Cards (z.B. Listing-Grid) etwas kompakter. */
+.immo-card .immo-cf-patch,
+.immo-property-card .immo-cf-patch {
+	top: 10px;
+	right: 10px;
+	padding: 0.45em 0.75em;
+	font-size: 0.72rem;
+}
+
+/* ICON: Inline-Pill für Tabellenzeilen ------------------------------------- */
+.immo-cf-icon {
+	padding: 0.3em 0.55em;
+	background: #ffd60a;
+	color: #1a1a1a;
+	border-radius: 4px;
+	font-size: 0.7rem;
+	border: 1px solid rgba(26, 26, 26, 0.2);
+}
+
+.immo-cf-icon::before {
+	content: "✓ ";
+	font-weight: 900;
+	margin-right: 0.1em;
+}
+
+/* High-Contrast / Reduced-Motion ------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+	.immo-cf-patch {
+		transform: none;
+	}
+}
+
+/* Mobile-Anpassung */
+@media (max-width: 480px) {
+	.immo-cf-patch {
+		top: 8px;
+		right: 8px;
+		padding: 0.45em 0.7em;
+		font-size: 0.72rem;
+	}
+}

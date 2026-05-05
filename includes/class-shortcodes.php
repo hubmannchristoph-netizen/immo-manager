@@ -152,6 +152,14 @@ class Shortcodes {
 			IMMO_MANAGER_VERSION
 		);
 
+		// „Provisionsfrei"-Badge — überall verfügbar, da auch in Listings genutzt.
+		wp_enqueue_style(
+			'immo-manager-cf-badge',
+			IMMO_MANAGER_PLUGIN_URL . 'public/css/commission-free-badge.css',
+			array( 'immo-manager-frontend' ),
+			IMMO_MANAGER_VERSION
+		);
+
 		wp_enqueue_script(
 			'immo-manager-filters',
 			IMMO_MANAGER_PLUGIN_URL . 'public/js/filters.js',

@@ -147,4 +147,36 @@ class Templates {
 		</div>
 		<?php
 	}
+
+	/**
+	 * Rendert das „Provisionsfrei"-Badge, wenn die Property dafür markiert ist
+	 * UND der Modus „Kauf" beinhaltet (sale | both). Bei Miete wird KEIN Badge
+	 * gerendert, weil Provision dort nicht anfällt.
+	 *
+	 * Aufruf in Templates:
+	 *   \ImmoManager\Templates::commission_free_badge( $meta, 'patch' );
+	 *
+	 * @param array<string, mixed> $meta    Property-Meta-Array (REST-Format,
+	 *                                       enthält 'commission_free' bool und 'mode').
+	 * @param string               $variant 'patch' (Sticker auf Bild) | 'icon' (Inline-Pill).
+	 *
+	 * @return void
+	 */
+	public static function commission_free_badge( array $meta, string $variant = 'patch' ): void {
+		$mode = (string) ( $meta['mode'] ?? 'sale' );
+		$show = ! empty( $meta['commission_free'] )
+			&& in_array( $mode, array( 'sale', 'both' ), true );
+
+		if ( ! $show ) {
+			return;
+		}
+
+		$label   = (string) Settings::get( 'commission_free_label', __( 'Provisionsfrei', 'immo-manager' ) );
+		$variant = 'icon' === $variant ? 'icon' : 'patch';
+
+		$file = IMMO_MANAGER_PLUGIN_DIR . 'templates/parts/commission-free-badge.php';
+		if ( is_readable( $file ) ) {
+			include $file;
+		}
+	}
 }

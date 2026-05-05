@@ -203,6 +203,28 @@ Unter jedem Rechner steht der Hinweis "Unverbindliche Schätzung – ersetzt kei
 
 ---
 
+## 6a. „Provisionsfrei"-Badge
+
+Property-Meta `_immo_commission_free` (Checkbox in Wizard Schritt 4 + Property-Metabox) steuert ein gut sichtbares gelb/oranges Patch-Badge auf allen Public-Templates.
+
+**Bedingung:** Badge erscheint nur, wenn `commission_free === true` UND Modus `sale` oder `both` (Provision ist ein Kauf-Thema).
+
+**Anzeigeorte:**
+
+- Property-Detailseite — gelber Sticker oben-rechts auf Hero/Galerie
+- Property-Listing-Cards (Archive, `[immo_grid]`, Elementor) — Sticker auf Vorschaubild
+- Bauprojekt-Detailseite — kleines Inline-Icon in der Preis-Spalte der Wohneinheiten-Tabelle (nur dort wo Property dahinter `commission_free=true`)
+- Filter-Live-Update via JS — Badge wird nach Filter-Reload erneut gerendert (`public/js/filters.js`)
+
+**Beschriftung konfigurierbar:**
+`Immo Manager → Einstellungen → 🧮 Rechner → Provisionsfrei-Badge: Beschriftung` (Default „Provisionsfrei"). Wert wird über REST-API als `meta.commission_free_label` ausgeliefert, sodass Headless-Konsumenten denselben Text rendern.
+
+**Konsistenz im Nebenkostenrechner & OpenImmo-Export:** Provision + USt-auf-Provision werden ausgeblendet bzw. `<aussen_courtage>` entfällt — das Badge ist somit garantiert deckungsgleich mit Berechnung und Export.
+
+**Helper:** `\ImmoManager\Templates::commission_free_badge( $meta, 'patch'|'icon' )` in `templates/parts/commission-free-badge.php`. CSS in `public/css/commission-free-badge.css`.
+
+---
+
 ## 7. Einstellungen & Design-System
 
 Settings-Tabs:
