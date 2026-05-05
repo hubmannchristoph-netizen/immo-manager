@@ -1127,6 +1127,7 @@ class RestApi {
 				
 				$property_data = array(
 					'title'     => get_the_title( $prop_post ),
+					'slug'      => $prop_post->post_name,
 					'permalink' => get_permalink( $prop_post ),
 					'image'     => $img_id ? wp_get_attachment_image_url( $img_id, 'large' ) : '',
 					'excerpt'   => wp_trim_words( get_the_excerpt( $prop_post ), 30 ),

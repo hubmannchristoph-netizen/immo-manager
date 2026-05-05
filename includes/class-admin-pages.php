@@ -919,9 +919,11 @@ class AdminPages {
 				<pre><code>{
   "project_id":     123,
   "applied_status": ["available", "reserved"],
-  "units":          [ /* format_unit() pro Einheit */ ],
+  "units":          [ /* pro Einheit: id, unit_number, status, area, rooms, floor,
+                         price_formatted, property: { title, slug, permalink, image, ... } */ ],
   "stats":          { "available": 4, "reserved": 1, "sold": 2, "rented": 0, "total": 7 }
 }</code></pre>
+				<p><?php esc_html_e( 'Wichtig: ', 'immo-manager' ); ?><code>property.slug</code><?php esc_html_e( ' ist enthalten — Headless-Konsumenten können daraus eine eigene Detail-URL bauen (z. B. ', 'immo-manager' ); ?><code>https://kunde.example.com/immobilie/{slug}</code>).</p>
 				<p><?php esc_html_e( 'Hinweis: ', 'immo-manager' ); ?><code>stats</code><?php esc_html_e( ' enthält IMMER alle Status-Counts (auch wenn nach status gefiltert wurde) — so bleibt der Gesamtüberblick erhalten.', 'immo-manager' ); ?></p>
 
 				<h4><?php esc_html_e( 'Beispiel-Aufruf', 'immo-manager' ); ?></h4>
