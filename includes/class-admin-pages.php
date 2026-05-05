@@ -638,6 +638,15 @@ class AdminPages {
 					<li><strong><?php esc_html_e( 'Projekt-Wohneinheiten', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'Tabellen-Übersicht aller Tops eines Projekts (Etage, Fläche, Zimmer, Preis, Status).', 'immo-manager' ); ?></li>
 					<li><strong><?php esc_html_e( 'Immobilien-Suche', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'horizontaler Suchschlitz für Header oder Hero-Sektionen.', 'immo-manager' ); ?></li>
 				</ul>
+
+				<h3><?php esc_html_e( 'Provisionsfrei-Badge auf Public-Templates', 'immo-manager' ); ?> <span class="immo-help-badge"><?php esc_html_e( 'Neu', 'immo-manager' ); ?></span></h3>
+				<p><?php esc_html_e( 'Properties mit aktivierter Checkbox „Provisionsfrei" (Wizard Schritt 4 oder Property-Metabox) zeigen automatisch ein gut sichtbares gelb/oranges Badge:', 'immo-manager' ); ?></p>
+				<ul>
+					<li><?php esc_html_e( 'Property-Detailseite — Sticker oben-rechts auf Hero/Galerie', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Listing-Cards (Archive, ', 'immo-manager' ); ?><code>[immo_list]</code><?php esc_html_e( ', Elementor) — Sticker auf Vorschaubild', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Bauprojekt-Detailseite — Inline-Icon in der Preisspalte der Wohneinheiten-Tabelle (nur bei Properties mit Flag)', 'immo-manager' ); ?></li>
+				</ul>
+				<p><?php esc_html_e( 'Bedingung: Modus „Verkauf" oder „Beides" — bei reiner Miete erscheint kein Badge. Beschriftung änderbar in ', 'immo-manager' ); ?><a href="<?php echo esc_url( $settings_url . '#tab-calculator' ); ?>"><?php esc_html_e( 'Einstellungen → Rechner', 'immo-manager' ); ?></a><?php esc_html_e( ' (siehe Kapitel 6).', 'immo-manager' ); ?></p>
 			</div>
 
 			<!-- 5. DESIGN & LAYOUT -->
@@ -689,6 +698,17 @@ class AdminPages {
 
 				<h3><?php esc_html_e( 'Konfiguration', 'immo-manager' ); ?></h3>
 				<p><a href="<?php echo esc_url( $settings_url . '#tab-calculator' ); ?>"><?php esc_html_e( '→ Einstellungen → Rechner', 'immo-manager' ); ?></a> <?php esc_html_e( ' — alle Sätze, Toggles, Notar-Modus und Finanz-Defaults.', 'immo-manager' ); ?></p>
+
+				<h3><?php esc_html_e( 'Provisionsfrei-Badge', 'immo-manager' ); ?> <span class="immo-help-badge"><?php esc_html_e( 'Neu', 'immo-manager' ); ?></span></h3>
+				<p><?php esc_html_e( 'Pro Property im Wizard Schritt 4 oder in der Property-Metabox die Checkbox „Provisionsfrei" aktivieren. Dann passiert dreierlei automatisch:', 'immo-manager' ); ?></p>
+				<ol>
+					<li><?php esc_html_e( 'Auf allen Public-Templates erscheint ein gut sichtbarer gelb/oranger „Provisionsfrei"-Patch (oben-rechts auf Hero-Bildern, Inline-Icon in Bauprojekt-Unit-Tabellen).', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Der Nebenkostenrechner blendet Maklerprovision + USt-auf-Provision aus.', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Im OpenImmo-Export wird das Element ', 'immo-manager' ); ?><code>&lt;aussen_courtage&gt;</code><?php esc_html_e( ' für diese Property weggelassen.', 'immo-manager' ); ?></li>
+				</ol>
+				<p><?php esc_html_e( 'Bedingung für die Anzeige: Property ist als Kauf markiert (Modus „Verkauf" oder „Beides"). Bei reiner Miete erscheint kein Badge.', 'immo-manager' ); ?></p>
+				<p><strong><?php esc_html_e( 'Beschriftung anpassen:', 'immo-manager' ); ?></strong>
+				<a href="<?php echo esc_url( $settings_url . '#tab-calculator' ); ?>"><?php esc_html_e( 'Einstellungen → Rechner → „Provisionsfrei-Badge: Beschriftung"', 'immo-manager' ); ?></a> <?php esc_html_e( '(Default „Provisionsfrei"). Der konfigurierte Text wird über REST als ', 'immo-manager' ); ?><code>meta.commission_free_label</code><?php esc_html_e( ' ausgeliefert — Headless-Konsumenten (z. B. das ImmoClient-Plugin) zeigen automatisch denselben Text.', 'immo-manager' ); ?></p>
 
 				<div class="immo-help-callout">
 					<strong>⚠️ <?php esc_html_e( 'Disclaimer:', 'immo-manager' ); ?></strong>
@@ -815,7 +835,8 @@ class AdminPages {
 						<tr><td><code>GET /properties/{id}/similar</code></td><td><?php esc_html_e( 'Ähnliche Immobilien (gleiche Region/Preis-Range)', 'immo-manager' ); ?></td></tr>
 						<tr><td><code>GET /projects</code></td><td><?php esc_html_e( 'Liste aller Bauprojekte', 'immo-manager' ); ?></td></tr>
 						<tr><td><code>GET /projects/{id}</code></td><td><?php esc_html_e( 'Detail eines Bauprojekts', 'immo-manager' ); ?></td></tr>
-						<tr><td><code>GET /projects/{id}/units</code></td><td><?php esc_html_e( 'Wohneinheiten eines Projekts inkl. Stats', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>GET /projects/{id}/units</code></td><td><?php esc_html_e( 'Wohneinheiten eines Projekts inkl. Stats. Filter: ', 'immo-manager' ); ?><code>status</code> (einzeln oder kommagetrennt: <code>available,reserved</code>), <code>orderby</code>, <code>limit</code></td></tr>
+						<tr><td><code>GET /projects/by-slug/{slug}/units</code></td><td><?php esc_html_e( 'Wohneinheiten per Projekt-Slug — gleiche Parameter wie ID-Variante', 'immo-manager' ); ?></td></tr>
 						<tr><td><code>GET /regions</code></td><td><?php esc_html_e( 'Alle Bundesländer (für Filter-Dropdowns)', 'immo-manager' ); ?></td></tr>
 						<tr><td><code>GET /regions/{state}/districts</code></td><td><?php esc_html_e( 'Bezirke eines Bundeslandes', 'immo-manager' ); ?></td></tr>
 						<tr><td><code>GET /features</code></td><td><?php esc_html_e( 'Ausstattungs-Tags gruppiert nach Kategorien', 'immo-manager' ); ?></td></tr>
@@ -883,6 +904,33 @@ class AdminPages {
     consent:          true
   })
 }).then( r =&gt; r.json() ).then( data =&gt; console.log( data.message ) );</code></pre>
+
+				<h3 style="margin-top: 2.5rem;"><code>GET /projects/{id|slug}/units</code> <span class="immo-help-badge"><?php esc_html_e( 'Neu', 'immo-manager' ); ?></span></h3>
+				<p><?php esc_html_e( 'Liefert die Wohneinheiten eines Bauprojekts isoliert vom Project-Hauptobjekt — ideal für externe Embeds (Headless, Cross-Site-Widgets).', 'immo-manager' ); ?></p>
+				<table>
+					<thead><tr><th><?php esc_html_e( 'Parameter', 'immo-manager' ); ?></th><th><?php esc_html_e( 'Typ', 'immo-manager' ); ?></th><th><?php esc_html_e( 'Beschreibung', 'immo-manager' ); ?></th></tr></thead>
+					<tbody>
+						<tr><td><code>status</code></td><td>string</td><td><?php esc_html_e( 'Einzeln oder kommagetrennt: ', 'immo-manager' ); ?><code>available</code>, <code>reserved</code>, <code>sold</code>, <code>rented</code> (z. B. <code>available,reserved</code>)</td></tr>
+						<tr><td><code>orderby</code></td><td>string</td><td><code>unit_number</code> | <code>floor</code> | <code>area</code> | <code>price</code></td></tr>
+						<tr><td><code>limit</code></td><td>integer</td><td><?php esc_html_e( 'Maximale Anzahl Treffer (0 = alle, Default 0)', 'immo-manager' ); ?></td></tr>
+					</tbody>
+				</table>
+				<h4><?php esc_html_e( 'Antwort-Format', 'immo-manager' ); ?></h4>
+				<pre><code>{
+  "project_id":     123,
+  "applied_status": ["available", "reserved"],
+  "units":          [ /* format_unit() pro Einheit */ ],
+  "stats":          { "available": 4, "reserved": 1, "sold": 2, "rented": 0, "total": 7 }
+}</code></pre>
+				<p><?php esc_html_e( 'Hinweis: ', 'immo-manager' ); ?><code>stats</code><?php esc_html_e( ' enthält IMMER alle Status-Counts (auch wenn nach status gefiltert wurde) — so bleibt der Gesamtüberblick erhalten.', 'immo-manager' ); ?></p>
+
+				<h4><?php esc_html_e( 'Beispiel-Aufruf', 'immo-manager' ); ?></h4>
+				<pre><code>fetch('<?php echo esc_url( $api_url ); ?>/projects/by-slug/bauprojekt-graz/units?status=available,reserved&orderby=price&limit=10')
+  .then( r =&gt; r.json() )
+  .then( data =&gt; {
+    console.log( data.units );  // gefilterte Wohneinheiten
+    console.log( data.stats );  // alle Counts unabhängig vom Filter
+  } );</code></pre>
 
 				<div class="immo-help-callout immo-help-callout--info">
 					<strong>💡 <?php esc_html_e( 'Tipp:', 'immo-manager' ); ?></strong>
