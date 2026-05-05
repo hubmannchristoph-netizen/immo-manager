@@ -1038,6 +1038,23 @@ class RestApi {
 			}
 		}
 
+		// Features anreichern (gleiche Logik wie bei Property).
+		$raw_features    = $m( '_immo_features', array() );
+		$features        = is_array( $raw_features ) ? $raw_features : array();
+		$features_detail = array();
+		$all_features    = Features::get_all();
+		$cat_labels      = Features::get_categories();
+		foreach ( $features as $fkey ) {
+			$cat_key = isset( $all_features[ $fkey ]['category'] ) ? (string) $all_features[ $fkey ]['category'] : '';
+			$features_detail[] = array(
+				'key'            => $fkey,
+				'label'          => Features::get_label( $fkey ),
+				'icon'           => Features::get_icon( $fkey ),
+				'category'       => $cat_key,
+				'category_label' => $cat_key && isset( $cat_labels[ $cat_key ] ) ? (string) $cat_labels[ $cat_key ] : '',
+			);
+		}
+
 		$counts     = Units::count_by_status( $id );
 		$area_range = Units::area_range( $id );
 		$state_key  = (string) $m( '_immo_region_state', '' );
@@ -1067,6 +1084,9 @@ class RestApi {
 				'video_url'          => (string) $m( '_immo_video_url', '' ),
 				'video_file_url'     => (int) $m( '_immo_video_id', 0 ) > 0 ? wp_get_attachment_url( (int) $m( '_immo_video_id', 0 ) ) : '',
 				'documents'          => $documents,
+				'features'           => $features,
+				'features_detail'    => $features_detail,
+				'custom_features'    => (string) $m( '_immo_custom_features', '' ),
 			),
 			'unit_stats'  => array_merge(
 				$counts,
