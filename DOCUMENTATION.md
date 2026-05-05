@@ -225,6 +225,38 @@ Property-Meta `_immo_commission_free` (Checkbox in Wizard Schritt 4 + Property-M
 
 ---
 
+## 6b. REST: Wohneinheiten eines Bauprojekts isoliert abrufen
+
+Zwei Endpoints liefern die Units eines Projekts unabhängig vom Project-Hauptobjekt — ideal für externe Embeds (z. B. `[immo_units]` im `immo-client`):
+
+```
+GET /wp-json/immo-manager/v1/projects/{id}/units
+GET /wp-json/immo-manager/v1/projects/by-slug/{slug}/units
+```
+
+**Query-Parameter:**
+
+| Param | Werte | Beschreibung |
+|-------|-------|--------------|
+| `status` | `available` \| `reserved` \| `sold` \| `rented` oder kommagetrennt (`available,reserved`) | Filter; mehrere Status erlaubt |
+| `orderby` | `unit_number` \| `floor` \| `price` \| `area` … | Sortier-Schlüssel (siehe `Units::get_by_project()`) |
+| `limit` | Integer ≥ 0 | Maximale Anzahl Treffer (`0` = alle) |
+
+**Antwort:**
+
+```jsonc
+{
+  "project_id": 123,
+  "applied_status": ["available", "reserved"],
+  "units": [ /* format_unit() pro Einheit, inkl. property.commission_free + commission_free_label */ ],
+  "stats": { "available": 4, "reserved": 1, "sold": 2, "rented": 0, "total": 7 }
+}
+```
+
+`stats` enthält IMMER alle Status-Counts (auch wenn nach `status` gefiltert wurde) — so kann ein Frontend den Gesamtüberblick rendern.
+
+---
+
 ## 7. Einstellungen & Design-System
 
 Settings-Tabs:

@@ -94,6 +94,12 @@ class RestApi {
 			'permission_callback' => '__return_true',
 		) );
 
+		register_rest_route( self::NAMESPACE, '/projects/by-slug/(?P<slug>[a-z0-9-]+)/units', array(
+			'methods'             => \WP_REST_Server::READABLE,
+			'callback'            => array( $this, 'get_project_units_by_slug' ),
+			'permission_callback' => '__return_true',
+		) );
+
 		// Referenzdaten.
 		register_rest_route( self::NAMESPACE, '/regions', array(
 			'methods'             => \WP_REST_Server::READABLE,
@@ -377,30 +383,85 @@ class RestApi {
 	/**
 	 * GET /projects/{id}/units
 	 *
+	 * Query-Parameter:
+	 *   - status: Einzelner Status oder kommagetrennte Liste (z. B. "available,reserved").
+	 *   - orderby: Sortier-Schlüssel (default: unit_number).
+	 *   - limit: Maximale Anzahl Wohneinheiten (0 = alle).
+	 *
 	 * @param \WP_REST_Request $request Request.
 	 *
 	 * @return \WP_REST_Response
 	 */
 	public function get_project_units( \WP_REST_Request $request ): \WP_REST_Response {
-		$id     = (int) $request->get_param( 'id' );
-		$status = $request->get_param( 'status' );
+		$id = (int) $request->get_param( 'id' );
+		return $this->build_units_response( $id, $request );
+	}
+
+	/**
+	 * GET /projects/by-slug/{slug}/units
+	 *
+	 * Convenience-Endpoint, der das Projekt per Slug auflöst und dieselbe
+	 * Antwort wie /projects/{id}/units liefert. Akzeptiert die gleichen
+	 * Query-Parameter (status, orderby, limit).
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function get_project_units_by_slug( \WP_REST_Request $request ) {
+		$slug  = sanitize_title( (string) $request->get_param( 'slug' ) );
+		$posts = get_posts( array(
+			'post_type'      => PostTypes::POST_TYPE_PROJECT,
+			'name'           => $slug,
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+		) );
+		if ( empty( $posts ) ) {
+			return new \WP_Error( 'not_found', __( 'Projekt nicht gefunden.', 'immo-manager' ), array( 'status' => 404 ) );
+		}
+		return $this->build_units_response( (int) $posts[0]->ID, $request );
+	}
+
+	/**
+	 * Gemeinsame Antwort-Konstruktion für Unit-Endpoints (ID + Slug).
+	 *
+	 * @param int              $project_id Projekt-ID.
+	 * @param \WP_REST_Request $request    Request mit status/orderby/limit-Parametern.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	private function build_units_response( int $project_id, \WP_REST_Request $request ): \WP_REST_Response {
 		$orderby = sanitize_key( (string) ( $request->get_param( 'orderby' ) ?? 'unit_number' ) );
+		$limit   = max( 0, (int) ( $request->get_param( 'limit' ) ?? 0 ) );
 
-		$units    = Units::get_by_project( $id, $orderby );
-		$filtered = $units;
+		// Status-Parameter unterstützt einzelnen Wert ODER kommagetrennte Liste.
+		$status_raw     = (string) ( $request->get_param( 'status' ) ?? '' );
+		$status_request = array_values( array_filter( array_map(
+			static function ( $s ) { return sanitize_key( trim( (string) $s ) ); },
+			explode( ',', $status_raw )
+		) ) );
+		$status_filter = array_values( array_intersect( $status_request, Units::STATUSES ) );
 
-		if ( $status && in_array( $status, Units::STATUSES, true ) ) {
-			$filtered = array_values( array_filter( $units, static function ( $u ) use ( $status ) {
-				return $u['status'] === $status;
+		$units = Units::get_by_project( $project_id, $orderby );
+
+		if ( ! empty( $status_filter ) ) {
+			$units = array_values( array_filter( $units, static function ( $u ) use ( $status_filter ) {
+				return in_array( $u['status'], $status_filter, true );
 			} ) );
 		}
 
-		$counts = Units::count_by_status( $id );
+		if ( $limit > 0 ) {
+			$units = array_slice( $units, 0, $limit );
+		}
+
+		$counts          = Units::count_by_status( $project_id );
 		$counts['total'] = array_sum( $counts );
 
 		return rest_ensure_response( array(
-			'units' => array_map( array( $this, 'format_unit' ), $filtered ),
-			'stats' => $counts,
+			'project_id'      => $project_id,
+			'applied_status'  => $status_filter,
+			'units'           => array_map( array( $this, 'format_unit' ), $units ),
+			'stats'           => $counts,
 		) );
 	}
 
