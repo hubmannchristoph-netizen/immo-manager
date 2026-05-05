@@ -3,3 +3,18 @@
 
 # Claude Code lokale Daten
 .claude/scheduled_tasks.lock
+
+# Playwright-MCP-Artefakte (Snapshots, Console-Logs)
+.playwright-mcp/
+
+# Test-Screenshots im Repo-Root (von Browser-Diagnosen)
+/project-*.png
+/project-*.jpg
+/project-*.jpeg
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
