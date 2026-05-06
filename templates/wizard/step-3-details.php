@@ -16,9 +16,9 @@ $p = $prefill;
 	<div class="immo-wizard-fields">
 		<?php
 		$area_fields = array(
-			'_immo_area'        => array( 'label' => __( 'Gesamtfläche (m²)', 'immo-manager' ), 'required' => false ),
-			'_immo_usable_area' => array( 'label' => __( 'Wohnfläche (m²)', 'immo-manager' ),   'required' => false ),
-			'_immo_land_area'   => array( 'label' => __( 'Grundstück (m²)', 'immo-manager' ),    'required' => false ),
+			'_immo_area'        => array( 'label' => __( 'Wohnfläche ca. (m²)', 'immo-manager' ),         'required' => false ),
+			'_immo_usable_area' => array( 'label' => __( 'Nutzfläche ca. (m²)', 'immo-manager' ),         'required' => false ),
+			'_immo_land_area'   => array( 'label' => __( 'Grundstücksfläche ca. (m²)', 'immo-manager' ), 'required' => false ),
 		);
 		foreach ( $area_fields as $name => $field ) :
 			$val = $p[ $name ] ?? '';

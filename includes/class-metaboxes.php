@@ -115,15 +115,15 @@ class Metaboxes {
 				</td>
 			</tr>
 			<tr>
-				<th><label for="_immo_area"><?php esc_html_e( 'Gesamtfläche (m²)', 'immo-manager' ); ?></label></th>
+				<th><label for="_immo_area"><?php esc_html_e( 'Wohnfläche ca. (m²)', 'immo-manager' ); ?></label></th>
 				<td><input type="number" step="0.01" min="0" id="_immo_area" name="immo_meta[_immo_area]" value="<?php echo esc_attr( (string) $meta['_immo_area'] ); ?>" class="small-text" /></td>
 			</tr>
 			<tr>
-				<th><label for="_immo_usable_area"><?php esc_html_e( 'Wohnfläche (m²)', 'immo-manager' ); ?></label></th>
+				<th><label for="_immo_usable_area"><?php esc_html_e( 'Nutzfläche ca. (m²)', 'immo-manager' ); ?></label></th>
 				<td><input type="number" step="0.01" min="0" id="_immo_usable_area" name="immo_meta[_immo_usable_area]" value="<?php echo esc_attr( (string) $meta['_immo_usable_area'] ); ?>" class="small-text" /></td>
 			</tr>
 			<tr>
-				<th><label for="_immo_land_area"><?php esc_html_e( 'Grundstücksfläche (m²)', 'immo-manager' ); ?></label></th>
+				<th><label for="_immo_land_area"><?php esc_html_e( 'Grundstücksfläche ca. (m²)', 'immo-manager' ); ?></label></th>
 				<td><input type="number" step="0.01" min="0" id="_immo_land_area" name="immo_meta[_immo_land_area]" value="<?php echo esc_attr( (string) $meta['_immo_land_area'] ); ?>" class="small-text" /></td>
 			</tr>
 			<tr>
