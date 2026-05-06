@@ -7,7 +7,7 @@
 $ErrorActionPreference = "SilentlyContinue"
 
 try {
-    $vaultRoot = "C:\Users\ch\Meine Ablage\AI Knowledge (2nd Brain)\2nd Brain\Projekte\ImmoManager"
+    $vaultRoot = "C:\Users\ch\Desktop\2nd Brain\Projekte\ImmoManager"
 
     if (-not (Test-Path -LiteralPath $vaultRoot)) { exit 0 }
 
