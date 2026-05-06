@@ -863,6 +863,7 @@ class AdminPages {
 						<tr><td><code>rooms</code></td><td>string</td><td><?php esc_html_e( 'Komma-Liste, z. B. ', 'immo-manager' ); ?><code>2,3</code></td></tr>
 						<tr><td><code>project_id</code></td><td>integer</td><td><?php esc_html_e( 'Nur Properties dieses Bauprojekts', 'immo-manager' ); ?></td></tr>
 						<tr><td><code>search</code></td><td>string</td><td><?php esc_html_e( 'Volltextsuche in Titel/Beschreibung', 'immo-manager' ); ?></td></tr>
+						<tr><td><code>ids</code> <span class="immo-help-badge"><?php esc_html_e( 'Neu', 'immo-manager' ); ?></span></td><td>string</td><td><?php esc_html_e( 'ID-Liste (Komma- oder Semikolon-getrennt, z. B. ', 'immo-manager' ); ?><code>123,456,789</code><?php esc_html_e( '). Liefert genau diese Properties in der angegebenen Reihenfolge — ideal für Referenzlisten oder kuratierte Embeds. ', 'immo-manager' ); ?><code>per_page</code><?php esc_html_e( ' wird automatisch auf die Listengröße gesetzt (Hard-Cap: 100 IDs). Mit ', 'immo-manager' ); ?><code>status</code><?php esc_html_e( ' kombinierbar.', 'immo-manager' ); ?></td></tr>
 					</tbody>
 				</table>
 
@@ -873,6 +874,15 @@ class AdminPages {
     console.log( data.properties );      // Array
     console.log( data.pagination );      // { total, page, total_pages }
   } );</code></pre>
+
+				<h4><?php esc_html_e( 'Beispiel: kuratierte Liste per ID', 'immo-manager' ); ?></h4>
+				<pre><code>// Genau diese drei Properties in der angegebenen Reihenfolge:
+fetch('<?php echo esc_url( $api_url ); ?>/properties?ids=42,17,93')
+  .then( r =&gt; r.json() )
+  .then( data =&gt; console.log( data.properties ) );
+
+// Auch Semikolon erlaubt, optional Status-Filter darüber legen:
+fetch('<?php echo esc_url( $api_url ); ?>/properties?ids=42;17;93&status=available,reserved')</code></pre>
 
 				<h3 style="margin-top: 2.5rem;"><code>POST /inquiries</code></h3>
 				<p><?php esc_html_e( 'Anfrage einreichen. Erfordert API-Key, falls in Settings aktiviert.', 'immo-manager' ); ?></p>
@@ -940,6 +950,23 @@ class AdminPages {
 					<code>{ properties: [...], pagination: {...} }</code>
 					<?php esc_html_e( ' bzw. einen einzelnen Datensatz. Fehlerantworten folgen dem WP-REST-Standard mit ', 'immo-manager' ); ?>
 					<code>{ code, message, data }</code>.
+				</div>
+
+				<h3 style="margin-top: 2.5rem;"><?php esc_html_e( 'Cross-Site-Einbindung mit dem ImmoClient', 'immo-manager' ); ?> <span class="immo-help-badge"><?php esc_html_e( 'Companion-Plugin', 'immo-manager' ); ?></span></h3>
+				<p><?php esc_html_e( 'Statt einen eigenen Headless-Konsumenten zu schreiben, kann auf einer beliebigen externen WordPress-Site das Companion-Plugin "ImmoClient" installiert werden. Es spricht die hier dokumentierte REST-API automatisch an, rendert die gleichen Listen, Detailseiten und Anfrage-Formulare und leitet eingehende Anfragen mit ', 'immo-manager' ); ?><code>source_url</code><?php esc_html_e( ' an den Manager weiter — sodass alle Anfragen zentral hier in der Anfragen-Übersicht landen, mit Quellnachweis der Site, von der sie kamen.', 'immo-manager' ); ?></p>
+				<p><strong><?php esc_html_e( 'Verfügbare Shortcodes auf der externen Site:', 'immo-manager' ); ?></strong></p>
+				<ul>
+					<li><code>[immo_list]</code> — <?php esc_html_e( 'volle Liste mit Filter-Bar (wie Manager-Frontend)', 'immo-manager' ); ?></li>
+					<li><code>[immo_list ids="123,456,789"]</code> <span class="immo-help-badge"><?php esc_html_e( 'Neu', 'immo-manager' ); ?></span> — <?php esc_html_e( 'kuratierte Liste in genau dieser Reihenfolge (Komma- oder Semikolon-getrennt). Filter-Bar wird automatisch ausgeblendet — ideal als Referenzliste oder Promo-Block.', 'immo-manager' ); ?></li>
+					<li><code>[immo_list ids="123,456,789" layout="slider"]</code> <span class="immo-help-badge"><?php esc_html_e( 'Neu', 'immo-manager' ); ?></span> — <?php esc_html_e( 'gleiche Liste als Splide-Slider, optional mit ', 'immo-manager' ); ?><code>autoplay</code>, <code>per_page</code>, <code>per_page_md</code>, <code>per_page_sm</code>, <code>gap</code>, <code>loop</code>.</li>
+					<li><code>[immo_property id="123"]</code> / <code>[immo_property slug="…"]</code> — <?php esc_html_e( 'einzelne Immobilie als Block', 'immo-manager' ); ?></li>
+					<li><code>[immo_project id="45"]</code> / <code>[immo_project slug="…"]</code> — <?php esc_html_e( 'volles Bauprojekt mit Galerie und Wohneinheiten', 'immo-manager' ); ?></li>
+					<li><code>[immo_units project_slug="…" layout="grid|table|list"]</code> — <?php esc_html_e( 'nur die Wohneinheiten eines Bauprojekts', 'immo-manager' ); ?></li>
+				</ul>
+				<p><?php esc_html_e( 'Konfiguration auf der externen Site: API-Basis-URL und (optional) API-Key in den ImmoClient-Einstellungen eintragen. Bei aktivierter Key-Prüfung im Manager (siehe ', 'immo-manager' ); ?><a href="<?php echo esc_url( $settings_url ); ?>"><?php esc_html_e( 'Einstellungen → API', 'immo-manager' ); ?></a><?php esc_html_e( ') muss derselbe Key dort hinterlegt sein, sonst werden Anfragen mit HTTP 401 abgewiesen.', 'immo-manager' ); ?></p>
+				<div class="immo-help-callout immo-help-callout--ok">
+					<strong>✔️ <?php esc_html_e( 'Eigenständigkeit bleibt erhalten:', 'immo-manager' ); ?></strong>
+					<?php esc_html_e( 'Die externe Site behält ihre eigenen Routen ', 'immo-manager' ); ?><code>/immobilie/{slug}</code><?php esc_html_e( ' und ', 'immo-manager' ); ?><code>/bauprojekt/{slug}</code><?php esc_html_e( ', eigenes Branding (Farben, Logo) und eigenes Mail-Sending. Der Manager bekommt nur eine zusätzliche, gespiegelte Anfrage zur zentralen Auswertung.', 'immo-manager' ); ?>
 				</div>
 			</div>
 

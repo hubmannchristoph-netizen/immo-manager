@@ -721,6 +721,22 @@ class RestApi {
 			'meta_query'     => array( 'relation' => 'AND' ),
 		);
 
+		// Filter: ID-Liste (komma- oder semikolongetrennt). Reihenfolge wird übernommen,
+		// solange kein expliziter orderby gesetzt ist. Hard-Cap 100 IDs.
+		$ids_raw = (string) ( $request->get_param( 'ids' ) ?? '' );
+		$id_list = array();
+		if ( '' !== $ids_raw ) {
+			$pieces  = preg_split( '/[,;]/', $ids_raw ) ?: array();
+			$id_list = array_values( array_unique( array_filter( array_map( 'absint', $pieces ) ) ) );
+			$id_list = array_slice( $id_list, 0, 100 );
+			if ( ! empty( $id_list ) ) {
+				$args['post__in']      = $id_list;
+				$args['orderby']       = 'post__in';
+				$args['posts_per_page'] = count( $id_list );
+				$args['paged']          = 1;
+			}
+		}
+
 		// Sortierung.
 		$orderby = sanitize_key( (string) ( $request->get_param( 'orderby' ) ?? 'newest' ) );
 		switch ( $orderby ) {
@@ -740,8 +756,11 @@ class RestApi {
 				$args['order']    = 'DESC';
 				break;
 			default: // newest.
-				$args['orderby'] = 'date';
-				$args['order']   = 'DESC';
+				// Bei ids-Liste die ID-Reihenfolge nicht überschreiben.
+				if ( empty( $id_list ) ) {
+					$args['orderby'] = 'date';
+					$args['order']   = 'DESC';
+				}
 		}
 
 		// Filter: Status.
@@ -1300,6 +1319,7 @@ class RestApi {
 			'energy_class'    => array( 'type' => 'string' ),
 			'features'        => array( 'type' => 'string' ),
 			'project_id'      => array( 'type' => 'integer' ),
+			'ids'             => array( 'type' => 'string' ),
 		);
 	}
 
