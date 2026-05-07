@@ -66,6 +66,7 @@ class Metaboxes {
 		add_meta_box( 'immo_project_gallery',   __( 'Bildergalerie', 'immo-manager' ),             array( $this, 'render_gallery' ),           PostTypes::POST_TYPE_PROJECT,  'normal', 'high' );
 		add_meta_box( 'immo_project_video',     __( 'Video / Virtuelle Tour', 'immo-manager' ),    array( $this, 'render_video' ),             PostTypes::POST_TYPE_PROJECT,  'normal', 'high' );
 		add_meta_box( 'immo_project_features',  __( 'Gemeinschafts-Ausstattung', 'immo-manager' ), array( $this, 'render_features' ),          PostTypes::POST_TYPE_PROJECT,  'normal', 'default' );
+		add_meta_box( 'immo_project_parking',   __( 'Stellplätze', 'immo-manager' ),               array( $this, 'render_project_parking' ),   PostTypes::POST_TYPE_PROJECT,  'normal', 'default' );
 		add_meta_box( 'immo_project_units',     __( 'Wohneinheiten', 'immo-manager' ),             array( $this, 'render_project_units' ),     PostTypes::POST_TYPE_PROJECT,  'normal', 'default' );
 		add_meta_box( 'immo_project_display',   __( 'Darstellung & Layout', 'immo-manager' ),      array( $this, 'render_property_display' ),  PostTypes::POST_TYPE_PROJECT,  'side',   'default' );
 		add_meta_box( 'immo_project_contact',   __( 'Kontakt / Agent', 'immo-manager' ),           array( $this, 'render_contact' ),           PostTypes::POST_TYPE_PROJECT,  'side',   'default' );
@@ -525,6 +526,81 @@ class Metaboxes {
 					<input type="date" id="_immo_project_start_date" name="immo_meta[_immo_project_start_date]" value="<?php echo esc_attr( (string) $meta['_immo_project_start_date'] ); ?>" />
 					<input type="date"                              name="immo_meta[_immo_project_completion]"  value="<?php echo esc_attr( (string) $meta['_immo_project_completion'] ); ?>" />
 				</td>
+			</tr>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Metabox: Stellplatz-Konfiguration des Bauprojekts.
+	 *
+	 * @param \WP_Post $post Post.
+	 *
+	 * @return void
+	 */
+	public function render_project_parking( \WP_Post $post ): void {
+		$meta = $this->get_meta( $post->ID, MetaFields::project_fields() );
+		?>
+		<table class="form-table immo-form">
+			<tr><th colspan="2"><h3 style="margin: 0.5em 0;"><?php esc_html_e( 'Tiefgarage', 'immo-manager' ); ?></h3></th></tr>
+			<tr>
+				<th><?php esc_html_e( 'Verfügbar', 'immo-manager' ); ?></th>
+				<td>
+					<label>
+						<input type="checkbox" name="immo_meta[_immo_parking_garage_available]" value="1" <?php checked( ! empty( $meta['_immo_parking_garage_available'] ) ); ?>>
+						<?php esc_html_e( 'Tiefgaragenplätze sind im Projekt verfügbar', 'immo-manager' ); ?>
+					</label>
+				</td>
+			</tr>
+			<tr>
+				<th><label for="_immo_parking_garage_total"><?php esc_html_e( 'Anzahl gesamt', 'immo-manager' ); ?></label></th>
+				<td><input type="number" id="_immo_parking_garage_total" name="immo_meta[_immo_parking_garage_total]" min="0" step="1" value="<?php echo esc_attr( (string) ( $meta['_immo_parking_garage_total'] ?? 0 ) ); ?>"></td>
+			</tr>
+			<tr>
+				<th><label for="_immo_parking_garage_price"><?php esc_html_e( 'Preis pro Platz', 'immo-manager' ); ?></label></th>
+				<td><input type="number" id="_immo_parking_garage_price" name="immo_meta[_immo_parking_garage_price]" min="0" step="1" value="<?php echo esc_attr( (string) ( $meta['_immo_parking_garage_price'] ?? 0 ) ); ?>"> €</td>
+			</tr>
+			<tr>
+				<th><?php esc_html_e( 'Verpflichtend', 'immo-manager' ); ?></th>
+				<td>
+					<label>
+						<input type="checkbox" name="immo_meta[_immo_parking_garage_required]" value="1" <?php checked( ! empty( $meta['_immo_parking_garage_required'] ) ); ?>>
+						<?php esc_html_e( 'Beim Wohnungskauf verpflichtend zu erwerben', 'immo-manager' ); ?>
+					</label>
+				</td>
+			</tr>
+
+			<tr><th colspan="2"><h3 style="margin: 1.5em 0 0.5em;"><?php esc_html_e( 'Außen-Stellplatz', 'immo-manager' ); ?></h3></th></tr>
+			<tr>
+				<th><?php esc_html_e( 'Verfügbar', 'immo-manager' ); ?></th>
+				<td>
+					<label>
+						<input type="checkbox" name="immo_meta[_immo_parking_outdoor_available]" value="1" <?php checked( ! empty( $meta['_immo_parking_outdoor_available'] ) ); ?>>
+						<?php esc_html_e( 'Außen-Stellplätze sind im Projekt verfügbar', 'immo-manager' ); ?>
+					</label>
+				</td>
+			</tr>
+			<tr>
+				<th><label for="_immo_parking_outdoor_total"><?php esc_html_e( 'Anzahl gesamt', 'immo-manager' ); ?></label></th>
+				<td><input type="number" id="_immo_parking_outdoor_total" name="immo_meta[_immo_parking_outdoor_total]" min="0" step="1" value="<?php echo esc_attr( (string) ( $meta['_immo_parking_outdoor_total'] ?? 0 ) ); ?>"></td>
+			</tr>
+			<tr>
+				<th><label for="_immo_parking_outdoor_price"><?php esc_html_e( 'Preis pro Platz', 'immo-manager' ); ?></label></th>
+				<td><input type="number" id="_immo_parking_outdoor_price" name="immo_meta[_immo_parking_outdoor_price]" min="0" step="1" value="<?php echo esc_attr( (string) ( $meta['_immo_parking_outdoor_price'] ?? 0 ) ); ?>"> €</td>
+			</tr>
+			<tr>
+				<th><?php esc_html_e( 'Verpflichtend', 'immo-manager' ); ?></th>
+				<td>
+					<label>
+						<input type="checkbox" name="immo_meta[_immo_parking_outdoor_required]" value="1" <?php checked( ! empty( $meta['_immo_parking_outdoor_required'] ) ); ?>>
+						<?php esc_html_e( 'Beim Wohnungskauf verpflichtend zu erwerben', 'immo-manager' ); ?>
+					</label>
+				</td>
+			</tr>
+
+			<tr>
+				<th><label for="_immo_parking_notes"><?php esc_html_e( 'Hinweis (Freitext)', 'immo-manager' ); ?></label></th>
+				<td><textarea id="_immo_parking_notes" name="immo_meta[_immo_parking_notes]" rows="2" cols="60" placeholder="<?php esc_attr_e( 'z. B. „1 TG-Platz pro Einheit verpflichtend, weitere auf Anfrage."', 'immo-manager' ); ?>"><?php echo esc_textarea( (string) ( $meta['_immo_parking_notes'] ?? '' ) ); ?></textarea></td>
 			</tr>
 		</table>
 		<?php
