@@ -1,6 +1,6 @@
 # Wohneinheiten-Erweiterung — Phase 3: Wizard & Backend-Eingabe
 
-**Status:** Draft
+**Status:** Implemented (2026-05-07)
 **Datum:** 2026-05-07
 **Voraussetzung:** Phasen 1 + 2 implementiert.
 **Scope:** Backend-Eingabe-UI für die neuen Felder. Bauprojekt-Editor bekommt eine Stellplatz-Metabox, der Wohneinheits-Modal-Editor (in Wizard und Project-Metabox) bekommt Zusatzflächen + Stellplatz-Counts.
