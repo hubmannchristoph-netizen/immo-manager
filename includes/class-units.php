@@ -320,6 +320,22 @@ class Units {
 		if ( isset( $data['usable_area'] ) ) {
 			$out['usable_area'] = max( 0, (float) $data['usable_area'] );
 		}
+		foreach ( array( 'balcony_area', 'loggia_area', 'garden_area', 'cellar_area' ) as $k ) {
+			if ( isset( $data[ $k ] ) ) {
+				$out[ $k ] = max( 0, (float) $data[ $k ] );
+			}
+		}
+		foreach ( array( 'parking_garage_count', 'parking_outdoor_count' ) as $k ) {
+			if ( isset( $data[ $k ] ) ) {
+				$out[ $k ] = max( 0, min( 255, (int) $data[ $k ] ) );
+			}
+		}
+		foreach ( array( 'parking_garage_price_override', 'parking_outdoor_price_override' ) as $k ) {
+			if ( array_key_exists( $k, $data ) ) {
+				$val       = $data[ $k ];
+				$out[ $k ] = ( '' === $val || null === $val ) ? null : max( 0, (float) $val );
+			}
+		}
 		foreach ( array( 'rooms', 'bedrooms', 'bathrooms' ) as $k ) {
 			if ( isset( $data[ $k ] ) ) {
 				$out[ $k ] = max( 0, (int) $data[ $k ] );
@@ -400,6 +416,14 @@ class Units {
 			'floor'          => '%d',
 			'area'           => '%f',
 			'usable_area'    => '%f',
+			'balcony_area'   => '%f',
+			'loggia_area'    => '%f',
+			'garden_area'    => '%f',
+			'cellar_area'    => '%f',
+			'parking_garage_count'           => '%d',
+			'parking_outdoor_count'          => '%d',
+			'parking_garage_price_override'  => '%f',
+			'parking_outdoor_price_override' => '%f',
 			'rooms'          => '%d',
 			'bedrooms'       => '%d',
 			'bathrooms'      => '%d',
