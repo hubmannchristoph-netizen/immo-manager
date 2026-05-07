@@ -106,6 +106,54 @@ $p = $prefill;
 	</div>
 </div>
 
+<!-- Stellplätze (nur Bauprojekt) -->
+<div class="immo-wizard-section immo-project-parking-section" style="display:none;">
+	<h3><?php esc_html_e( 'Stellplätze', 'immo-manager' ); ?></h3>
+
+	<h4 style="margin: 1rem 0 0.5rem; font-size: 0.95em;"><?php esc_html_e( 'Tiefgarage', 'immo-manager' ); ?></h4>
+	<div class="immo-wizard-fields">
+		<div class="immo-field immo-field--quarter">
+			<label><input type="checkbox" name="_immo_parking_garage_available" value="1" <?php checked( ! empty( $prefill['_immo_parking_garage_available'] ) ); ?>> <?php esc_html_e( 'Verfügbar', 'immo-manager' ); ?></label>
+		</div>
+		<div class="immo-field immo-field--quarter">
+			<label><?php esc_html_e( 'Anzahl', 'immo-manager' ); ?></label>
+			<input type="number" min="0" step="1" name="_immo_parking_garage_total" class="immo-wizard-input immo-input" value="<?php echo esc_attr( (string) ( $prefill['_immo_parking_garage_total'] ?? 0 ) ); ?>">
+		</div>
+		<div class="immo-field immo-field--quarter">
+			<label><?php esc_html_e( 'Preis pro Platz (€)', 'immo-manager' ); ?></label>
+			<input type="number" min="0" step="1" name="_immo_parking_garage_price" class="immo-wizard-input immo-input" value="<?php echo esc_attr( (string) ( $prefill['_immo_parking_garage_price'] ?? 0 ) ); ?>">
+		</div>
+		<div class="immo-field immo-field--quarter">
+			<label><input type="checkbox" name="_immo_parking_garage_required" value="1" <?php checked( ! empty( $prefill['_immo_parking_garage_required'] ) ); ?>> <?php esc_html_e( 'Verpflichtend', 'immo-manager' ); ?></label>
+		</div>
+	</div>
+
+	<h4 style="margin: 1.5rem 0 0.5rem; font-size: 0.95em;"><?php esc_html_e( 'Außen-Stellplatz', 'immo-manager' ); ?></h4>
+	<div class="immo-wizard-fields">
+		<div class="immo-field immo-field--quarter">
+			<label><input type="checkbox" name="_immo_parking_outdoor_available" value="1" <?php checked( ! empty( $prefill['_immo_parking_outdoor_available'] ) ); ?>> <?php esc_html_e( 'Verfügbar', 'immo-manager' ); ?></label>
+		</div>
+		<div class="immo-field immo-field--quarter">
+			<label><?php esc_html_e( 'Anzahl', 'immo-manager' ); ?></label>
+			<input type="number" min="0" step="1" name="_immo_parking_outdoor_total" class="immo-wizard-input immo-input" value="<?php echo esc_attr( (string) ( $prefill['_immo_parking_outdoor_total'] ?? 0 ) ); ?>">
+		</div>
+		<div class="immo-field immo-field--quarter">
+			<label><?php esc_html_e( 'Preis pro Platz (€)', 'immo-manager' ); ?></label>
+			<input type="number" min="0" step="1" name="_immo_parking_outdoor_price" class="immo-wizard-input immo-input" value="<?php echo esc_attr( (string) ( $prefill['_immo_parking_outdoor_price'] ?? 0 ) ); ?>">
+		</div>
+		<div class="immo-field immo-field--quarter">
+			<label><input type="checkbox" name="_immo_parking_outdoor_required" value="1" <?php checked( ! empty( $prefill['_immo_parking_outdoor_required'] ) ); ?>> <?php esc_html_e( 'Verpflichtend', 'immo-manager' ); ?></label>
+		</div>
+	</div>
+
+	<div class="immo-wizard-fields" style="margin-top: 1rem;">
+		<div class="immo-field" style="width:100%;">
+			<label><?php esc_html_e( 'Hinweis (Freitext)', 'immo-manager' ); ?></label>
+			<textarea name="_immo_parking_notes" rows="2" class="immo-wizard-input immo-input" placeholder="<?php esc_attr_e( 'z. B. „1 TG-Platz pro Einheit verpflichtend, weitere auf Anfrage."', 'immo-manager' ); ?>"><?php echo esc_textarea( (string) ( $prefill['_immo_parking_notes'] ?? '' ) ); ?></textarea>
+		</div>
+	</div>
+</div>
+
 <div class="immo-wizard-section immo-property-only">
 	<div class="immo-field immo-field--half">
 		<label for="wiz_available_from"><?php esc_html_e( 'Verfügbar ab (optional)', 'immo-manager' ); ?></label>

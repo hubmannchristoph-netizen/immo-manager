@@ -555,6 +555,10 @@
 		toggleField('_immo_project_start_date', isProject);
 		toggleField('_immo_project_completion', isProject);
 
+		// Project: Stellplatz-Sektion
+		var parkingSection = self.el.querySelector('.immo-project-parking-section');
+		if (parkingSection) { parkingSection.style.display = isProject ? '' : 'none'; }
+
 		// Unit manager sections
 		var unitPlaceholder = self.el.querySelector('.immo-units-integration-placeholder');
 		if (unitPlaceholder) { unitPlaceholder.style.display = (isProject && self.postId === 0) ? '' : 'none'; }
