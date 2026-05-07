@@ -37,21 +37,39 @@ class Units {
 		$orderby  = in_array( $orderby, $allowed, true ) ? $orderby : 'unit_number';
 		$order    = strtoupper( $order ) === 'DESC' ? 'DESC' : 'ASC';
 
-		// Bei unit_number natürliche Sortierung erzwingen (1, 2, 10 statt 1, 10, 2).
+		// Bei unit_number: in PHP natürlich sortieren (H1-1, H1-2, …, H1-10, H2-1, …).
+		// SQL kann das nicht zuverlässig — daher hier neutral nach id holen und unten sortieren.
 		if ( 'unit_number' === $orderby ) {
-			$order_clause = "LENGTH(unit_number) {$order}, unit_number {$order}";
+			$order_clause = 'id ASC';
 		} else {
-			$order_clause = "{$orderby} {$order}";
+			$order_clause = "{$orderby} {$order}, id ASC";
 		}
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$sql = $wpdb->prepare(
-			"SELECT * FROM {$table} WHERE project_id = %d ORDER BY {$order_clause}, id ASC",
+			"SELECT * FROM {$table} WHERE project_id = %d ORDER BY {$order_clause}",
 			$project_id
 		);
 
-		$rows = $wpdb->get_results( $sql, ARRAY_A );
-		return is_array( $rows ) ? array_map( array( __CLASS__, 'hydrate' ), $rows ) : array();
+		$rows  = $wpdb->get_results( $sql, ARRAY_A );
+		$units = is_array( $rows ) ? array_map( array( __CLASS__, 'hydrate' ), $rows ) : array();
+
+		if ( 'unit_number' === $orderby && ! empty( $units ) ) {
+			usort(
+				$units,
+				static function ( $a, $b ) {
+					return strnatcasecmp(
+						(string) ( $a['unit_number'] ?? '' ),
+						(string) ( $b['unit_number'] ?? '' )
+					);
+				}
+			);
+			if ( 'DESC' === $order ) {
+				$units = array_reverse( $units );
+			}
+		}
+
+		return $units;
 	}
 
 	/**

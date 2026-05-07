@@ -463,7 +463,7 @@
 /* ============================================================
    AKKORDEON
    ============================================================ */
-.immo-detail-content { display:flex;flex-direction:column;gap:0; }
+.immo-detail-content { display:flex;flex-direction:column;gap:0;min-width:0; }
 
 .immo-accordion { border:1px solid var(--immo-border);border-radius:0;overflow:hidden;margin-bottom:8px; }
 .immo-accordion:last-child { margin-bottom:0; }

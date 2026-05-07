@@ -287,18 +287,6 @@ $hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoM
 									<td><?php echo $unit['rooms'] ? esc_html( (int) $unit['rooms'] ) : '—'; ?></td>
 									<td class="immo-units-cell-price">
 										<?php echo $price_display ? esc_html( $price_display ) : '—'; ?>
-										<?php
-										// „Provisionsfrei"-Icon, wenn die zugehörige Property das Flag trägt
-										// UND es eine Kauf-Einheit ist (Preis > 0). Bei Mietern (rent > 0, price = 0)
-										// wird kein Badge gezeigt, weil Provision dort nicht anfällt.
-										$unit_prop = $unit['property'] ?? array();
-										if ( ! empty( $unit_prop['commission_free'] ) && (float) $unit['price'] > 0 ) {
-											\ImmoManager\Templates::commission_free_badge(
-												array( 'commission_free' => true, 'mode' => 'sale' ),
-												'icon'
-											);
-										}
-										?>
 									</td>
 									<td><span class="immo-unit-status-pill <?php echo esc_attr( $sc ); ?>"><?php echo esc_html( $sl ); ?></span></td>
 									<td class="immo-units-table-action">
