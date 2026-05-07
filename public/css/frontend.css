@@ -1247,3 +1247,73 @@
 	-webkit-text-fill-color: transparent;
 	background-clip: text;
 }
+
+/* ============================================================
+   STELLPLATZ-SEKTION (Phase 2 Wohneinheiten-Erweiterung)
+   ============================================================ */
+.immo-parking-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+.immo-parking-item {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.9rem;
+	padding: 0.85rem 1rem;
+	background: var(--immo-bg);
+	border: 1px solid var(--immo-border);
+	border-radius: var(--immo-radius-sm);
+}
+.immo-parking-icon {
+	font-size: 1.5rem;
+	line-height: 1;
+	flex-shrink: 0;
+}
+.immo-parking-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.4rem 0.9rem;
+	flex: 1;
+	min-width: 0;
+}
+.immo-parking-title {
+	font-weight: 700;
+	color: var(--immo-text);
+	margin-right: auto;
+}
+.immo-parking-price {
+	font-weight: 700;
+	color: var(--immo-accent);
+}
+.immo-parking-flag {
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	padding: 0.18em 0.55em;
+	border-radius: 999px;
+}
+.immo-parking-flag-required { background: #fee2e2; color: #991b1b; }
+.immo-parking-flag-optional { background: #e5e7eb; color: #374151; }
+.immo-parking-total {
+	font-size: 0.85rem;
+	color: var(--immo-text-muted);
+}
+.immo-parking-notes {
+	margin: 0.9rem 0 0;
+	padding: 0.7rem 0.9rem;
+	background: var(--immo-bg-tinted, #f3f4f6);
+	border-left: 3px solid var(--immo-accent);
+	border-radius: 6px;
+	font-size: 0.92rem;
+	color: var(--immo-text-muted);
+}
+@media (max-width: 600px) {
+	.immo-parking-meta { gap: 0.25rem 0.6rem; }
+	.immo-parking-title { width: 100%; margin-right: 0; }
+}
