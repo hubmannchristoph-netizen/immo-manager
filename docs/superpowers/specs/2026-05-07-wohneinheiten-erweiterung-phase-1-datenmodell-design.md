@@ -1,6 +1,6 @@
 # Wohneinheiten-Erweiterung — Phase 1: Datenmodell
 
-**Status:** Draft
+**Status:** Implemented (2026-05-07)
 **Datum:** 2026-05-07
 **Scope:** Nur DB-Schema + Sanitize/Validate. Kein Wizard, kein REST-Output, kein Frontend.
 
