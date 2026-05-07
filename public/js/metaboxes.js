@@ -77,18 +77,6 @@
 		var $spinner = $editor.find('.spinner');
 		var $msg     = $editor.find('.immo-unit-message');
 
-		function toggleBalconyTerrace() {
-			var gardenVal = parseFloat($editor.find('input[name="garden_area"]').val()) || 0;
-			var hasGarden = gardenVal > 0;
-			$editor.find('.immo-unit-terrace-field').toggle(hasGarden);
-			$editor.find('.immo-unit-balcony-field').toggle(!hasGarden);
-			if (hasGarden) {
-				$editor.find('input[name="balcony_area"]').val('0');
-			} else {
-				$editor.find('input[name="terrace_area"]').val('0');
-			}
-		}
-
 		function openEditor(unit) {
 			$editor.find('input, textarea, select').each(function () {
 				var $f = $(this);
@@ -104,7 +92,6 @@
 				}
 			});
 			$editor.find('input[name="unit_id"]').val(unit && unit.id ? unit.id : 0);
-			toggleBalconyTerrace();
 
 			// Robustly handle floor plan data
 			var fpId = unit && unit.floor_plan_image_id ? parseInt(unit.floor_plan_image_id, 10) : 0;
@@ -136,9 +123,6 @@
 		$editor.on('click', function (e) {
 			if (e.target === this) { closeEditor(); }
 		});
-
-		// Garten-Wert ändert → Balkon/Terrasse-Felder togglen.
-		$editor.on('input change', 'input[name="garden_area"]', toggleBalconyTerrace);
 
 		// Media Uploader für Grundriss
 		var frame;
