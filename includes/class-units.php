@@ -247,6 +247,14 @@ class Units {
 		$row['floor']        = (int) ( $row['floor'] ?? 0 );
 		$row['area']         = (float) ( $row['area'] ?? 0 );
 		$row['usable_area']  = (float) ( $row['usable_area'] ?? 0 );
+		$row['balcony_area'] = (float) ( $row['balcony_area'] ?? 0 );
+		$row['loggia_area']  = (float) ( $row['loggia_area']  ?? 0 );
+		$row['garden_area']  = (float) ( $row['garden_area']  ?? 0 );
+		$row['cellar_area']  = (float) ( $row['cellar_area']  ?? 0 );
+		$row['parking_garage_count']  = (int) ( $row['parking_garage_count']  ?? 0 );
+		$row['parking_outdoor_count'] = (int) ( $row['parking_outdoor_count'] ?? 0 );
+		$row['parking_garage_price_override']  = ( isset( $row['parking_garage_price_override'] )  && '' !== $row['parking_garage_price_override']  && null !== $row['parking_garage_price_override'] )  ? (float) $row['parking_garage_price_override']  : null;
+		$row['parking_outdoor_price_override'] = ( isset( $row['parking_outdoor_price_override'] ) && '' !== $row['parking_outdoor_price_override'] && null !== $row['parking_outdoor_price_override'] ) ? (float) $row['parking_outdoor_price_override'] : null;
 		$row['rooms']        = (int) ( $row['rooms'] ?? 0 );
 		$row['bedrooms']     = (int) ( $row['bedrooms'] ?? 0 );
 		$row['bathrooms']    = (int) ( $row['bathrooms'] ?? 0 );
