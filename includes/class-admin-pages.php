@@ -936,6 +936,10 @@ fetch('<?php echo esc_url( $api_url ); ?>/properties?ids=42;17;93&status=availab
 				<p><?php esc_html_e( 'Wichtig: ', 'immo-manager' ); ?><code>property.slug</code><?php esc_html_e( ' ist enthalten — Headless-Konsumenten können daraus eine eigene Detail-URL bauen (z. B. ', 'immo-manager' ); ?><code>https://kunde.example.com/immobilie/{slug}</code>).</p>
 				<p><?php esc_html_e( 'Hinweis: ', 'immo-manager' ); ?><code>stats</code><?php esc_html_e( ' enthält IMMER alle Status-Counts (auch wenn nach status gefiltert wurde) — so bleibt der Gesamtüberblick erhalten.', 'immo-manager' ); ?></p>
 
+				<h4 style="margin-top: 1.5rem;"><?php esc_html_e( 'Wohneinheiten-Zusatzfelder (ab 1.1.0)', 'immo-manager' ); ?></h4>
+				<p><?php esc_html_e( 'Pro Einheit zusätzlich:', 'immo-manager' ); ?> <code>balcony_area</code>, <code>loggia_area</code>, <code>garden_area</code>, <code>cellar_area</code> <?php esc_html_e( '(alle in m², default 0). Stellplatz-Inkludierung als', 'immo-manager' ); ?> <code>parking.garage_count</code>, <code>parking.outdoor_count</code> <?php esc_html_e( 'sowie Override-Preise', 'immo-manager' ); ?> <code>parking.garage_price_override</code> / <code>parking.outdoor_price_override</code> <?php esc_html_e( '(NULL = Projekt-Default).', 'immo-manager' ); ?></p>
+				<p><?php esc_html_e( 'Das Bauprojekt liefert in', 'immo-manager' ); ?> <code>meta.parking</code> <?php esc_html_e( 'die zentrale Stellplatz-Konfiguration:', 'immo-manager' ); ?> <code>garage.{available, total, price, required}</code>, <code>outdoor.{available, total, price, required}</code>, <code>notes</code>.</p>
+
 				<h4><?php esc_html_e( 'Beispiel-Aufruf', 'immo-manager' ); ?></h4>
 				<pre><code>fetch('<?php echo esc_url( $api_url ); ?>/projects/by-slug/bauprojekt-graz/units?status=available,reserved&orderby=price&limit=10')
   .then( r =&gt; r.json() )
