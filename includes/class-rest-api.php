@@ -1106,6 +1106,21 @@ class RestApi {
 				'features'           => $features,
 				'features_detail'    => $features_detail,
 				'custom_features'    => (string) $m( '_immo_custom_features', '' ),
+				'parking'            => array(
+					'garage' => array(
+						'available' => (bool)  $m( '_immo_parking_garage_available', false ),
+						'total'     => (int)   $m( '_immo_parking_garage_total', 0 ),
+						'price'     => (float) $m( '_immo_parking_garage_price', 0 ),
+						'required'  => (bool)  $m( '_immo_parking_garage_required', false ),
+					),
+					'outdoor' => array(
+						'available' => (bool)  $m( '_immo_parking_outdoor_available', false ),
+						'total'     => (int)   $m( '_immo_parking_outdoor_total', 0 ),
+						'price'     => (float) $m( '_immo_parking_outdoor_price', 0 ),
+						'required'  => (bool)  $m( '_immo_parking_outdoor_required', false ),
+					),
+					'notes' => (string) $m( '_immo_parking_notes', '' ),
+				),
 			),
 			'unit_stats'  => array_merge(
 				$counts,
@@ -1192,6 +1207,16 @@ class RestApi {
 			'floor'           => (int) $unit['floor'],
 			'area'            => (float) $unit['area'],
 			'usable_area'     => (float) $unit['usable_area'],
+			'balcony_area'    => (float) ( $unit['balcony_area'] ?? 0 ),
+			'loggia_area'     => (float) ( $unit['loggia_area']  ?? 0 ),
+			'garden_area'     => (float) ( $unit['garden_area']  ?? 0 ),
+			'cellar_area'     => (float) ( $unit['cellar_area']  ?? 0 ),
+			'parking'         => array(
+				'garage_count'           => (int)   ( $unit['parking_garage_count']  ?? 0 ),
+				'outdoor_count'          => (int)   ( $unit['parking_outdoor_count'] ?? 0 ),
+				'garage_price_override'  => null === ( $unit['parking_garage_price_override']  ?? null ) ? null : (float) $unit['parking_garage_price_override'],
+				'outdoor_price_override' => null === ( $unit['parking_outdoor_price_override'] ?? null ) ? null : (float) $unit['parking_outdoor_price_override'],
+			),
 			'rooms'           => (int) $unit['rooms'],
 			'bedrooms'        => (int) $unit['bedrooms'],
 			'bathrooms'       => (int) $unit['bathrooms'],
