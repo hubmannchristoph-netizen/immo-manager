@@ -1209,6 +1209,7 @@ class RestApi {
 			'usable_area'     => (float) $unit['usable_area'],
 			'balcony_area'    => (float) ( $unit['balcony_area'] ?? 0 ),
 			'loggia_area'     => (float) ( $unit['loggia_area']  ?? 0 ),
+			'terrace_area'    => (float) ( $unit['terrace_area'] ?? 0 ),
 			'garden_area'     => (float) ( $unit['garden_area']  ?? 0 ),
 			'cellar_area'     => (float) ( $unit['cellar_area']  ?? 0 ),
 			'parking'         => array(

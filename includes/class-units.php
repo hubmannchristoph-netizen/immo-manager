@@ -249,6 +249,7 @@ class Units {
 		$row['usable_area']  = (float) ( $row['usable_area'] ?? 0 );
 		$row['balcony_area'] = (float) ( $row['balcony_area'] ?? 0 );
 		$row['loggia_area']  = (float) ( $row['loggia_area']  ?? 0 );
+		$row['terrace_area'] = (float) ( $row['terrace_area'] ?? 0 );
 		$row['garden_area']  = (float) ( $row['garden_area']  ?? 0 );
 		$row['cellar_area']  = (float) ( $row['cellar_area']  ?? 0 );
 		$row['parking_garage_count']  = (int) ( $row['parking_garage_count']  ?? 0 );
@@ -328,7 +329,7 @@ class Units {
 		if ( isset( $data['usable_area'] ) ) {
 			$out['usable_area'] = max( 0, (float) $data['usable_area'] );
 		}
-		foreach ( array( 'balcony_area', 'loggia_area', 'garden_area', 'cellar_area' ) as $k ) {
+		foreach ( array( 'balcony_area', 'loggia_area', 'terrace_area', 'garden_area', 'cellar_area' ) as $k ) {
 			if ( isset( $data[ $k ] ) ) {
 				$out[ $k ] = max( 0, (float) $data[ $k ] );
 			}
@@ -426,6 +427,7 @@ class Units {
 			'usable_area'    => '%f',
 			'balcony_area'   => '%f',
 			'loggia_area'    => '%f',
+			'terrace_area'   => '%f',
 			'garden_area'    => '%f',
 			'cellar_area'    => '%f',
 			'parking_garage_count'           => '%d',

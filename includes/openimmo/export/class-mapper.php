@@ -205,9 +205,12 @@ class Mapper {
 			$this->text( $el, 'anzahl_badezimmer', (string) (int) $l->meta['_immo_bathrooms'] );
 		}
 
-		// Balkon + Loggia summiert in <balkon_terrasse_flaeche> — OpenImmo hat kein
-		// separates Loggia-Tag; Loggia ist konzeptionell ein überdachter Balkon.
-		$balcony_total = (float) ( $l->meta['_immo_balcony_area'] ?? 0 ) + (float) ( $l->meta['_immo_loggia_area'] ?? 0 );
+		// Balkon + Loggia + Terrasse summiert in <balkon_terrasse_flaeche> — OpenImmo
+		// hat keine separaten Loggia-/Terrasse-Tags. Terrasse zählt fachlich zur
+		// "balkon_terrasse"-Kategorie, Loggia ist ein überdachter Balkon.
+		$balcony_total = (float) ( $l->meta['_immo_balcony_area'] ?? 0 )
+		               + (float) ( $l->meta['_immo_loggia_area']  ?? 0 )
+		               + (float) ( $l->meta['_immo_terrace_area'] ?? 0 );
 		if ( $balcony_total > 0 ) {
 			$this->text( $el, 'balkon_terrasse_flaeche', $this->float_str( $balcony_total ) );
 		}
@@ -266,7 +269,7 @@ class Mapper {
 			$el->appendChild( $this->dom->createElement( 'unterkellert' ) );
 			$oi_seen[] = 'unterkellert';
 		}
-		if ( ( (float) ( $l->meta['_immo_balcony_area'] ?? 0 ) + (float) ( $l->meta['_immo_loggia_area'] ?? 0 ) ) > 0 && ! in_array( 'balkon_terrasse', $oi_seen, true ) ) {
+		if ( ( (float) ( $l->meta['_immo_balcony_area'] ?? 0 ) + (float) ( $l->meta['_immo_loggia_area'] ?? 0 ) + (float) ( $l->meta['_immo_terrace_area'] ?? 0 ) ) > 0 && ! in_array( 'balkon_terrasse', $oi_seen, true ) ) {
 			$el->appendChild( $this->dom->createElement( 'balkon_terrasse' ) );
 			$oi_seen[] = 'balkon_terrasse';
 		}
