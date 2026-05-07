@@ -523,6 +523,7 @@ $hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoM
 					'base_price'      => $first['price'],
 					'commission_free' => $first['commission_free'],
 					'units'           => $calc_units,
+					'parking'         => $meta['parking'] ?? array(),
 				);
 				include IMMO_MANAGER_PLUGIN_DIR . 'templates/parts/calculator.php';
 			}

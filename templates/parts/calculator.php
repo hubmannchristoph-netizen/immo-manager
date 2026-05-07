@@ -20,6 +20,29 @@ $ctx             = $calc_context ?? array();
 $base_price      = (float) ( $ctx['base_price'] ?? 0 );
 $commission_free = (bool) ( $ctx['commission_free'] ?? false );
 $units           = (array) ( $ctx['units'] ?? array() );
+$parking         = (array) ( $ctx['parking'] ?? array() );
+
+// Stellplatz-Konfig auf Projekt-Ebene (nur wenn verfügbar einbinden).
+$pk_g = $parking['garage']  ?? array();
+$pk_o = $parking['outdoor'] ?? array();
+$pk_garage_avail   = ! empty( $pk_g['available'] );
+$pk_outdoor_avail  = ! empty( $pk_o['available'] );
+$pk_garage_price   = (float) ( $pk_g['price']    ?? 0 );
+$pk_outdoor_price  = (float) ( $pk_o['price']    ?? 0 );
+$pk_garage_max     = max( 0, (int) ( $pk_g['total'] ?? 0 ) );
+$pk_outdoor_max    = max( 0, (int) ( $pk_o['total'] ?? 0 ) );
+// Default-Maximum pro Käufer wenn total nicht gesetzt.
+if ( $pk_garage_max  <= 0 ) { $pk_garage_max  = 9; }
+if ( $pk_outdoor_max <= 0 ) { $pk_outdoor_max = 9; }
+$pk_garage_required  = ! empty( $pk_g['required'] );
+$pk_outdoor_required = ! empty( $pk_o['required'] );
+$pk_data_attrs = sprintf(
+	' data-parking-garage-price="%s" data-parking-garage-max="%d" data-parking-outdoor-price="%s" data-parking-outdoor-max="%d"',
+	esc_attr( (string) $pk_garage_price ),
+	$pk_garage_max,
+	esc_attr( (string) $pk_outdoor_price ),
+	$pk_outdoor_max
+);
 
 $enable_costs     = (bool) \ImmoManager\Settings::get( 'calc_enable_costs', 1 );
 $enable_financing = (bool) \ImmoManager\Settings::get( 'calc_enable_financing', 1 );
@@ -73,6 +96,7 @@ $render_unit_select = function () use ( $units ) {
 				data-mode="costs"
 				data-base-price="<?php echo esc_attr( (string) $base_price ); ?>"
 				data-commission-free="<?php echo esc_attr( $commission_free ? '1' : '0' ); ?>"
+				<?php echo $pk_data_attrs; ?>
 				<?php if ( $units_json ) : ?> data-units="<?php echo esc_attr( $units_json ); ?>"<?php endif; ?>>
 
 				<?php $render_unit_select(); ?>
@@ -84,6 +108,26 @@ $render_unit_select = function () use ( $units ) {
 							<label class="immo-calc-price-label"><?php esc_html_e( 'Kaufpreis', 'immo-manager' ); ?></label>
 							<input type="number" class="immo-calc-price" min="0" step="1" value="<?php echo esc_attr( (string) (int) $base_price ); ?>">
 						</div>
+						<?php if ( $pk_garage_avail ) : ?>
+							<div class="immo-calc-input-row">
+								<label><?php
+									/* translators: %s: Preis pro TG-Platz */
+									printf( esc_html__( 'TG-Plätze (× %s)', 'immo-manager' ), esc_html( number_format_i18n( $pk_garage_price, 0 ) . ' €' ) );
+									if ( $pk_garage_required ) { echo ' <small style="color:#991b1b;">(' . esc_html__( 'Pflicht', 'immo-manager' ) . ')</small>'; }
+								?></label>
+								<input type="number" class="immo-calc-parking-garage" min="<?php echo $pk_garage_required ? 1 : 0; ?>" max="<?php echo (int) $pk_garage_max; ?>" step="1" value="<?php echo $pk_garage_required ? 1 : 0; ?>">
+							</div>
+						<?php endif; ?>
+						<?php if ( $pk_outdoor_avail ) : ?>
+							<div class="immo-calc-input-row">
+								<label><?php
+									/* translators: %s: Preis pro Außen-Stellplatz */
+									printf( esc_html__( 'Außen-Stellplätze (× %s)', 'immo-manager' ), esc_html( number_format_i18n( $pk_outdoor_price, 0 ) . ' €' ) );
+									if ( $pk_outdoor_required ) { echo ' <small style="color:#991b1b;">(' . esc_html__( 'Pflicht', 'immo-manager' ) . ')</small>'; }
+								?></label>
+								<input type="number" class="immo-calc-parking-outdoor" min="<?php echo $pk_outdoor_required ? 1 : 0; ?>" max="<?php echo (int) $pk_outdoor_max; ?>" step="1" value="<?php echo $pk_outdoor_required ? 1 : 0; ?>">
+							</div>
+						<?php endif; ?>
 					</div>
 					<div class="immo-calc-section immo-calc-section--results">
 						<h4 class="immo-calc-section-title"><?php esc_html_e( 'Aufstellung', 'immo-manager' ); ?></h4>
@@ -118,6 +162,7 @@ $render_unit_select = function () use ( $units ) {
 				data-mode="financing"
 				data-base-price="<?php echo esc_attr( (string) $base_price ); ?>"
 				data-commission-free="<?php echo esc_attr( $commission_free ? '1' : '0' ); ?>"
+				<?php echo $pk_data_attrs; ?>
 				<?php if ( $units_json ) : ?> data-units="<?php echo esc_attr( $units_json ); ?>"<?php endif; ?>>
 
 				<?php $render_unit_select(); ?>
@@ -130,6 +175,25 @@ $render_unit_select = function () use ( $units ) {
 							<label class="immo-calc-price-label"><?php esc_html_e( 'Kaufpreis', 'immo-manager' ); ?></label>
 							<input type="number" class="immo-calc-price" min="0" step="1" value="<?php echo esc_attr( (string) (int) $base_price ); ?>">
 						</div>
+
+						<?php if ( $pk_garage_avail ) : ?>
+							<div class="immo-calc-input-row">
+								<label><?php
+									printf( esc_html__( 'TG-Plätze (× %s)', 'immo-manager' ), esc_html( number_format_i18n( $pk_garage_price, 0 ) . ' €' ) );
+									if ( $pk_garage_required ) { echo ' <small style="color:#991b1b;">(' . esc_html__( 'Pflicht', 'immo-manager' ) . ')</small>'; }
+								?></label>
+								<input type="number" class="immo-calc-parking-garage" min="<?php echo $pk_garage_required ? 1 : 0; ?>" max="<?php echo (int) $pk_garage_max; ?>" step="1" value="<?php echo $pk_garage_required ? 1 : 0; ?>">
+							</div>
+						<?php endif; ?>
+						<?php if ( $pk_outdoor_avail ) : ?>
+							<div class="immo-calc-input-row">
+								<label><?php
+									printf( esc_html__( 'Außen-Stellplätze (× %s)', 'immo-manager' ), esc_html( number_format_i18n( $pk_outdoor_price, 0 ) . ' €' ) );
+									if ( $pk_outdoor_required ) { echo ' <small style="color:#991b1b;">(' . esc_html__( 'Pflicht', 'immo-manager' ) . ')</small>'; }
+								?></label>
+								<input type="number" class="immo-calc-parking-outdoor" min="<?php echo $pk_outdoor_required ? 1 : 0; ?>" max="<?php echo (int) $pk_outdoor_max; ?>" step="1" value="<?php echo $pk_outdoor_required ? 1 : 0; ?>">
+							</div>
+						<?php endif; ?>
 
 						<div class="immo-calc-input-row">
 							<label>
