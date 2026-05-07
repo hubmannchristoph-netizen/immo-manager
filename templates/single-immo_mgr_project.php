@@ -283,7 +283,25 @@ $hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoM
 								<tr class="<?php echo esc_attr( implode( ' ', $row_classes ) ); ?>" data-status="<?php echo esc_attr( $unit['status'] ); ?>">
 									<td class="immo-units-cell-number"><strong><?php echo esc_html( $unit['unit_number'] ); ?></strong></td>
 									<td><?php echo esc_html( $floor_display ); ?></td>
-									<td><?php echo $unit['area'] ? esc_html( number_format_i18n( (float) $unit['area'], 0 ) . ' m²' ) : '—'; ?></td>
+									<td>
+										<?php echo $unit['area'] ? esc_html( number_format_i18n( (float) $unit['area'], 0 ) . ' m²' ) : '—'; ?>
+										<?php
+										$extras = array();
+										if ( (float) ( $unit['balcony_area'] ?? 0 ) > 0 ) { $extras[] = '🏔️ ' . number_format_i18n( (float) $unit['balcony_area'], 0 ) . ' m²'; }
+										if ( (float) ( $unit['loggia_area']  ?? 0 ) > 0 ) { $extras[] = '🏛️ ' . number_format_i18n( (float) $unit['loggia_area'],  0 ) . ' m²'; }
+										if ( (float) ( $unit['garden_area']  ?? 0 ) > 0 ) { $extras[] = '🌿 ' . number_format_i18n( (float) $unit['garden_area'],  0 ) . ' m²'; }
+										if ( (float) ( $unit['cellar_area']  ?? 0 ) > 0 ) { $extras[] = '🏚️ ' . number_format_i18n( (float) $unit['cellar_area'],  0 ) . ' m²'; }
+										if ( (int)   ( $unit['parking']['garage_count']  ?? 0 ) > 0 ) { $extras[] = '🅿️ ×' . (int) $unit['parking']['garage_count']; }
+										if ( (int)   ( $unit['parking']['outdoor_count'] ?? 0 ) > 0 ) { $extras[] = '🚗 ×' . (int) $unit['parking']['outdoor_count']; }
+										if ( $extras ) :
+										?>
+											<span class="immo-unit-extras">
+												<?php foreach ( $extras as $e ) : ?>
+													<span class="immo-unit-extra"><?php echo esc_html( $e ); ?></span>
+												<?php endforeach; ?>
+											</span>
+										<?php endif; ?>
+									</td>
 									<td><?php echo $unit['rooms'] ? esc_html( (int) $unit['rooms'] ) : '—'; ?></td>
 									<td class="immo-units-cell-price">
 										<?php echo $price_display ? esc_html( $price_display ) : '—'; ?>
