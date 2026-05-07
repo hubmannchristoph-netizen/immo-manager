@@ -3,7 +3,7 @@
  * Plugin Name:       Immo Manager
  * Plugin URI:        mailto:hubmann.christoph@gmail.com
  * Description:       Professionelle Immobilienverwaltung für Österreich – Verkauf, Vermietung und Bauprojekte mit Wohneinheiten.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Requires at least: 5.9
  * Requires PHP:      7.4
  * Author:            Hubmann Christoph
@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Plugin-Konstanten definieren
  */
-define( 'IMMO_MANAGER_VERSION', '1.1.0' );
+define( 'IMMO_MANAGER_VERSION', '1.2.0' );
 define( 'IMMO_MANAGER_PLUGIN_FILE', __FILE__ );
 define( 'IMMO_MANAGER_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'IMMO_MANAGER_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

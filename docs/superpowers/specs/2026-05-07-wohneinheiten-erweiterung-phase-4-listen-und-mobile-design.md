@@ -1,6 +1,6 @@
 # Wohneinheiten-Erweiterung — Phase 4: Listen-Anzeige & Mobile
 
-**Status:** Draft
+**Status:** Implemented (2026-05-07)
 **Datum:** 2026-05-07
 **Voraussetzung:** Phasen 1–3 implementiert.
 **Scope:** Die in Phase 1 angelegten Werte werden in der **Wohneinheits-Tabelle** sichtbar; Mobile-Breiten-Bug der Tabelle wird gefixt.
