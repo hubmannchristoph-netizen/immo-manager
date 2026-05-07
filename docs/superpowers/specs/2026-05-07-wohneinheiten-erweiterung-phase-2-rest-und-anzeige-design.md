@@ -1,6 +1,6 @@
 # Wohneinheiten-Erweiterung — Phase 2: REST & Anzeige
 
-**Status:** Draft
+**Status:** Implemented (2026-05-07)
 **Datum:** 2026-05-07
 **Voraussetzung:** Phase 1 (Datenmodell) implementiert.
 **Scope:** REST-DTOs liefern die neuen Felder, Manager-Frontend (`single-immo_mgr_project.php`) und immo-client (`single-project.php` + Lightbox-Datenpool) zeigen sie.
