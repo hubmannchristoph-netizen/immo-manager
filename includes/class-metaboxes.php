@@ -547,6 +547,7 @@ class Metaboxes {
 				<th><?php esc_html_e( 'Verfügbar', 'immo-manager' ); ?></th>
 				<td>
 					<label>
+						<input type="hidden" name="immo_meta[_immo_parking_garage_available]" value="0">
 						<input type="checkbox" name="immo_meta[_immo_parking_garage_available]" value="1" <?php checked( ! empty( $meta['_immo_parking_garage_available'] ) ); ?>>
 						<?php esc_html_e( 'Tiefgaragenplätze sind im Projekt verfügbar', 'immo-manager' ); ?>
 					</label>
@@ -564,6 +565,7 @@ class Metaboxes {
 				<th><?php esc_html_e( 'Verpflichtend', 'immo-manager' ); ?></th>
 				<td>
 					<label>
+						<input type="hidden" name="immo_meta[_immo_parking_garage_required]" value="0">
 						<input type="checkbox" name="immo_meta[_immo_parking_garage_required]" value="1" <?php checked( ! empty( $meta['_immo_parking_garage_required'] ) ); ?>>
 						<?php esc_html_e( 'Beim Wohnungskauf verpflichtend zu erwerben', 'immo-manager' ); ?>
 					</label>
@@ -575,6 +577,7 @@ class Metaboxes {
 				<th><?php esc_html_e( 'Verfügbar', 'immo-manager' ); ?></th>
 				<td>
 					<label>
+						<input type="hidden" name="immo_meta[_immo_parking_outdoor_available]" value="0">
 						<input type="checkbox" name="immo_meta[_immo_parking_outdoor_available]" value="1" <?php checked( ! empty( $meta['_immo_parking_outdoor_available'] ) ); ?>>
 						<?php esc_html_e( 'Außen-Stellplätze sind im Projekt verfügbar', 'immo-manager' ); ?>
 					</label>
@@ -592,6 +595,7 @@ class Metaboxes {
 				<th><?php esc_html_e( 'Verpflichtend', 'immo-manager' ); ?></th>
 				<td>
 					<label>
+						<input type="hidden" name="immo_meta[_immo_parking_outdoor_required]" value="0">
 						<input type="checkbox" name="immo_meta[_immo_parking_outdoor_required]" value="1" <?php checked( ! empty( $meta['_immo_parking_outdoor_required'] ) ); ?>>
 						<?php esc_html_e( 'Beim Wohnungskauf verpflichtend zu erwerben', 'immo-manager' ); ?>
 					</label>

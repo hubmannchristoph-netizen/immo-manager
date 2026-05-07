@@ -113,6 +113,7 @@ $p = $prefill;
 	<h4 style="margin: 1rem 0 0.5rem; font-size: 0.95em;"><?php esc_html_e( 'Tiefgarage', 'immo-manager' ); ?></h4>
 	<div class="immo-wizard-fields">
 		<div class="immo-field immo-field--quarter">
+			<input type="hidden" name="_immo_parking_garage_available" value="0">
 			<label><input type="checkbox" name="_immo_parking_garage_available" value="1" <?php checked( ! empty( $prefill['_immo_parking_garage_available'] ) ); ?>> <?php esc_html_e( 'Verfügbar', 'immo-manager' ); ?></label>
 		</div>
 		<div class="immo-field immo-field--quarter">
@@ -124,6 +125,7 @@ $p = $prefill;
 			<input type="number" min="0" step="1" name="_immo_parking_garage_price" class="immo-wizard-input immo-input" value="<?php echo esc_attr( (string) ( $prefill['_immo_parking_garage_price'] ?? 0 ) ); ?>">
 		</div>
 		<div class="immo-field immo-field--quarter">
+			<input type="hidden" name="_immo_parking_garage_required" value="0">
 			<label><input type="checkbox" name="_immo_parking_garage_required" value="1" <?php checked( ! empty( $prefill['_immo_parking_garage_required'] ) ); ?>> <?php esc_html_e( 'Verpflichtend', 'immo-manager' ); ?></label>
 		</div>
 	</div>
@@ -131,6 +133,7 @@ $p = $prefill;
 	<h4 style="margin: 1.5rem 0 0.5rem; font-size: 0.95em;"><?php esc_html_e( 'Außen-Stellplatz', 'immo-manager' ); ?></h4>
 	<div class="immo-wizard-fields">
 		<div class="immo-field immo-field--quarter">
+			<input type="hidden" name="_immo_parking_outdoor_available" value="0">
 			<label><input type="checkbox" name="_immo_parking_outdoor_available" value="1" <?php checked( ! empty( $prefill['_immo_parking_outdoor_available'] ) ); ?>> <?php esc_html_e( 'Verfügbar', 'immo-manager' ); ?></label>
 		</div>
 		<div class="immo-field immo-field--quarter">
@@ -142,6 +145,7 @@ $p = $prefill;
 			<input type="number" min="0" step="1" name="_immo_parking_outdoor_price" class="immo-wizard-input immo-input" value="<?php echo esc_attr( (string) ( $prefill['_immo_parking_outdoor_price'] ?? 0 ) ); ?>">
 		</div>
 		<div class="immo-field immo-field--quarter">
+			<input type="hidden" name="_immo_parking_outdoor_required" value="0">
 			<label><input type="checkbox" name="_immo_parking_outdoor_required" value="1" <?php checked( ! empty( $prefill['_immo_parking_outdoor_required'] ) ); ?>> <?php esc_html_e( 'Verpflichtend', 'immo-manager' ); ?></label>
 		</div>
 	</div>
