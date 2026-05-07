@@ -343,10 +343,10 @@ $key_facts = array_filter( array(
 			$prop_units = \ImmoManager\Units::get_by_property( (int) $property['id'] );
 			if ( ! empty( $prop_units ) ) :
 				$prop_status_class = array(
-					'available' => 'is-available',
-					'reserved'  => 'is-reserved',
-					'sold'      => 'is-sold',
-					'rented'    => 'is-rented',
+					'available' => 'status-available',
+					'reserved'  => 'status-reserved',
+					'sold'      => 'status-sold',
+					'rented'    => 'status-rented',
 				);
 				$prop_status_labels = array(
 					'available' => __( 'Verfügbar', 'immo-manager' ),
@@ -397,7 +397,30 @@ $key_facts = array_filter( array(
 									<tr class="immo-units-row" data-status="<?php echo esc_attr( $u_status ); ?>">
 										<td class="immo-units-cell-number"><strong><?php echo esc_html( (string) ( $u['unit_number'] ?? '' ) ); ?></strong></td>
 										<td><?php echo esc_html( $floor_disp ); ?></td>
-										<td><?php echo $u_area_val > 0 ? esc_html( number_format_i18n( $u_area_val, $u_area_dec ) . ' m²' ) : '—'; ?></td>
+										<td>
+											<?php echo $u_area_val > 0 ? esc_html( number_format_i18n( $u_area_val, $u_area_dec ) . ' m²' ) : '—'; ?>
+											<?php
+											$fmt_area_pill = static function ( $v ) {
+												$v = (float) $v;
+												return number_format_i18n( $v, ( floor( $v ) == $v ) ? 0 : 1 );
+											};
+											$u_extras = array();
+											if ( (float) ( $u['balcony_area'] ?? 0 ) > 0 ) { $u_extras[] = array( 'label' => __( 'Balkon', 'immo-manager' ),     'text' => '🪟 ' . $fmt_area_pill( $u['balcony_area'] ) . ' m²' ); }
+											if ( (float) ( $u['loggia_area']  ?? 0 ) > 0 ) { $u_extras[] = array( 'label' => __( 'Loggia', 'immo-manager' ),     'text' => '🏛️ ' . $fmt_area_pill( $u['loggia_area'] )  . ' m²' ); }
+											if ( (float) ( $u['terrace_area'] ?? 0 ) > 0 ) { $u_extras[] = array( 'label' => __( 'Terrasse', 'immo-manager' ),   'text' => '⛱️ ' . $fmt_area_pill( $u['terrace_area'] ) . ' m²' ); }
+											if ( (float) ( $u['garden_area']  ?? 0 ) > 0 ) { $u_extras[] = array( 'label' => __( 'Garten', 'immo-manager' ),     'text' => '🌳 ' . $fmt_area_pill( $u['garden_area'] )  . ' m²' ); }
+											if ( (float) ( $u['cellar_area']  ?? 0 ) > 0 ) { $u_extras[] = array( 'label' => __( 'Keller', 'immo-manager' ),     'text' => '📦 ' . $fmt_area_pill( $u['cellar_area'] )  . ' m²' ); }
+											if ( (int)   ( $u['parking_garage_count']  ?? 0 ) > 0 ) { $u_extras[] = array( 'label' => __( 'Tiefgaragenplatz', 'immo-manager' ),  'text' => '🅿️ ×' . (int) $u['parking_garage_count'] ); }
+											if ( (int)   ( $u['parking_outdoor_count'] ?? 0 ) > 0 ) { $u_extras[] = array( 'label' => __( 'Außen-Stellplatz',  'immo-manager' ), 'text' => '🚗 ×' . (int) $u['parking_outdoor_count'] ); }
+											if ( $u_extras ) :
+											?>
+												<span class="immo-unit-extras">
+													<?php foreach ( $u_extras as $e ) : ?>
+														<span class="immo-unit-extra" title="<?php echo esc_attr( $e['label'] ); ?>" aria-label="<?php echo esc_attr( $e['label'] . ': ' . $e['text'] ); ?>"><?php echo esc_html( $e['text'] ); ?></span>
+													<?php endforeach; ?>
+												</span>
+											<?php endif; ?>
+										</td>
 										<td><?php echo $u['rooms'] ? esc_html( (int) $u['rooms'] ) : '—'; ?></td>
 										<td class="immo-units-cell-price"><?php echo esc_html( $u_price_disp ); ?></td>
 										<td><span class="immo-unit-status-pill <?php echo esc_attr( $u_status_class ); ?>"><?php echo esc_html( $u_status_label ); ?></span></td>

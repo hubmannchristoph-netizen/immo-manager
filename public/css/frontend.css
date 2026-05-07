@@ -792,8 +792,9 @@
 	white-space: nowrap;
 }
 .immo-unit-status-pill.status-available { background: #c8f5cc; color: #145718; }
-.immo-unit-status-pill.status-reserved  { background: #fff0cc; color: #7a5200; }
+.immo-unit-status-pill.status-reserved  { background: #ffe2b8; color: #8a4a00; }
 .immo-unit-status-pill.status-sold      { background: #ffd6d6; color: #7a0000; }
+.immo-unit-status-pill.status-rented    { background: #ffd6d6; color: #7a0000; }
 
 .immo-unit-facts {
 	list-style: none;
