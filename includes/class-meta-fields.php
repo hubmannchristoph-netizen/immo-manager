@@ -139,6 +139,17 @@ class MetaFields {
 			'_immo_layout_type'       => array( 'type' => 'string',  'enum' => array( '', 'standard', 'compact' ), 'default' => '' ),
 			'_immo_gallery_type'      => array( 'type' => 'string',  'enum' => array( '', 'slider', 'grid' ), 'default' => '' ),
 			'_immo_hero_type'         => array( 'type' => 'string',  'enum' => array( '', 'full', 'contained' ), 'default' => '' ),
+
+			// Stellplatz-Konfiguration (Phase 1 Wohneinheiten-Erweiterung).
+			'_immo_parking_garage_available'  => array( 'type' => 'boolean', 'default' => false ),
+			'_immo_parking_garage_total'      => array( 'type' => 'integer', 'default' => 0 ),
+			'_immo_parking_garage_price'      => array( 'type' => 'number',  'default' => 0 ),
+			'_immo_parking_garage_required'   => array( 'type' => 'boolean', 'default' => false ),
+			'_immo_parking_outdoor_available' => array( 'type' => 'boolean', 'default' => false ),
+			'_immo_parking_outdoor_total'     => array( 'type' => 'integer', 'default' => 0 ),
+			'_immo_parking_outdoor_price'     => array( 'type' => 'number',  'default' => 0 ),
+			'_immo_parking_outdoor_required'  => array( 'type' => 'boolean', 'default' => false ),
+			'_immo_parking_notes'             => array( 'type' => 'string',  'default' => '' ),
 		);
 	}
 
