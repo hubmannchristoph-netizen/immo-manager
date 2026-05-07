@@ -320,6 +320,12 @@ $step_slugs = array( 1 => 'type', 2 => 'location', 3 => 'details', 4 => 'price',
 								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Zimmer</label><input type="number" name="rooms" class="immo-input"></div>
 								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Kaufpreis</label><input type="number" step="0.01" name="price" class="immo-input"></div>
 								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Mietpreis</label><input type="number" step="0.01" name="rent" class="immo-input"></div>
+								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Balkon (m²)</label><input type="number" step="0.01" min="0" name="balcony_area" class="immo-input"></div>
+								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Loggia (m²)</label><input type="number" step="0.01" min="0" name="loggia_area" class="immo-input"></div>
+								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Garten (m²)</label><input type="number" step="0.01" min="0" name="garden_area" class="immo-input"></div>
+								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Keller (m²)</label><input type="number" step="0.01" min="0" name="cellar_area" class="immo-input"></div>
+								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">TG-Plätze inkl.</label><input type="number" min="0" max="9" name="parking_garage_count" class="immo-input"></div>
+								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Außen-Stellplätze inkl.</label><input type="number" min="0" max="9" name="parking_outdoor_count" class="immo-input"></div>
 								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Status</label>
 									<select name="status" class="immo-input" style="height: auto;">
 										<option value="available">Verfügbar</option>
