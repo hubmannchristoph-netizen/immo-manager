@@ -103,6 +103,12 @@ class ListingDTO {
 		return array(
 			'_immo_area'          => (float) ( $unit['area']        ?? 0 ),
 			'_immo_usable_area'   => (float) ( $unit['usable_area'] ?? 0 ),
+			'_immo_balcony_area'  => (float) ( $unit['balcony_area'] ?? 0 ),
+			'_immo_loggia_area'   => (float) ( $unit['loggia_area']  ?? 0 ),
+			'_immo_garden_area'   => (float) ( $unit['garden_area']  ?? 0 ),
+			'_immo_cellar_area'   => (float) ( $unit['cellar_area']  ?? 0 ),
+			'_immo_parking_garage_count'  => (int) ( $unit['parking_garage_count']  ?? 0 ),
+			'_immo_parking_outdoor_count' => (int) ( $unit['parking_outdoor_count'] ?? 0 ),
 			'_immo_rooms'         => (int)   ( $unit['rooms']       ?? 0 ),
 			'_immo_bedrooms'      => (int)   ( $unit['bedrooms']    ?? 0 ),
 			'_immo_bathrooms'     => (int)   ( $unit['bathrooms']   ?? 0 ),

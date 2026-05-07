@@ -204,6 +204,26 @@ class Mapper {
 		if ( ! empty( $l->meta['_immo_bathrooms'] ) ) {
 			$this->text( $el, 'anzahl_badezimmer', (string) (int) $l->meta['_immo_bathrooms'] );
 		}
+
+		// Balkon + Loggia summiert in <balkon_terrasse_flaeche> — OpenImmo hat kein
+		// separates Loggia-Tag; Loggia ist konzeptionell ein überdachter Balkon.
+		$balcony_total = (float) ( $l->meta['_immo_balcony_area'] ?? 0 ) + (float) ( $l->meta['_immo_loggia_area'] ?? 0 );
+		if ( $balcony_total > 0 ) {
+			$this->text( $el, 'balkon_terrasse_flaeche', $this->float_str( $balcony_total ) );
+		}
+		if ( ! empty( $l->meta['_immo_garden_area'] ) ) {
+			$this->text( $el, 'gartenflaeche', $this->float_str( $l->meta['_immo_garden_area'] ) );
+		}
+		if ( ! empty( $l->meta['_immo_cellar_area'] ) ) {
+			$this->text( $el, 'kellerflaeche', $this->float_str( $l->meta['_immo_cellar_area'] ) );
+		}
+
+		// Stellplätze: TG + Außen aufsummiert als anzahl_stellplaetze.
+		$parking_total = (int) ( $l->meta['_immo_parking_garage_count'] ?? 0 ) + (int) ( $l->meta['_immo_parking_outdoor_count'] ?? 0 );
+		if ( $parking_total > 0 ) {
+			$this->text( $el, 'anzahl_stellplaetze', (string) $parking_total );
+		}
+
 		return $el;
 	}
 
@@ -225,6 +245,30 @@ class Mapper {
 			$node      = $this->dom->createElement( $oi_tag );
 			// Feature-Knoten in OpenImmo sind oft Boolean-Container ohne Wert.
 			$el->appendChild( $node );
+		}
+
+		// Stellplatzart-Knoten (Boolean-Kombination) basierend auf Unit-Counts.
+		$has_garage  = (int) ( $l->meta['_immo_parking_garage_count']  ?? 0 ) > 0;
+		$has_outdoor = (int) ( $l->meta['_immo_parking_outdoor_count'] ?? 0 ) > 0;
+		if ( $has_garage || $has_outdoor ) {
+			$stp = $this->dom->createElement( 'stellplatzart' );
+			if ( $has_garage )  { $stp->setAttribute( 'TIEFGARAGE', 'true' ); }
+			if ( $has_outdoor ) { $stp->setAttribute( 'FREIPLATZ',  'true' ); }
+			$el->appendChild( $stp );
+		}
+
+		// Boolean-Indikatoren aus Unit-Flächen ableiten (zusätzlich zum FEATURE_MAP).
+		if ( (float) ( $l->meta['_immo_garden_area'] ?? 0 ) > 0 && ! in_array( 'gartennutzung', $oi_seen, true ) ) {
+			$el->appendChild( $this->dom->createElement( 'gartennutzung' ) );
+			$oi_seen[] = 'gartennutzung';
+		}
+		if ( (float) ( $l->meta['_immo_cellar_area'] ?? 0 ) > 0 && ! in_array( 'unterkellert', $oi_seen, true ) ) {
+			$el->appendChild( $this->dom->createElement( 'unterkellert' ) );
+			$oi_seen[] = 'unterkellert';
+		}
+		if ( ( (float) ( $l->meta['_immo_balcony_area'] ?? 0 ) + (float) ( $l->meta['_immo_loggia_area'] ?? 0 ) ) > 0 && ! in_array( 'balkon_terrasse', $oi_seen, true ) ) {
+			$el->appendChild( $this->dom->createElement( 'balkon_terrasse' ) );
+			$oi_seen[] = 'balkon_terrasse';
 		}
 
 		if ( ! empty( $l->meta['_immo_heating'] ) ) {
