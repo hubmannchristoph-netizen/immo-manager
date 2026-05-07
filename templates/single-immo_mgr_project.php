@@ -290,8 +290,22 @@ $hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoM
 									</td>
 									<td><span class="immo-unit-status-pill <?php echo esc_attr( $sc ); ?>"><?php echo esc_html( $sl ); ?></span></td>
 									<td class="immo-units-table-action">
-										<?php if ( ! empty( $unit['property'] ) ) : ?>
-											<button type="button" class="immo-units-action-btn immo-quick-info-btn" data-property="<?php echo esc_attr( wp_json_encode( $unit['property'] ) ); ?>" aria-label="<?php esc_attr_e( 'Quick-Info anzeigen', 'immo-manager' ); ?>" title="<?php esc_attr_e( 'Quick-Info anzeigen', 'immo-manager' ); ?>">
+										<?php if ( ! empty( $unit['property'] ) ) :
+											$qi_data = array_merge(
+												is_array( $unit['property'] ?? null ) ? $unit['property'] : array(),
+												array(
+													'unit_balcony_area' => (float) ( $unit['balcony_area'] ?? 0 ),
+													'unit_loggia_area'  => (float) ( $unit['loggia_area']  ?? 0 ),
+													'unit_garden_area'  => (float) ( $unit['garden_area']  ?? 0 ),
+													'unit_cellar_area'  => (float) ( $unit['cellar_area']  ?? 0 ),
+													'unit_parking'      => array(
+														'garage_count'  => (int) ( $unit['parking']['garage_count']  ?? 0 ),
+														'outdoor_count' => (int) ( $unit['parking']['outdoor_count'] ?? 0 ),
+													),
+												)
+											);
+											?>
+											<button type="button" class="immo-units-action-btn immo-quick-info-btn" data-property="<?php echo esc_attr( wp_json_encode( $qi_data ) ); ?>" aria-label="<?php esc_attr_e( 'Quick-Info anzeigen', 'immo-manager' ); ?>" title="<?php esc_attr_e( 'Quick-Info anzeigen', 'immo-manager' ); ?>">
 												🔍
 											</button>
 										<?php elseif ( ! empty( $unit['floor_plan'] ) ) : ?>
@@ -320,6 +334,80 @@ $hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoM
 								<li><span aria-hidden="true"><?php echo esc_html( $f['icon'] ); ?></span> <?php echo esc_html( $f['label'] ); ?></li>
 							<?php endforeach; ?>
 						</ul>
+					</div>
+				</div>
+			<?php endif; ?>
+
+			<?php
+			$pk         = $meta['parking'] ?? array();
+			$pk_garage  = $pk['garage']  ?? array();
+			$pk_outdoor = $pk['outdoor'] ?? array();
+			$pk_notes   = (string) ( $pk['notes'] ?? '' );
+			$has_garage  = ! empty( $pk_garage['available'] );
+			$has_outdoor = ! empty( $pk_outdoor['available'] );
+			if ( $has_garage || $has_outdoor || '' !== $pk_notes ) :
+			?>
+				<div class="immo-accordion">
+					<button class="immo-accordion-header" aria-expanded="false">
+						<?php esc_html_e( 'Stellplätze', 'immo-manager' ); ?>
+						<span class="immo-accordion-icon" aria-hidden="true"></span>
+					</button>
+					<div class="immo-accordion-body" hidden>
+						<ul class="immo-parking-list">
+							<?php if ( $has_garage ) : ?>
+								<li class="immo-parking-item">
+									<span class="immo-parking-icon" aria-hidden="true">🅿️</span>
+									<div class="immo-parking-meta">
+										<strong class="immo-parking-title"><?php esc_html_e( 'Tiefgaragenplatz', 'immo-manager' ); ?></strong>
+										<span class="immo-parking-price">
+											<?php
+											$gprice = (float) ( $pk_garage['price'] ?? 0 );
+											echo esc_html( $gprice > 0 ? number_format_i18n( $gprice, 0 ) . ' ' . $currency : __( 'Preis auf Anfrage', 'immo-manager' ) );
+											?>
+										</span>
+										<span class="immo-parking-flag immo-parking-flag-<?php echo ! empty( $pk_garage['required'] ) ? 'required' : 'optional'; ?>">
+											<?php echo ! empty( $pk_garage['required'] ) ? esc_html__( 'verpflichtend', 'immo-manager' ) : esc_html__( 'optional', 'immo-manager' ); ?>
+										</span>
+										<?php if ( (int) ( $pk_garage['total'] ?? 0 ) > 0 ) : ?>
+											<span class="immo-parking-total">
+												<?php
+												/* translators: %d: Gesamtanzahl der Stellplaetze */
+												printf( esc_html__( '%d Plätze gesamt', 'immo-manager' ), (int) $pk_garage['total'] );
+												?>
+											</span>
+										<?php endif; ?>
+									</div>
+								</li>
+							<?php endif; ?>
+							<?php if ( $has_outdoor ) : ?>
+								<li class="immo-parking-item">
+									<span class="immo-parking-icon" aria-hidden="true">🚗</span>
+									<div class="immo-parking-meta">
+										<strong class="immo-parking-title"><?php esc_html_e( 'Außen-Stellplatz', 'immo-manager' ); ?></strong>
+										<span class="immo-parking-price">
+											<?php
+											$oprice = (float) ( $pk_outdoor['price'] ?? 0 );
+											echo esc_html( $oprice > 0 ? number_format_i18n( $oprice, 0 ) . ' ' . $currency : __( 'Preis auf Anfrage', 'immo-manager' ) );
+											?>
+										</span>
+										<span class="immo-parking-flag immo-parking-flag-<?php echo ! empty( $pk_outdoor['required'] ) ? 'required' : 'optional'; ?>">
+											<?php echo ! empty( $pk_outdoor['required'] ) ? esc_html__( 'verpflichtend', 'immo-manager' ) : esc_html__( 'optional', 'immo-manager' ); ?>
+										</span>
+										<?php if ( (int) ( $pk_outdoor['total'] ?? 0 ) > 0 ) : ?>
+											<span class="immo-parking-total">
+												<?php
+												/* translators: %d: Gesamtanzahl der Stellplaetze */
+												printf( esc_html__( '%d Plätze gesamt', 'immo-manager' ), (int) $pk_outdoor['total'] );
+												?>
+											</span>
+										<?php endif; ?>
+									</div>
+								</li>
+							<?php endif; ?>
+						</ul>
+						<?php if ( '' !== $pk_notes ) : ?>
+							<p class="immo-parking-notes"><?php echo esc_html( $pk_notes ); ?></p>
+						<?php endif; ?>
 					</div>
 				</div>
 			<?php endif; ?>
@@ -523,7 +611,9 @@ $hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoM
 			<span id="immo-qi-built"></span>
 			<span id="immo-qi-energy"></span>
 		</div>
-		
+
+		<div id="immo-qi-extras" style="display: flex; justify-content: center; gap: 0.9rem; flex-wrap: wrap; font-size: 0.88em; color: #4b5563; margin-bottom: 1.25rem;"></div>
+
 		<strong id="immo-qi-price" style="color: var(--immo-accent); font-size: 1.4em; display: block; margin-bottom: 1.5rem;"></strong>
 
 		<?php if ( (int) \ImmoManager\Settings::get( 'quick_info_show_details_button', 1 ) ) : ?>
@@ -569,6 +659,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
 			document.getElementById('immo-qi-built').innerHTML = data.built_year > 0 ? '📅 ' + data.built_year : '';
 			document.getElementById('immo-qi-energy').innerHTML = data.energy_class ? '⚡ ' + data.energy_class : '';
+
+			// Zusatzflächen (Balkon, Loggia, Garten, Keller) + Stellplatz-Inkludierung
+			const extras = document.getElementById('immo-qi-extras');
+			if (extras) {
+				const items = [];
+				if (data.unit_balcony_area > 0) items.push('🏔️ <?php echo esc_js( __( 'Balkon', 'immo-manager' ) ); ?> ' + data.unit_balcony_area + ' m²');
+				if (data.unit_loggia_area  > 0) items.push('🏛️ <?php echo esc_js( __( 'Loggia', 'immo-manager' ) ); ?> ' + data.unit_loggia_area  + ' m²');
+				if (data.unit_garden_area  > 0) items.push('🌿 <?php echo esc_js( __( 'Garten', 'immo-manager' ) ); ?> ' + data.unit_garden_area  + ' m²');
+				if (data.unit_cellar_area  > 0) items.push('🏚️ <?php echo esc_js( __( 'Keller', 'immo-manager' ) ); ?> ' + data.unit_cellar_area  + ' m²');
+				const pk = data.unit_parking || {};
+				if (pk.garage_count  > 0) items.push('🅿️ ' + pk.garage_count  + '× <?php echo esc_js( __( 'TG-Platz inkl.', 'immo-manager' ) ); ?>');
+				if (pk.outdoor_count > 0) items.push('🚗 ' + pk.outdoor_count + '× <?php echo esc_js( __( 'Stellplatz inkl.', 'immo-manager' ) ); ?>');
+				extras.innerHTML = items.map(s => '<span>' + s + '</span>').join('');
+				extras.style.display = items.length ? 'flex' : 'none';
+			}
+
 			document.getElementById('immo-qi-price').innerHTML = data.price ? data.price : (data.rent ? data.rent + '/Mo' : '');
 
 			qiLightbox.hidden = false;
