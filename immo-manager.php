@@ -1,13 +1,13 @@
 <?php
 /**
  * Plugin Name:       Immo Manager
- * Plugin URI:        https://example.com/immo-manager
+ * Plugin URI:        mailto:hubmann.christoph@gmail.com
  * Description:       Professionelle Immobilienverwaltung für Österreich – Verkauf, Vermietung und Bauprojekte mit Wohneinheiten.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 5.9
  * Requires PHP:      7.4
- * Author:            Christoph
- * Author URI:        https://example.com
+ * Author:            Hubmann Christoph
+ * Author URI:        mailto:hubmann.christoph@gmail.com
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       immo-manager
@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Plugin-Konstanten definieren
  */
-define( 'IMMO_MANAGER_VERSION', '1.0.0' );
+define( 'IMMO_MANAGER_VERSION', '1.1.0' );
 define( 'IMMO_MANAGER_PLUGIN_FILE', __FILE__ );
 define( 'IMMO_MANAGER_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'IMMO_MANAGER_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
