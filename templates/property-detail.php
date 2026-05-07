@@ -339,6 +339,78 @@ $key_facts = array_filter( array(
 			<?php endif; ?>
 
 			<?php
+			// === Wohneinheiten zu dieser Immobilie ===
+			$prop_units = \ImmoManager\Units::get_by_property( (int) $property['id'] );
+			if ( ! empty( $prop_units ) ) :
+				$prop_status_class = array(
+					'available' => 'is-available',
+					'reserved'  => 'is-reserved',
+					'sold'      => 'is-sold',
+					'rented'    => 'is-rented',
+				);
+				$prop_status_labels = array(
+					'available' => __( 'Verfügbar', 'immo-manager' ),
+					'reserved'  => __( 'Reserviert', 'immo-manager' ),
+					'sold'      => __( 'Verkauft', 'immo-manager' ),
+					'rented'    => __( 'Vermietet', 'immo-manager' ),
+				);
+				$currency_sym = (string) \ImmoManager\Settings::get( 'currency_symbol', '€' );
+				?>
+				<div class="immo-accordion">
+					<button class="immo-accordion-header" aria-expanded="true">
+						<?php esc_html_e( 'Wohneinheiten zu dieser Immobilie', 'immo-manager' ); ?>
+						<span class="immo-accordion-badge"><?php echo (int) count( $prop_units ); ?></span>
+						<span class="immo-accordion-icon" aria-hidden="true"></span>
+					</button>
+					<div class="immo-accordion-body">
+						<div class="immo-units-table-wrap">
+							<table class="immo-units-table">
+								<thead>
+									<tr>
+										<th><?php esc_html_e( 'Nr.', 'immo-manager' ); ?></th>
+										<th><?php esc_html_e( 'Etage', 'immo-manager' ); ?></th>
+										<th><?php esc_html_e( 'Fläche', 'immo-manager' ); ?></th>
+										<th><?php esc_html_e( 'Zi.', 'immo-manager' ); ?></th>
+										<th><?php esc_html_e( 'Preis', 'immo-manager' ); ?></th>
+										<th><?php esc_html_e( 'Status', 'immo-manager' ); ?></th>
+									</tr>
+								</thead>
+								<tbody>
+								<?php foreach ( $prop_units as $u ) :
+									$u_floor = (int) ( $u['floor'] ?? 0 );
+									$floor_disp = 0 === $u_floor ? __( 'EG', 'immo-manager' ) : $u_floor . '.';
+									$u_status = (string) ( $u['status'] ?? 'available' );
+									$u_status_label = $prop_status_labels[ $u_status ] ?? $u_status;
+									$u_status_class = $prop_status_class[ $u_status ] ?? '';
+									$u_area_val = (float) ( $u['area'] ?? 0 );
+									$u_area_dec = ( floor( $u_area_val ) == $u_area_val ) ? 0 : 1;
+									$u_price = (float) ( $u['price'] ?? 0 );
+									$u_rent  = (float) ( $u['rent']  ?? 0 );
+									if ( $u_price > 0 ) {
+										$u_price_disp = number_format_i18n( $u_price, 0 ) . ' ' . $currency_sym;
+									} elseif ( $u_rent > 0 ) {
+										$u_price_disp = number_format_i18n( $u_rent, 0 ) . ' ' . $currency_sym . '/Mo';
+									} else {
+										$u_price_disp = '—';
+									}
+								?>
+									<tr class="immo-units-row" data-status="<?php echo esc_attr( $u_status ); ?>">
+										<td class="immo-units-cell-number"><strong><?php echo esc_html( (string) ( $u['unit_number'] ?? '' ) ); ?></strong></td>
+										<td><?php echo esc_html( $floor_disp ); ?></td>
+										<td><?php echo $u_area_val > 0 ? esc_html( number_format_i18n( $u_area_val, $u_area_dec ) . ' m²' ) : '—'; ?></td>
+										<td><?php echo $u['rooms'] ? esc_html( (int) $u['rooms'] ) : '—'; ?></td>
+										<td class="immo-units-cell-price"><?php echo esc_html( $u_price_disp ); ?></td>
+										<td><span class="immo-unit-status-pill <?php echo esc_attr( $u_status_class ); ?>"><?php echo esc_html( $u_status_label ); ?></span></td>
+									</tr>
+								<?php endforeach; ?>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			<?php endif; ?>
+
+			<?php
 			// === Nebenkosten- & Finanzierungsrechner (am Ende der Akkordeons) ===
 			// $show_sale (Zeile ~32) prüft bereits: mode in (sale|both) UND price > 0.
 			if ( $show_sale ) {
