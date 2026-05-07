@@ -115,7 +115,7 @@ $render_unit_select = function () use ( $units ) {
 									printf( esc_html__( 'TG-Plätze (× %s)', 'immo-manager' ), esc_html( number_format_i18n( $pk_garage_price, 0 ) . ' €' ) );
 									if ( $pk_garage_required ) { echo ' <small style="color:#991b1b;">(' . esc_html__( 'Pflicht', 'immo-manager' ) . ')</small>'; }
 								?></label>
-								<input type="number" class="immo-calc-parking-garage" min="<?php echo $pk_garage_required ? 1 : 0; ?>" max="<?php echo (int) $pk_garage_max; ?>" step="1" value="<?php echo $pk_garage_required ? 1 : 0; ?>">
+								<input type="number" class="immo-calc-parking-garage" min="<?php echo $pk_garage_required ? 1 : 0; ?>" max="<?php echo (int) $pk_garage_max; ?>" step="1" value="1">
 							</div>
 						<?php endif; ?>
 						<?php if ( $pk_outdoor_avail ) : ?>
@@ -125,7 +125,7 @@ $render_unit_select = function () use ( $units ) {
 									printf( esc_html__( 'Außen-Stellplätze (× %s)', 'immo-manager' ), esc_html( number_format_i18n( $pk_outdoor_price, 0 ) . ' €' ) );
 									if ( $pk_outdoor_required ) { echo ' <small style="color:#991b1b;">(' . esc_html__( 'Pflicht', 'immo-manager' ) . ')</small>'; }
 								?></label>
-								<input type="number" class="immo-calc-parking-outdoor" min="<?php echo $pk_outdoor_required ? 1 : 0; ?>" max="<?php echo (int) $pk_outdoor_max; ?>" step="1" value="<?php echo $pk_outdoor_required ? 1 : 0; ?>">
+								<input type="number" class="immo-calc-parking-outdoor" min="<?php echo $pk_outdoor_required ? 1 : 0; ?>" max="<?php echo (int) $pk_outdoor_max; ?>" step="1" value="0">
 							</div>
 						<?php endif; ?>
 					</div>
@@ -182,7 +182,7 @@ $render_unit_select = function () use ( $units ) {
 									printf( esc_html__( 'TG-Plätze (× %s)', 'immo-manager' ), esc_html( number_format_i18n( $pk_garage_price, 0 ) . ' €' ) );
 									if ( $pk_garage_required ) { echo ' <small style="color:#991b1b;">(' . esc_html__( 'Pflicht', 'immo-manager' ) . ')</small>'; }
 								?></label>
-								<input type="number" class="immo-calc-parking-garage" min="<?php echo $pk_garage_required ? 1 : 0; ?>" max="<?php echo (int) $pk_garage_max; ?>" step="1" value="<?php echo $pk_garage_required ? 1 : 0; ?>">
+								<input type="number" class="immo-calc-parking-garage" min="<?php echo $pk_garage_required ? 1 : 0; ?>" max="<?php echo (int) $pk_garage_max; ?>" step="1" value="1">
 							</div>
 						<?php endif; ?>
 						<?php if ( $pk_outdoor_avail ) : ?>
@@ -191,7 +191,7 @@ $render_unit_select = function () use ( $units ) {
 									printf( esc_html__( 'Außen-Stellplätze (× %s)', 'immo-manager' ), esc_html( number_format_i18n( $pk_outdoor_price, 0 ) . ' €' ) );
 									if ( $pk_outdoor_required ) { echo ' <small style="color:#991b1b;">(' . esc_html__( 'Pflicht', 'immo-manager' ) . ')</small>'; }
 								?></label>
-								<input type="number" class="immo-calc-parking-outdoor" min="<?php echo $pk_outdoor_required ? 1 : 0; ?>" max="<?php echo (int) $pk_outdoor_max; ?>" step="1" value="<?php echo $pk_outdoor_required ? 1 : 0; ?>">
+								<input type="number" class="immo-calc-parking-outdoor" min="<?php echo $pk_outdoor_required ? 1 : 0; ?>" max="<?php echo (int) $pk_outdoor_max; ?>" step="1" value="0">
 							</div>
 						<?php endif; ?>
 
