@@ -73,6 +73,55 @@ class Units {
 	}
 
 	/**
+	 * Alle Units abrufen, die einer Property direkt zugeordnet sind.
+	 *
+	 * @param int    $property_id Property-Post-ID.
+	 * @param string $orderby     Sortierfeld.
+	 * @param string $order       ASC/DESC.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public static function get_by_property( int $property_id, string $orderby = 'unit_number', string $order = 'ASC' ): array {
+		global $wpdb;
+		$table   = Database::units_table();
+		$allowed = array( 'id', 'unit_number', 'floor', 'price', 'area', 'rooms', 'status', 'created_at' );
+		$orderby = in_array( $orderby, $allowed, true ) ? $orderby : 'unit_number';
+		$order   = strtoupper( $order ) === 'DESC' ? 'DESC' : 'ASC';
+
+		if ( 'unit_number' === $orderby ) {
+			$order_clause = 'id ASC';
+		} else {
+			$order_clause = "{$orderby} {$order}, id ASC";
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $wpdb->prepare(
+			"SELECT * FROM {$table} WHERE property_id = %d ORDER BY {$order_clause}",
+			$property_id
+		);
+
+		$rows  = $wpdb->get_results( $sql, ARRAY_A );
+		$units = is_array( $rows ) ? array_map( array( __CLASS__, 'hydrate' ), $rows ) : array();
+
+		if ( 'unit_number' === $orderby && ! empty( $units ) ) {
+			usort(
+				$units,
+				static function ( $a, $b ) {
+					return strnatcasecmp(
+						(string) ( $a['unit_number'] ?? '' ),
+						(string) ( $b['unit_number'] ?? '' )
+					);
+				}
+			);
+			if ( 'DESC' === $order ) {
+				$units = array_reverse( $units );
+			}
+		}
+
+		return $units;
+	}
+
+	/**
 	 * Eine Unit per ID abrufen.
 	 *
 	 * @param int $id Unit-ID.

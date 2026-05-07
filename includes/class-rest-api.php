@@ -69,6 +69,18 @@ class RestApi {
 			'permission_callback' => '__return_true',
 		) );
 
+		register_rest_route( self::NAMESPACE, '/properties/(?P<id>\d+)/units', array(
+			'methods'             => \WP_REST_Server::READABLE,
+			'callback'            => array( $this, 'get_property_units' ),
+			'permission_callback' => '__return_true',
+		) );
+
+		register_rest_route( self::NAMESPACE, '/properties/by-slug/(?P<slug>[a-z0-9-]+)/units', array(
+			'methods'             => \WP_REST_Server::READABLE,
+			'callback'            => array( $this, 'get_property_units_by_slug' ),
+			'permission_callback' => '__return_true',
+		) );
+
 		// Bauprojekte.
 		register_rest_route( self::NAMESPACE, '/projects', array(
 			'methods'             => \WP_REST_Server::READABLE,
@@ -462,6 +474,87 @@ class RestApi {
 			'applied_status'  => $status_filter,
 			'units'           => array_map( array( $this, 'format_unit' ), $units ),
 			'stats'           => $counts,
+		) );
+	}
+
+	/**
+	 * GET /properties/{id}/units — alle Wohneinheiten dieser Immobilie.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function get_property_units( \WP_REST_Request $request ): \WP_REST_Response {
+		$id = (int) $request->get_param( 'id' );
+		return $this->build_property_units_response( $id, $request );
+	}
+
+	/**
+	 * GET /properties/by-slug/{slug}/units — by-slug-Variante.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function get_property_units_by_slug( \WP_REST_Request $request ) {
+		$slug  = sanitize_title( (string) $request->get_param( 'slug' ) );
+		$posts = get_posts( array(
+			'post_type'      => PostTypes::POST_TYPE_PROPERTY,
+			'name'           => $slug,
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+		) );
+		if ( empty( $posts ) ) {
+			return new \WP_Error( 'not_found', __( 'Immobilie nicht gefunden.', 'immo-manager' ), array( 'status' => 404 ) );
+		}
+		return $this->build_property_units_response( (int) $posts[0]->ID, $request );
+	}
+
+	/**
+	 * Antwort-Konstruktion für Property-Unit-Endpoints.
+	 *
+	 * @param int              $property_id Property-ID.
+	 * @param \WP_REST_Request $request     Request.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	private function build_property_units_response( int $property_id, \WP_REST_Request $request ): \WP_REST_Response {
+		$orderby = sanitize_key( (string) ( $request->get_param( 'orderby' ) ?? 'unit_number' ) );
+		$limit   = max( 0, (int) ( $request->get_param( 'limit' ) ?? 0 ) );
+
+		$status_raw     = (string) ( $request->get_param( 'status' ) ?? '' );
+		$status_request = array_values( array_filter( array_map(
+			static function ( $s ) { return sanitize_key( trim( (string) $s ) ); },
+			explode( ',', $status_raw )
+		) ) );
+		$status_filter = array_values( array_intersect( $status_request, Units::STATUSES ) );
+
+		$units = Units::get_by_property( $property_id, $orderby );
+
+		if ( ! empty( $status_filter ) ) {
+			$units = array_values( array_filter( $units, static function ( $u ) use ( $status_filter ) {
+				return in_array( $u['status'], $status_filter, true );
+			} ) );
+		}
+
+		if ( $limit > 0 ) {
+			$units = array_slice( $units, 0, $limit );
+		}
+
+		// Stats aus dem ungefilterten All-Set ableiten.
+		$all_units = Units::get_by_property( $property_id, $orderby );
+		$counts    = array( 'available' => 0, 'reserved' => 0, 'sold' => 0, 'rented' => 0 );
+		foreach ( $all_units as $u ) {
+			$st = (string) ( $u['status'] ?? '' );
+			if ( isset( $counts[ $st ] ) ) { $counts[ $st ]++; }
+		}
+		$counts['total'] = array_sum( $counts );
+
+		return rest_ensure_response( array(
+			'property_id'    => $property_id,
+			'applied_status' => $status_filter,
+			'units'          => array_map( array( $this, 'format_unit' ), $units ),
+			'stats'          => $counts,
 		) );
 	}
 
