@@ -20,7 +20,7 @@ class Database {
 	/**
 	 * Aktuelle DB-Schema-Version.
 	 */
-	public const DB_VERSION = '1.6.0';
+	public const DB_VERSION = '1.7.0';
 
 	/**
 	 * Option-Key für die gespeicherte DB-Version.
@@ -125,6 +125,14 @@ class Database {
 			floor INT NOT NULL DEFAULT 0,
 			area DECIMAL(10,2) NOT NULL DEFAULT 0.00,
 			usable_area DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			balcony_area DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+			loggia_area DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+			garden_area DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+			cellar_area DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+			parking_garage_count TINYINT UNSIGNED NOT NULL DEFAULT 0,
+			parking_outdoor_count TINYINT UNSIGNED NOT NULL DEFAULT 0,
+			parking_garage_price_override DECIMAL(10,2) NULL DEFAULT NULL,
+			parking_outdoor_price_override DECIMAL(10,2) NULL DEFAULT NULL,
 			rooms INT NOT NULL DEFAULT 0,
 			bedrooms INT NOT NULL DEFAULT 0,
 			bathrooms INT NOT NULL DEFAULT 0,
