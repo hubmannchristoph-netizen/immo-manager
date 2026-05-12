@@ -319,6 +319,7 @@ $hero_type     = ( ! empty( $meta['hero_type'] ) ) ? $meta['hero_type'] : \ImmoM
 											$qi_data = array_merge(
 												is_array( $unit['property'] ?? null ) ? $unit['property'] : array(),
 												array(
+													'unit_price_display' => $price_display,
 													'unit_balcony_area' => (float) ( $unit['balcony_area'] ?? 0 ),
 													'unit_loggia_area'  => (float) ( $unit['loggia_area']  ?? 0 ),
 													'unit_terrace_area' => (float) ( $unit['terrace_area'] ?? 0 ),
@@ -718,7 +719,10 @@ document.addEventListener('DOMContentLoaded', function() {
 				extras.style.display = items.length ? 'flex' : 'none';
 			}
 
-			document.getElementById('immo-qi-price').innerHTML = data.price ? data.price : (data.rent ? data.rent + '/Mo' : '');
+			const qiPrice = document.getElementById('immo-qi-price');
+			const unitPrice = (data.unit_price_display || '').trim();
+			qiPrice.textContent = unitPrice;
+			qiPrice.style.display = unitPrice ? 'block' : 'none';
 
 			qiLightbox.hidden = false;
 			document.querySelectorAll('#immo-qi-facts span').forEach(span => { span.style.display = span.innerHTML.trim() ? 'inline-block' : 'none'; });
