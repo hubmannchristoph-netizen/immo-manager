@@ -244,6 +244,36 @@ class Units {
 	}
 
 	/**
+	 * Status-Counts pro Immobilie (direkt zugeordnete Wohneinheiten).
+	 *
+	 * @param int $property_id Property-Post-ID.
+	 *
+	 * @return array<string, int> Alle Stati aus self::STATUSES, fehlende mit 0.
+	 */
+	public static function count_by_property( int $property_id ): array {
+		global $wpdb;
+		$table = Database::units_table();
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT status, COUNT(*) AS cnt FROM {$table} WHERE property_id = %d GROUP BY status",
+				$property_id
+			),
+			ARRAY_A
+		);
+
+		$counts = array_fill_keys( self::STATUSES, 0 );
+		foreach ( (array) $rows as $row ) {
+			$status = (string) ( $row['status'] ?? '' );
+			if ( isset( $counts[ $status ] ) ) {
+				$counts[ $status ] = (int) $row['cnt'];
+			}
+		}
+
+		return $counts;
+	}
+
+	/**
 	 * Min-/Max-Wohnfläche der Units eines Projekts.
 	 *
 	 * Berücksichtigt alle Units mit area > 0, unabhängig vom Status.
