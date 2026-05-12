@@ -38,6 +38,10 @@ $display_area = (float) ( $meta['area'] ?? 0 );
 if ( $display_area <= 0 ) {
 	$display_area = (float) ( $meta['usable_area'] ?? 0 );
 }
+
+// Wohneinheiten-Verfügbarkeit (nur wenn der Immobilie Units direkt zugeordnet sind).
+$unit_total = (int) ( $property['unit_stats']['total'] ?? 0 );
+$unit_avail = (int) ( $property['unit_stats']['available'] ?? 0 );
 ?>
 <article class="immo-property-card" role="listitem" data-property-id="<?php echo esc_attr( (string) $property['id'] ); ?>">
 	<a href="<?php echo esc_url( $property['permalink'] ?? '#' ); ?>" class="immo-card-link" tabindex="-1" aria-hidden="true">
@@ -95,6 +99,20 @@ if ( $display_area <= 0 ) {
 			<?php endif; ?>
 			<?php if ( $meta['energy_class'] ) : ?>
 				<li><span aria-hidden="true">⚡</span> <?php echo esc_html( $meta['energy_class'] ); ?></li>
+			<?php endif; ?>
+			<?php if ( $unit_total > 0 ) : ?>
+				<li>
+					<span aria-hidden="true">🏘️</span>
+					<?php
+					if ( $unit_avail > 0 ) {
+						/* translators: 1: Anzahl verfügbarer Wohneinheiten, 2: Gesamtanzahl */
+						echo esc_html( sprintf( __( '%1$d von %2$d verfügbar', 'immo-manager' ), $unit_avail, $unit_total ) );
+					} else {
+						/* translators: %d: Gesamtanzahl der Wohneinheiten */
+						echo esc_html( sprintf( _n( '%d Wohneinheit – ausverkauft', '%d Wohneinheiten – ausverkauft', $unit_total, 'immo-manager' ), $unit_total ) );
+					}
+					?>
+				</li>
 			<?php endif; ?>
 		</ul>
 
