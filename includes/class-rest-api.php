@@ -1116,6 +1116,12 @@ class RestApi {
 			'modified_at' => get_the_modified_date( 'c', $post ),
 		);
 
+		$u_counts             = Units::count_by_property( $id );
+		$result['unit_stats'] = array_merge(
+			$u_counts,
+			array( 'total' => array_sum( $u_counts ) )
+		);
+
 		if ( $full ) {
 			$result['description'] = apply_filters( 'the_content', $post->post_content );
 			$result['gallery']     = $this->format_gallery( $id );
