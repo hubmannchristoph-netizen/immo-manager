@@ -299,8 +299,18 @@ class Metaboxes {
 				<td><input type="number" step="0.01" min="0" id="_immo_energy_fgee" name="immo_meta[_immo_energy_fgee]" value="<?php echo esc_attr( (string) $meta['_immo_energy_fgee'] ); ?>" class="small-text" /></td>
 			</tr>
 			<tr>
-				<th><label for="_immo_heating"><?php esc_html_e( 'Heizungsart', 'immo-manager' ); ?></label></th>
-				<td><input type="text" id="_immo_heating" name="immo_meta[_immo_heating]" value="<?php echo esc_attr( (string) $meta['_immo_heating'] ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'z. B. Gasetagenheizung, Fernwärme', 'immo-manager' ); ?>" /></td>
+				<th><label for="mb_heating_select"><?php esc_html_e( 'Heizungsart', 'immo-manager' ); ?></label></th>
+				<td>
+					<?php
+					$heating_field = array(
+						'current_value' => (string) $meta['_immo_heating'],
+						'input_name'    => 'immo_meta[_immo_heating]',
+						'field_id'      => 'mb_heating',
+						'input_class'   => 'regular-text',
+					);
+					include IMMO_MANAGER_PLUGIN_DIR . 'templates/parts/heating-field.php';
+					?>
+				</td>
 			</tr>
 		</table>
 		<?php

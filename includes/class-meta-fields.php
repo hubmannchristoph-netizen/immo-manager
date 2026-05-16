@@ -283,4 +283,27 @@ class MetaFields {
 		}
 		return $out;
 	}
+
+	/**
+	 * Vorgegebene Heizungs-Optionen für das Heizungs-Dropdown.
+	 *
+	 * Key = gespeicherter Wert (Freitext-kompatibel, da `_immo_heating` weiterhin
+	 * `string` ohne Enum bleibt), Value = lokalisiertes Label.
+	 * Bestandswerte, die nicht im Set enthalten sind, bleiben gespeichert und
+	 * werden im UI als „Sonstige" mit Freitext-Fallback angezeigt.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function heating_options(): array {
+		return array(
+			'Fernwärme'      => __( 'Fernwärme', 'immo-manager' ),
+			'Gasheizung'     => __( 'Gasheizung', 'immo-manager' ),
+			'Ölheizung'      => __( 'Ölheizung', 'immo-manager' ),
+			'Wärmepumpe'     => __( 'Wärmepumpe', 'immo-manager' ),
+			'Pellets/Holz'   => __( 'Pellets/Holz', 'immo-manager' ),
+			'Elektroheizung' => __( 'Elektroheizung', 'immo-manager' ),
+			'Solar'          => __( 'Solar', 'immo-manager' ),
+			'Kamin/Ofen'     => __( 'Kamin/Ofen', 'immo-manager' ),
+		);
+	}
 }

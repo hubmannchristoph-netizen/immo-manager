@@ -84,10 +84,16 @@ $p = $prefill;
 				value="<?php echo esc_attr( (string) ( $p['_immo_energy_hwb'] ?? '' ) ); ?>">
 		</div>
 		<div class="immo-field immo-field--half">
-			<label for="wiz_heating"><?php esc_html_e( 'Heizungsart', 'immo-manager' ); ?></label>
-			<input type="text" id="wiz_heating" name="_immo_heating" class="immo-wizard-input immo-input"
-				value="<?php echo esc_attr( (string) ( $p['_immo_heating'] ?? '' ) ); ?>"
-				placeholder="<?php esc_attr_e( 'z. B. Fernwärme, Gasheizung', 'immo-manager' ); ?>">
+			<label for="wiz_heating_select"><?php esc_html_e( 'Heizungsart', 'immo-manager' ); ?></label>
+			<?php
+			$heating_field = array(
+				'current_value' => (string) ( $p['_immo_heating'] ?? '' ),
+				'input_name'    => '_immo_heating',
+				'field_id'      => 'wiz_heating',
+				'input_class'   => 'immo-wizard-input immo-input',
+			);
+			include IMMO_MANAGER_PLUGIN_DIR . 'templates/parts/heating-field.php';
+			?>
 		</div>
 	</div>
 </div>

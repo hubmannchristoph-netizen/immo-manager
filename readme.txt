@@ -4,7 +4,7 @@ Tags: immobilien, real-estate, vermietung, verkauf, austria, headless, rest-api
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.3.4
+Stable tag: 1.3.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,12 @@ Eine WordPress-Installation dient als Datenquelle. Externe Websites laden Immobi
 4. Unter Immo Manager > Dashboard Demo-Daten importieren
 
 == Changelog ==
+
+= 1.3.6 =
+* Fix: Heizungs-Dropdown-Wert wurde im Wizard nicht gespeichert, weil das Hidden-Feld nicht in den Wizard-Sammelselektor (`.immo-wizard-input`) eingebunden war – Folge: Heizung auf der Detailseite leer. Hidden-Feld trägt jetzt die übergebenen CSS-Klassen.
+
+= 1.3.5 =
+* Heizungsart als Dropdown statt Freitext (Wizard Schritt 3 + Property-Metabox). Optionen: Fernwärme, Gasheizung, Ölheizung, Wärmepumpe, Pellets/Holz, Elektroheizung, Solar, Kamin/Ofen, Sonstige. Bestehende Freitext-Werte bleiben erhalten — sie werden automatisch als "Sonstige" mit Freitext-Fallback angezeigt.
 
 = 1.3.4 =
 * REST: `meta.has_priced_units` (bool) und `unit_stats.min_price_formatted` / `min_rent_formatted` mitgeliefert, damit das immo-client-Plugin Auflistung und Detailseite identisch wie der Manager rendern kann.
