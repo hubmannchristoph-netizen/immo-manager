@@ -4,7 +4,7 @@ Tags: immobilien, real-estate, vermietung, verkauf, austria, headless, rest-api
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.3.1
+Stable tag: 1.3.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,16 @@ Eine WordPress-Installation dient als Datenquelle. Externe Websites laden Immobi
 4. Unter Immo Manager > Dashboard Demo-Daten importieren
 
 == Changelog ==
+
+= 1.3.4 =
+* REST: `meta.has_priced_units` (bool) und `unit_stats.min_price_formatted` / `min_rent_formatted` mitgeliefert, damit das immo-client-Plugin Auflistung und Detailseite identisch wie der Manager rendern kann.
+
+= 1.3.3 =
+* Detailseite: Nebenkosten- und Finanzierungsrechner werden auch bei zugeordneten Wohneinheiten angezeigt – vorbelegt mit dem günstigsten verfügbaren Unit-Preis und einem Dropdown zur Auswahl jeder verfügbaren Einheit (Preis und Provisionsfrei-Status werden bei Wechsel automatisch übernommen).
+
+= 1.3.2 =
+* Immobilien-Auflistung: bei zugeordneten Wohneinheiten zeigt die Karte jetzt den günstigsten verfügbaren Unit-Preis als "ab X €" (statt "Preis siehe Preisliste"). Ohne Units: weiterhin der normale Property-Preis. Detailseite bleibt unverändert ("Preis siehe Preisliste" bei Units).
+* REST: `unit_stats` liefert zusätzlich `min_price` und `min_rent` der verfügbaren Units.
 
 = 1.3.1 =
 * Wenn einer Immobilie Wohneinheiten zugeordnet sind, wird der Property-Preis nicht mehr angezeigt – stattdessen erscheint "Preis siehe Preisliste" (Auflistung & Detailseite).

@@ -1117,10 +1117,25 @@ class RestApi {
 		);
 
 		$u_counts             = Units::count_by_property( $id );
+		$u_total              = array_sum( $u_counts );
+		$u_min_offer          = $u_total > 0
+			? Units::min_offer_by_property( $id )
+			: array( 'price' => 0.0, 'rent' => 0.0 );
+		$has_priced_units     = $u_min_offer['price'] > 0 || $u_min_offer['rent'] > 0;
 		$result['unit_stats'] = array_merge(
 			$u_counts,
-			array( 'total' => array_sum( $u_counts ) )
+			array(
+				'total'               => $u_total,
+				'min_price'           => $u_min_offer['price'],
+				'min_rent'            => $u_min_offer['rent'],
+				'min_price_formatted' => $u_min_offer['price'] > 0 ? $this->format_price( $u_min_offer['price'] ) : null,
+				'min_rent_formatted'  => $u_min_offer['rent']  > 0 ? $this->format_price( $u_min_offer['rent'] )  : null,
+			)
 		);
+		// Flag für die Client-Templates: zeigt an, dass mindestens eine Unit
+		// einen Preis hat — Auflistung/Detailseite stellen darauf um (Pricelist /
+		// "ab"-Preis / Unit-Calculator-Dropdown).
+		$result['meta']['has_priced_units'] = $has_priced_units;
 
 		if ( $full ) {
 			$result['description'] = apply_filters( 'the_content', $post->post_content );

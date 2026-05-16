@@ -20,6 +20,17 @@ $display_price = $mode === 'rent' && $rent > 0
 	: ( $meta['price_formatted'] ?? '' );
 $price_suffix = $mode === 'rent' ? ' / ' . __( 'Monat', 'immo-manager' ) : '';
 
+// Wohneinheiten-Preise: günstigster verfügbarer Unit-Preis → "ab X €".
+$unit_min_price = (float) ( $property['unit_stats']['min_price'] ?? 0 );
+$unit_min_rent  = (float) ( $property['unit_stats']['min_rent']  ?? 0 );
+$currency_sym   = (string) \ImmoManager\Settings::get( 'currency_symbol', '€' );
+$unit_price_display = '';
+if ( 'rent' === $mode && $unit_min_rent > 0 ) {
+	$unit_price_display = number_format_i18n( $unit_min_rent, 0 ) . ' ' . $currency_sym . ' / ' . __( 'Monat', 'immo-manager' );
+} elseif ( $unit_min_price > 0 ) {
+	$unit_price_display = number_format_i18n( $unit_min_price, 0 ) . ' ' . $currency_sym;
+}
+
 $status_labels = array(
 	'available' => array( 'label' => __( 'Verfügbar', 'immo-manager' ), 'class' => 'available' ),
 	'reserved'  => array( 'label' => __( 'Reserviert', 'immo-manager' ), 'class' => 'reserved' ),
@@ -84,11 +95,14 @@ $unit_avail = (int) ( $property['unit_stats']['available'] ?? 0 );
 			</p>
 		<?php endif; ?>
 
-		<?php if ( $unit_total > 0 ) : ?>
-			<p class="immo-card-price immo-card-price--pricelist">
-				<strong><?php esc_html_e( 'Preis siehe Preisliste', 'immo-manager' ); ?></strong>
+		<?php if ( $unit_total > 0 && '' !== $unit_price_display ) : ?>
+			<p class="immo-card-price immo-card-price--from">
+				<strong>
+					<span class="immo-card-price-prefix"><?php esc_html_e( 'ab', 'immo-manager' ); ?></span>
+					<?php echo esc_html( $unit_price_display ); ?>
+				</strong>
 			</p>
-		<?php elseif ( $display_price ) : ?>
+		<?php elseif ( 0 === $unit_total && $display_price ) : ?>
 			<p class="immo-card-price">
 				<strong><?php echo esc_html( $display_price . $price_suffix ); ?></strong>
 			</p>

@@ -30,14 +30,54 @@ if ( ! empty( $gallery ) ) {
 
 // Zugeordnete Wohneinheiten (Status-Counts) – beeinflusst die Preis-Darstellung.
 // Sind der Immobilie Units zugeordnet, wird der Property-Preis durch
-// "Preis siehe Preisliste" ersetzt und der Calculator ausgeblendet.
+// "Preis siehe Preisliste" ersetzt; der Calculator bleibt aber sichtbar und
+// wird mit dem günstigsten Unit-Preis vorbelegt (Auswahl via Dropdown).
 $prop_unit_counts = \ImmoManager\Units::count_by_property( (int) $property['id'] );
 $prop_units_total = array_sum( $prop_unit_counts );
 $has_units        = $prop_units_total > 0;
 
-// Preis
+// Wohneinheiten einmalig laden (Tabelle weiter unten + Calculator-Dropdown nutzen die).
+$prop_units = $has_units
+	? \ImmoManager\Units::get_by_property( (int) $property['id'] )
+	: array();
+
+// Calculator-Unit-Liste vorbereiten: nur verfügbare Units mit Kaufpreis > 0,
+// nach Preis aufsteigend sortiert → günstigster steht ganz oben und ist Default.
+$calc_units = array();
+foreach ( $prop_units as $u ) {
+	$up = (float) ( $u['price'] ?? 0 );
+	$us = (string) ( $u['status'] ?? '' );
+	if ( $up <= 0 || 'available' !== $us ) {
+		continue;
+	}
+	$u_no   = (string) ( $u['unit_number'] ?? '' );
+	$u_area = (float)  ( $u['area'] ?? 0 );
+	$u_area_disp = $u_area > 0 ? number_format_i18n( $u_area, ( floor( $u_area ) == $u_area ) ? 0 : 1 ) . ' m²' : '';
+	$u_price_disp = number_format_i18n( $up, 0 ) . ' ' . $currency;
+	$label_parts  = array_filter( array(
+		'' !== $u_no ? sprintf( __( 'Whg. %s', 'immo-manager' ), $u_no ) : '',
+		$u_area_disp,
+		$u_price_disp,
+	) );
+	$calc_units[] = array(
+		'id'              => (int)  ( $u['id'] ?? 0 ),
+		'label'           => implode( ' · ', $label_parts ),
+		'price'           => $up,
+		'commission_free' => (bool) ( $u['commission_free'] ?? false ),
+	);
+}
+usort( $calc_units, static fn( $a, $b ) => $a['price'] <=> $b['price'] );
+$calc_min_price       = ! empty( $calc_units ) ? (float) $calc_units[0]['price'] : 0.0;
+$calc_commission_free = ! empty( $calc_units ) ? (bool)  $calc_units[0]['commission_free'] : false;
+
+// Preis-Hero: bei Units → "siehe Preisliste"; sonst klassisch.
 $show_sale = in_array( $mode, array( 'sale', 'both' ), true ) && (float) $meta['price'] > 0 && ! $has_units;
 $show_rent = in_array( $mode, array( 'rent', 'both' ), true ) && (float) $meta['rent'] > 0 && ! $has_units;
+
+// Calculator: sichtbar im Sale-Modus, sobald ein verbindlicher Preis existiert –
+// entweder Property-Preis (klassisch) oder mindestens eine verfügbare Unit mit Preis.
+$show_calculator = in_array( $mode, array( 'sale', 'both' ), true )
+	&& ( ( ! $has_units && (float) $meta['price'] > 0 ) || ( $has_units && $calc_min_price > 0 ) );
 
 // Layout-Konfiguration (mit Fallback auf globale Einstellungen).
 $detail_layout = ( ! empty( $meta['layout_type'] ) ) ? $meta['layout_type'] : \ImmoManager\Settings::get( 'default_detail_layout', 'standard' );
@@ -355,7 +395,7 @@ $key_facts = array_filter( array(
 
 			<?php
 			// === Wohneinheiten zu dieser Immobilie ===
-			$prop_units = \ImmoManager\Units::get_by_property( (int) $property['id'] );
+			// $prop_units wurde bereits am Anfang der Datei geladen (für Calculator-Dropdown).
 			if ( ! empty( $prop_units ) ) :
 				$prop_status_class = array(
 					'available' => 'status-available',
@@ -450,12 +490,18 @@ $key_facts = array_filter( array(
 
 			<?php
 			// === Nebenkosten- & Finanzierungsrechner (am Ende der Akkordeons) ===
-			// $show_sale (Zeile ~32) prüft bereits: mode in (sale|both) UND price > 0.
-			if ( $show_sale ) {
+			// Bei Units: günstigste verfügbare Unit ist Default; Dropdown ermöglicht
+			// die Auswahl jeder verfügbaren Einheit (Preis + commission_free werden
+			// per JS umgeschaltet, siehe public/js/calculators.js).
+			if ( $show_calculator ) {
 				$calc_context = array(
-					'base_price'      => (float) ( $meta['price'] ?? 0 ),
-					'commission_free' => (bool) ( $meta['commission_free'] ?? false ),
-					'units'           => array(),
+					'base_price'      => $has_units
+						? $calc_min_price
+						: (float) ( $meta['price'] ?? 0 ),
+					'commission_free' => $has_units
+						? $calc_commission_free
+						: (bool) ( $meta['commission_free'] ?? false ),
+					'units'           => $calc_units,
 				);
 				include IMMO_MANAGER_PLUGIN_DIR . 'templates/parts/calculator.php';
 			}

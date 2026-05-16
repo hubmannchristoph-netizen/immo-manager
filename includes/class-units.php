@@ -274,6 +274,38 @@ class Units {
 	}
 
 	/**
+	 * Niedrigster Preis / niedrigste Miete der direkt zugeordneten Wohneinheiten.
+	 *
+	 * Berücksichtigt nur verfügbare Units (`status = 'available'`) und nur Werte > 0.
+	 * Das passt zur Auflistungs-Logik „ab X €" — verkaufte/reservierte Einheiten
+	 * sollen den ab-Preis nicht nach unten verzerren.
+	 *
+	 * @param int $property_id Property-Post-ID.
+	 *
+	 * @return array{price: float, rent: float} Min-Werte; 0 wenn keine passende Unit.
+	 */
+	public static function min_offer_by_property( int $property_id ): array {
+		global $wpdb;
+		$table = Database::units_table();
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT MIN(NULLIF(price,0)) AS min_price, MIN(NULLIF(rent,0)) AS min_rent
+				 FROM {$table}
+				 WHERE property_id = %d AND status = %s",
+				$property_id,
+				'available'
+			),
+			ARRAY_A
+		);
+
+		return array(
+			'price' => (float) ( $row['min_price'] ?? 0 ),
+			'rent'  => (float) ( $row['min_rent']  ?? 0 ),
+		);
+	}
+
+	/**
 	 * Min-/Max-Wohnfläche der Units eines Projekts.
 	 *
 	 * Berücksichtigt alle Units mit area > 0, unabhängig vom Status.
