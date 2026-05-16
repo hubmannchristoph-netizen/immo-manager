@@ -84,7 +84,11 @@ $unit_avail = (int) ( $property['unit_stats']['available'] ?? 0 );
 			</p>
 		<?php endif; ?>
 
-		<?php if ( $display_price ) : ?>
+		<?php if ( $unit_total > 0 ) : ?>
+			<p class="immo-card-price immo-card-price--pricelist">
+				<strong><?php esc_html_e( 'Preis siehe Preisliste', 'immo-manager' ); ?></strong>
+			</p>
+		<?php elseif ( $display_price ) : ?>
 			<p class="immo-card-price">
 				<strong><?php echo esc_html( $display_price . $price_suffix ); ?></strong>
 			</p>

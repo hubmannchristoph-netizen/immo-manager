@@ -28,9 +28,16 @@ if ( ! empty( $gallery ) ) {
 	$all_images = array_merge( $all_images, $gallery );
 }
 
+// Zugeordnete Wohneinheiten (Status-Counts) – beeinflusst die Preis-Darstellung.
+// Sind der Immobilie Units zugeordnet, wird der Property-Preis durch
+// "Preis siehe Preisliste" ersetzt und der Calculator ausgeblendet.
+$prop_unit_counts = \ImmoManager\Units::count_by_property( (int) $property['id'] );
+$prop_units_total = array_sum( $prop_unit_counts );
+$has_units        = $prop_units_total > 0;
+
 // Preis
-$show_sale = in_array( $mode, array( 'sale', 'both' ), true ) && (float) $meta['price'] > 0;
-$show_rent = in_array( $mode, array( 'rent', 'both' ), true ) && (float) $meta['rent'] > 0;
+$show_sale = in_array( $mode, array( 'sale', 'both' ), true ) && (float) $meta['price'] > 0 && ! $has_units;
+$show_rent = in_array( $mode, array( 'rent', 'both' ), true ) && (float) $meta['rent'] > 0 && ! $has_units;
 
 // Layout-Konfiguration (mit Fallback auf globale Einstellungen).
 $detail_layout = ( ! empty( $meta['layout_type'] ) ) ? $meta['layout_type'] : \ImmoManager\Settings::get( 'default_detail_layout', 'standard' );
@@ -153,7 +160,15 @@ $key_facts = array_filter( array(
 			</div>
 
 			<!-- PREIS – sehr prominent -->
-			<?php if ( $show_sale || $show_rent ) : ?>
+			<?php if ( $has_units ) : ?>
+				<div class="immo-price-hero immo-price-hero--pricelist">
+					<span class="immo-price-hero-label"><?php esc_html_e( 'Preis', 'immo-manager' ); ?></span>
+					<span class="immo-price-hero-value"><?php esc_html_e( 'siehe Preisliste', 'immo-manager' ); ?></span>
+					<?php if ( $meta['operating_costs'] ) : ?>
+						<span class="immo-price-hero-note">+ <?php echo esc_html( number_format_i18n( (float) $meta['operating_costs'] ) . ' ' . $currency ); ?> <?php esc_html_e( 'BK/Monat', 'immo-manager' ); ?></span>
+					<?php endif; ?>
+				</div>
+			<?php elseif ( $show_sale || $show_rent ) : ?>
 				<div class="immo-price-hero">
 					<?php if ( $show_sale ) : ?>
 						<span class="immo-price-hero-label"><?php esc_html_e( 'Kaufpreis', 'immo-manager' ); ?></span>

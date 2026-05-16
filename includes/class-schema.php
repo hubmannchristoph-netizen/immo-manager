@@ -441,20 +441,27 @@ class Schema {
 		}
 
 		// Offer-Logik.
+		// Sind der Immobilie Wohneinheiten zugeordnet, dann zählt der Property-Preis
+		// nicht mehr als verbindliches Angebot (UI zeigt "siehe Preisliste"). Wir
+		// unterdrücken den Property-Sale-Offer in diesem Fall, damit Suchmaschinen
+		// keinen Sammel-"ab"-Preis bewerben, der auf der Seite nicht sichtbar ist.
 		$mode   = (string) get_post_meta( $post_id, '_immo_mode', true );
 		$status = (string) get_post_meta( $post_id, '_immo_status', true );
 		$price  = (float) get_post_meta( $post_id, '_immo_price', true );
 		$rent   = (float) get_post_meta( $post_id, '_immo_rent', true );
 		$avail  = (string) get_post_meta( $post_id, '_immo_available_from', true );
 
+		$unit_counts      = Units::count_by_property( $post_id );
+		$has_linked_units = array_sum( $unit_counts ) > 0;
+
 		$offers = array();
-		if ( in_array( $mode, array( 'sale', 'both' ), true ) ) {
+		if ( in_array( $mode, array( 'sale', 'both' ), true ) && ! $has_linked_units ) {
 			$o = $this->build_offer_sale( $price, $status, $avail );
 			if ( $o ) {
 				$offers[] = $o;
 			}
 		}
-		if ( in_array( $mode, array( 'rent', 'both' ), true ) ) {
+		if ( in_array( $mode, array( 'rent', 'both' ), true ) && ! $has_linked_units ) {
 			$o = $this->build_offer_rent( $rent, $status );
 			if ( $o ) {
 				$offers[] = $o;

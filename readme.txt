@@ -4,7 +4,7 @@ Tags: immobilien, real-estate, vermietung, verkauf, austria, headless, rest-api
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -53,6 +53,11 @@ Eine WordPress-Installation dient als Datenquelle. Externe Websites laden Immobi
 4. Unter Immo Manager > Dashboard Demo-Daten importieren
 
 == Changelog ==
+
+= 1.3.1 =
+* Wenn einer Immobilie Wohneinheiten zugeordnet sind, wird der Property-Preis nicht mehr angezeigt – stattdessen erscheint "Preis siehe Preisliste" (Auflistung & Detailseite).
+* Finanzierungs-/Nebenkostenrechner wird in diesem Fall ausgeblendet.
+* JSON-LD: Kein Property-Sale-Offer mehr, wenn Units zugeordnet sind (Konsistenz zur UI).
 
 = 1.0.0 =
 * Erste Version
