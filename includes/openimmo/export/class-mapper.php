@@ -302,12 +302,18 @@ class Mapper {
 
 		if ( ! empty( $l->meta['_immo_energy_class'] )
 			|| ! empty( $l->meta['_immo_energy_hwb'] )
+			|| ! empty( $l->meta['_immo_energy_eeb'] )
 			|| ! empty( $l->meta['_immo_energy_fgee'] ) ) {
 			$energie = $this->dom->createElement( 'energiepass' );
 
 			// epart: BEDARF (Bedarfsausweis) is the standard fallback when not specified explicitly.
 			// Phase 6 may make this configurable per listing.
 			$this->text( $energie, 'epart', 'BEDARF' );
+
+			// Endenergiebedarf (EEB, Pflicht seit 1.7.2026). Laut XSD-Sequence VOR hwbwert/hwbklasse.
+			if ( ! empty( $l->meta['_immo_energy_eeb'] ) ) {
+				$this->text( $energie, 'endenergiebedarf', $this->float_str( $l->meta['_immo_energy_eeb'] ) );
+			}
 
 			if ( ! empty( $l->meta['_immo_energy_hwb'] ) ) {
 				$this->text( $energie, 'hwbwert', $this->float_str( $l->meta['_immo_energy_hwb'] ) );

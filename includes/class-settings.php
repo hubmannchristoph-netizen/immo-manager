@@ -113,6 +113,10 @@ class Settings {
 			'enable_projects'     => 1,
 			'enable_inquiries'    => 1,
 			'quick_info_show_details_button' => 1,
+			// Google Fonts extern laden (DSGVO: bei 0 greifen die System-Font-Stacks).
+			'load_google_fonts'   => 1,
+			// Daten beim Löschen des Plugins entfernen (Opt-in, Default: Daten bleiben erhalten).
+			'delete_data_on_uninstall' => 0,
 			// Kontakt.
 			'contact_email'       => '',
 			'sender_name'         => '',
@@ -173,9 +177,7 @@ class Settings {
 	 * @return mixed
 	 */
 	public static function get( string $key, $default = null ) {
-		$saved    = get_option( self::OPTION_NAME, array() );
-		$defaults = self::get_defaults();
-		$merged   = array_merge( $defaults, is_array( $saved ) ? $saved : array() );
+		$merged = self::get_all();
 
 		if ( array_key_exists( $key, $merged ) ) {
 			return $merged[ $key ];
@@ -185,14 +187,36 @@ class Settings {
 	}
 
 	/**
+	 * Request-Cache der gemergten Settings (Defaults + gespeicherte Werte).
+	 *
+	 * Settings::get() wird pro Request sehr oft aufgerufen (Templates, REST-
+	 * Formatter, Design-System). Ohne Cache würde jedes Mal get_defaults()
+	 * (~100 Einträge) neu aufgebaut und array_merge() ausgeführt.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	private static $cache = null;
+
+	/**
+	 * Cache verwerfen (nach update_option / add_option / delete_option).
+	 *
+	 * @return void
+	 */
+	public static function reset_cache(): void {
+		self::$cache = null;
+	}
+
+	/**
 	 * Alle Settings abrufen.
 	 *
 	 * @return array<string, mixed>
 	 */
 	public static function get_all(): array {
-		$saved    = get_option( self::OPTION_NAME, array() );
-		$defaults = self::get_defaults();
-		return array_merge( $defaults, is_array( $saved ) ? $saved : array() );
+		if ( null === self::$cache ) {
+			$saved       = get_option( self::OPTION_NAME, array() );
+			self::$cache = array_merge( self::get_defaults(), is_array( $saved ) ? $saved : array() );
+		}
+		return self::$cache;
 	}
 
 	/**
@@ -767,6 +791,8 @@ class Settings {
 			'enable_projects'                => __( 'Bauprojekte mit Wohneinheiten aktivieren', 'immo-manager' ),
 			'enable_inquiries'               => __( 'Anfragen-System aktivieren', 'immo-manager' ),
 			'quick_info_show_details_button' => __( 'Details-Button in Quick-Info-Lightbox anzeigen', 'immo-manager' ),
+			'load_google_fonts'              => __( 'Google Fonts extern laden (deaktivieren für DSGVO-konformes Hosting ohne Drittanbieter-Requests; es greifen dann System-Schriften)', 'immo-manager' ),
+			'delete_data_on_uninstall'       => __( 'Beim LÖSCHEN des Plugins alle Daten entfernen (Immobilien, Bauprojekte, Wohneinheiten, Anfragen, Einstellungen). Standard: aus – Daten bleiben erhalten.', 'immo-manager' ),
 		);
 
 		foreach ( $toggles as $key => $label ) {
@@ -1658,7 +1684,7 @@ class Settings {
 			: $defaults['default_hero_type'];
 
 		// Feature-Toggles (Checkboxes).
-		foreach ( array( 'enable_wizard', 'enable_filter', 'enable_projects', 'enable_inquiries', 'quick_info_show_details_button', 'admin_notifications', 'map_enabled' ) as $toggle ) {
+		foreach ( array( 'enable_wizard', 'enable_filter', 'enable_projects', 'enable_inquiries', 'quick_info_show_details_button', 'admin_notifications', 'map_enabled', 'load_google_fonts', 'delete_data_on_uninstall' ) as $toggle ) {
 			$sanitized[ $toggle ] = ! empty( $input[ $toggle ] ) ? 1 : 0;
 		}
 
@@ -1793,6 +1819,9 @@ class Settings {
 	 * @return void
 	 */
 	public function flush_caches(): void {
+		// 0. Eigenen Request-Cache verwerfen.
+		self::reset_cache();
+
 		// 1. WordPress Object Cache (Redis/Memcached) leeren
 		wp_cache_flush();
 

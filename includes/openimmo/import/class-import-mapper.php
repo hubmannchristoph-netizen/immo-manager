@@ -56,6 +56,7 @@ class ImportMapper {
 		$meta['_immo_renovation_year'] = (int) $this->read_text( $immobilie, 'letztemodernisierung' );
 		$meta['_immo_energy_class']    = $this->read_text( $immobilie, 'hwbklasse' );
 		$meta['_immo_energy_hwb']      = (float) $this->read_text( $immobilie, 'hwbwert' );
+		$meta['_immo_energy_eeb']      = (float) $this->read_text( $immobilie, 'endenergiebedarf' );
 		$meta['_immo_energy_fgee']     = (float) $this->read_text( $immobilie, 'fgeewert' );
 
 		$meta['_immo_features'] = $this->read_features( $immobilie );

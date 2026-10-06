@@ -241,6 +241,12 @@ class Plugin {
 		if ( is_admin() ) {
 			add_action( 'init', array( $this, 'init_admin' ), 5 );
 		}
+
+		// Settings-Request-Cache verwerfen, sobald die Option geschrieben wird
+		// (Settings-Formular, AJAX-API-Key-Generator, WP-CLI, …).
+		add_action( 'update_option_' . Settings::OPTION_NAME, array( Settings::class, 'reset_cache' ), 1 );
+		add_action( 'add_option_' . Settings::OPTION_NAME, array( Settings::class, 'reset_cache' ), 1 );
+		add_action( 'delete_option_' . Settings::OPTION_NAME, array( Settings::class, 'reset_cache' ), 1 );
 	}
 
 	/**
@@ -282,6 +288,11 @@ class Plugin {
 		$this->get_demo_data();
 		$this->get_openimmo_admin_page();
 		$this->get_openimmo_conflicts_page();
+
+		// Cron-Events selbstheilend sicherstellen – z. B. nach einem Update per
+		// ZIP-Upload, bei dem der Activation-Hook nicht erneut läuft.
+		$this->get_openimmo_cron();
+		\ImmoManager\OpenImmo\CronScheduler::ensure_scheduled();
 	}
 
 	/**

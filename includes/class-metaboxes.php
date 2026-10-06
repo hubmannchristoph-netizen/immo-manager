@@ -275,11 +275,21 @@ class Metaboxes {
 	 */
 	public function render_property_energy( \WP_Post $post ): void {
 		$meta    = $this->get_meta( $post->ID, MetaFields::property_fields() );
-		$classes = array( '', 'A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G' );
+		$classes = array_merge( array( '' ), MetaFields::energy_classes() );
+		$missing = MetaFields::missing_energy_fields( $meta );
 		?>
+		<p class="description">
+			<?php esc_html_e( 'Seit 1. Juli 2026 (EAVG-Novelle) müssen Inserate die Energieeffizienzklasse, den Heizwärmebedarf (HWB) und den Endenergiebedarf (EEB) enthalten. Der fGEE ist nur noch für Ausweise nach altem Recht zulässig. Fehlende Angaben können mit bis zu 1.450 € bestraft werden.', 'immo-manager' ); ?>
+		</p>
+		<?php if ( ! empty( $missing ) && 'publish' === $post->post_status && MetaFields::energy_certificate_required( (string) $meta['_immo_property_type'] ) ) : ?>
+			<div class="notice notice-warning inline" style="margin: 8px 0;"><p>
+				<strong><?php esc_html_e( 'Energieausweis unvollständig:', 'immo-manager' ); ?></strong>
+				<?php echo esc_html( implode( ', ', $missing ) ); ?>
+			</p></div>
+		<?php endif; ?>
 		<table class="form-table immo-form">
 			<tr>
-				<th><label for="_immo_energy_class"><?php esc_html_e( 'Energieklasse', 'immo-manager' ); ?></label></th>
+				<th><label for="_immo_energy_class"><?php esc_html_e( 'Energieeffizienzklasse', 'immo-manager' ); ?> <span class="immo-required">*</span></label></th>
 				<td>
 					<select id="_immo_energy_class" name="immo_meta[_immo_energy_class]">
 						<?php foreach ( $classes as $cls ) : ?>
@@ -291,12 +301,22 @@ class Metaboxes {
 				</td>
 			</tr>
 			<tr>
-				<th><label for="_immo_energy_hwb"><?php esc_html_e( 'HWB (kWh/m²·a)', 'immo-manager' ); ?></label></th>
+				<th><label for="_immo_energy_hwb"><?php esc_html_e( 'Heizwärmebedarf HWB (kWh/m²a)', 'immo-manager' ); ?> <span class="immo-required">*</span></label></th>
 				<td><input type="number" step="0.1" min="0" id="_immo_energy_hwb" name="immo_meta[_immo_energy_hwb]" value="<?php echo esc_attr( (string) $meta['_immo_energy_hwb'] ); ?>" class="small-text" /></td>
 			</tr>
 			<tr>
-				<th><label for="_immo_energy_fgee"><?php esc_html_e( 'fGEE', 'immo-manager' ); ?></label></th>
-				<td><input type="number" step="0.01" min="0" id="_immo_energy_fgee" name="immo_meta[_immo_energy_fgee]" value="<?php echo esc_attr( (string) $meta['_immo_energy_fgee'] ); ?>" class="small-text" /></td>
+				<th><label for="_immo_energy_eeb"><?php esc_html_e( 'Endenergiebedarf EEB (kWh/m²a)', 'immo-manager' ); ?> <span class="immo-required">*</span></label></th>
+				<td>
+					<input type="number" step="0.1" min="0" id="_immo_energy_eeb" name="immo_meta[_immo_energy_eeb]" value="<?php echo esc_attr( (string) $meta['_immo_energy_eeb'] ); ?>" class="small-text" />
+					<p class="description"><?php esc_html_e( 'Pflichtangabe seit 1.7.2026 (Ausweise nach OIB-Richtlinie 6:2025).', 'immo-manager' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th><label for="_immo_energy_fgee"><?php esc_html_e( 'fGEE (nur Altausweis)', 'immo-manager' ); ?></label></th>
+				<td>
+					<input type="number" step="0.01" min="0" id="_immo_energy_fgee" name="immo_meta[_immo_energy_fgee]" value="<?php echo esc_attr( (string) $meta['_immo_energy_fgee'] ); ?>" class="small-text" />
+					<p class="description"><?php esc_html_e( 'Gesamtenergieeffizienz-Faktor – nur bei Energieausweisen nach altem Recht anstelle des EEB.', 'immo-manager' ); ?></p>
+				</td>
 			</tr>
 			<tr>
 				<th><label for="mb_heating_select"><?php esc_html_e( 'Heizungsart', 'immo-manager' ); ?></label></th>

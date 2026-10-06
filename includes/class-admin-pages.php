@@ -462,6 +462,17 @@ class AdminPages {
 		}
 		$api_url      = rest_url( RestApi::NAMESPACE );
 		$settings_url = admin_url( 'admin.php?page=' . Settings::MENU_SLUG );
+		$embed_url    = IMMO_MANAGER_PLUGIN_URL . 'public/embed/immo-embed.js';
+		$manual_url   = IMMO_MANAGER_PLUGIN_URL . 'public/embed/anleitung.html';
+
+		// Für den Snippet-Generator: veröffentlichte Bauprojekte & Immobilien (ID, Slug, Titel).
+		$embed_items = array( 'projects' => array(), 'properties' => array() );
+		foreach ( array( 'projects' => PostTypes::POST_TYPE_PROJECT, 'properties' => PostTypes::POST_TYPE_PROPERTY ) as $bucket => $ptype ) {
+			$posts = get_posts( array( 'post_type' => $ptype, 'post_status' => 'publish', 'posts_per_page' => 50, 'orderby' => 'title', 'order' => 'ASC' ) );
+			foreach ( $posts as $ep ) {
+				$embed_items[ $bucket ][] = array( 'id' => (int) $ep->ID, 'slug' => $ep->post_name, 'title' => get_the_title( $ep ) );
+			}
+		}
 		?>
 		<style>
 			.immo-help-wrap { max-width: 1100px; }
@@ -503,6 +514,7 @@ class AdminPages {
 				<a href="#help-schema"><?php esc_html_e( '9. SEO & Schema.org', 'immo-manager' ); ?></a>
 				<a href="#help-settings"><?php esc_html_e( '10. Einstellungs-Übersicht', 'immo-manager' ); ?></a>
 				<a href="#help-api"><?php esc_html_e( '11. REST-API Referenz', 'immo-manager' ); ?></a>
+				<a href="#help-embed"><?php esc_html_e( '12. Embed-Widgets für externe Webseiten', 'immo-manager' ); ?></a>
 			</div>
 
 			<!-- 1. ÜBERSICHT -->
@@ -568,7 +580,7 @@ class AdminPages {
 					<tbody>
 						<tr><td><strong>1. Typ</strong></td><td><?php esc_html_e( 'Immobilientyp (Wohnung/Haus/etc.), Modus (Miete/Kauf/beides), Status', 'immo-manager' ); ?></td></tr>
 						<tr><td><strong>2. Lage</strong></td><td><?php esc_html_e( 'Adresse, PLZ, Ort, Bundesland, Bezirk, Geo-Koordinaten (Maps-Integration)', 'immo-manager' ); ?></td></tr>
-						<tr><td><strong>3. Details</strong></td><td><?php esc_html_e( 'Fläche, Zimmer, Bäder, Etage, Baujahr, Sanierung, Energieklasse, HWB, Heizung', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>3. Details</strong></td><td><?php esc_html_e( 'Fläche, Zimmer, Bäder, Etage, Baujahr, Sanierung, Energieausweis (Energieeffizienzklasse, HWB, Endenergiebedarf EEB – Pflicht seit 1.7.2026; fGEE nur bei Altausweis), Heizung', 'immo-manager' ); ?></td></tr>
 						<tr><td><strong>4. Preis</strong></td><td><?php esc_html_e( 'Kaufpreis, Miete, Betriebskosten, Kaution, Provisionsfrei-Toggle, Verfügbar-ab', 'immo-manager' ); ?></td></tr>
 						<tr><td><strong>5. Ausstattung</strong></td><td><?php esc_html_e( 'Klickbare Feature-Tags (Innen/Außen/Sicherheit/Sonstiges), freier Text', 'immo-manager' ); ?></td></tr>
 						<tr><td><strong>6. Medien</strong></td><td><?php esc_html_e( 'Hauptbild, Galerie, Dokumente (Exposé-PDF, Grundriss), Video-URL/Datei', 'immo-manager' ); ?></td></tr>
@@ -638,6 +650,10 @@ class AdminPages {
 					<li><strong><?php esc_html_e( 'Projekt-Wohneinheiten', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'Tabellen-Übersicht aller Tops eines Projekts (Etage, Fläche, Zimmer, Preis, Status).', 'immo-manager' ); ?></li>
 					<li><strong><?php esc_html_e( 'Immobilien-Suche', 'immo-manager' ); ?></strong> — <?php esc_html_e( 'horizontaler Suchschlitz für Header oder Hero-Sektionen.', 'immo-manager' ); ?></li>
 				</ul>
+
+				<h3><?php esc_html_e( 'Embed-Widget für fremde Webseiten', 'immo-manager' ); ?> <span class="immo-help-badge"><?php esc_html_e( 'Neu', 'immo-manager' ); ?></span></h3>
+				<p><?php esc_html_e( 'Immobilien, Bauprojekte und Wohneinheiten lassen sich mit einem Script-Snippet in JEDE Webseite einbetten – auch ohne WordPress. Komplette Bedienungsanleitung, Snippet-Generator mit Live-Vorschau und Schritt-für-Schritt-Anleitungen für Webflow, Wix, Jimdo, Squarespace, Typo3, Joomla, Shopify und reines HTML:', 'immo-manager' ); ?>
+					<a href="#help-embed"><strong><?php esc_html_e( '→ Kapitel 12: Embed-Widgets', 'immo-manager' ); ?></strong></a></p>
 
 				<h3><?php esc_html_e( 'Provisionsfrei-Badge auf Public-Templates', 'immo-manager' ); ?> <span class="immo-help-badge"><?php esc_html_e( 'Neu', 'immo-manager' ); ?></span></h3>
 				<p><?php esc_html_e( 'Properties mit aktivierter Checkbox „Provisionsfrei" (Wizard Schritt 4 oder Property-Metabox) zeigen automatisch ein gut sichtbares gelb/oranges Badge:', 'immo-manager' ); ?></p>
@@ -974,6 +990,228 @@ fetch('<?php echo esc_url( $api_url ); ?>/properties?ids=42;17;93&status=availab
 				</div>
 			</div>
 
+			<!-- 12. EMBED-WIDGETS -->
+			<div class="immo-help-section" id="help-embed">
+				<h2>🧩 <?php esc_html_e( '12. Embed-Widgets für externe Webseiten', 'immo-manager' ); ?> <span class="immo-help-badge"><?php esc_html_e( 'Neu', 'immo-manager' ); ?></span></h2>
+				<p class="description"><?php esc_html_e( 'Mit dem Embed-Widget zeigst du deine Immobilien, Bauprojekte und Wohneinheiten auf jeder beliebigen Webseite – egal ob WordPress, Webflow, Wix, Jimdo, Squarespace, Typo3, Joomla, Shopify oder eine handgeschriebene HTML-Seite. Die Daten werden live aus dieser Installation geladen; Änderungen hier erscheinen sofort auf allen eingebundenen Seiten.', 'immo-manager' ); ?></p>
+
+				<h3><?php esc_html_e( 'So funktioniert es', 'immo-manager' ); ?></h3>
+				<ol>
+					<li><?php esc_html_e( 'Ein kleines JavaScript (immo-embed.js, ca. 40 KB, keine Abhängigkeiten) wird einmal pro Seite eingebunden.', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Überall, wo Inhalte erscheinen sollen, steht ein Platzhalter-Element mit dem Attribut data-immo-embed.', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Das Script holt die Daten über die öffentliche REST-API dieser Installation und rendert sie isoliert in einem Shadow DOM – das CSS der Zielseite kann nichts kaputt machen und umgekehrt.', 'immo-manager' ); ?></li>
+					<li><?php esc_html_e( 'Farben kommen automatisch aus deinen Design-Einstellungen (Primär-/Akzentfarbe) oder werden per Attribut überschrieben.', 'immo-manager' ); ?></li>
+				</ol>
+				<div class="immo-help-callout immo-help-callout--ok">
+					<strong>✅ <?php esc_html_e( 'Keine Installation auf der Zielseite nötig.', 'immo-manager' ); ?></strong>
+					<?php esc_html_e( 'Es braucht weder WordPress noch ein Plugin dort – nur die Möglichkeit, ein HTML-Snippet einzufügen. Eine eigenständige Anleitung mit Live-Demo findest du hier:', 'immo-manager' ); ?>
+					<a href="<?php echo esc_url( $manual_url ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $manual_url ); ?></a>
+				</div>
+
+				<h3><?php esc_html_e( 'Schritt 1: Script einbinden (einmal pro Seite)', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Am besten kurz vor dem schließenden </body>-Tag oder im Footer-Bereich für „Custom Code" deines Baukastens:', 'immo-manager' ); ?></p>
+				<pre><code>&lt;script src="<?php echo esc_url( $embed_url ); ?>" defer&gt;&lt;/script&gt;</code></pre>
+
+				<h3><?php esc_html_e( 'Schritt 2: Platzhalter einfügen', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Ein &lt;div&gt; mit data-immo-embed pro Widget. Beliebig viele Widgets pro Seite sind möglich:', 'immo-manager' ); ?></p>
+				<pre><code>&lt;!-- Bauprojekte als Grid, 3 Spalten --&gt;
+&lt;div data-immo-embed="projects" data-columns="3" data-title="Unsere Bauprojekte"&gt;&lt;/div&gt;
+
+&lt;!-- Wohneinheiten eines Bauprojekts (ID oder Slug) --&gt;
+&lt;div data-immo-embed="units" data-project="<?php echo esc_attr( $embed_items['projects'][0]['slug'] ?? 'mein-bauprojekt' ); ?>"&gt;&lt;/div&gt;
+
+&lt;!-- Immobilien-Grid mit Filterleiste und „Mehr laden" --&gt;
+&lt;div data-immo-embed="properties" data-mode="sale" data-limit="6" data-filters="1"&gt;&lt;/div&gt;
+
+&lt;!-- Einzelne Immobilie / einzelnes Bauprojekt als Detailkarte --&gt;
+&lt;div data-immo-embed="property" data-slug="<?php echo esc_attr( $embed_items['properties'][0]['slug'] ?? 'meine-immobilie' ); ?>"&gt;&lt;/div&gt;
+&lt;div data-immo-embed="project" data-id="<?php echo esc_attr( (string) ( $embed_items['projects'][0]['id'] ?? 123 ) ); ?>"&gt;&lt;/div&gt;</code></pre>
+
+				<h3><?php esc_html_e( 'Snippet-Generator mit Live-Vorschau', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Widget zusammenklicken, Snippet kopieren, in die Zielseite einfügen – fertig. Die Vorschau zeigt exakt, was später auf der externen Seite erscheint.', 'immo-manager' ); ?></p>
+				<div class="immo-embed-gen" id="immo-embed-gen" data-embed-url="<?php echo esc_url( $embed_url ); ?>" data-items="<?php echo esc_attr( wp_json_encode( $embed_items ) ); ?>">
+					<div class="immo-embed-gen-grid">
+						<label><?php esc_html_e( 'Widget-Typ', 'immo-manager' ); ?>
+							<select name="type">
+								<option value="projects"><?php esc_html_e( 'Bauprojekte (Grid)', 'immo-manager' ); ?></option>
+								<option value="units"><?php esc_html_e( 'Wohneinheiten eines Bauprojekts', 'immo-manager' ); ?></option>
+								<option value="project"><?php esc_html_e( 'Bauprojekt-Detail + Einheiten', 'immo-manager' ); ?></option>
+								<option value="properties"><?php esc_html_e( 'Immobilien (Grid)', 'immo-manager' ); ?></option>
+								<option value="property"><?php esc_html_e( 'Immobilien-Detailkarte', 'immo-manager' ); ?></option>
+							</select>
+						</label>
+						<label data-for="units project"><?php esc_html_e( 'Bauprojekt', 'immo-manager' ); ?>
+							<select name="projectRef"></select>
+						</label>
+						<label data-for="property"><?php esc_html_e( 'Immobilie', 'immo-manager' ); ?>
+							<select name="propertyRef"></select>
+						</label>
+						<label data-for="projects properties"><?php esc_html_e( 'Spalten', 'immo-manager' ); ?>
+							<select name="columns"><option>1</option><option>2</option><option selected>3</option><option>4</option></select>
+						</label>
+						<label data-for="projects properties"><?php esc_html_e( 'Anzahl', 'immo-manager' ); ?>
+							<input type="number" name="limit" min="1" max="50" value="6">
+						</label>
+						<label data-for="properties"><?php esc_html_e( 'Angebot', 'immo-manager' ); ?>
+							<select name="mode"><option value=""><?php esc_html_e( 'Alle', 'immo-manager' ); ?></option><option value="sale"><?php esc_html_e( 'Kaufen', 'immo-manager' ); ?></option><option value="rent"><?php esc_html_e( 'Mieten', 'immo-manager' ); ?></option></select>
+						</label>
+						<label data-for="properties"><?php esc_html_e( 'Filterleiste', 'immo-manager' ); ?>
+							<select name="filters"><option value=""><?php esc_html_e( 'Aus', 'immo-manager' ); ?></option><option value="1"><?php esc_html_e( 'An', 'immo-manager' ); ?></option></select>
+						</label>
+						<label data-for="units project"><?php esc_html_e( 'Status', 'immo-manager' ); ?>
+							<select name="status"><option value=""><?php esc_html_e( 'Alle', 'immo-manager' ); ?></option><option value="available"><?php esc_html_e( 'Nur verfügbar', 'immo-manager' ); ?></option><option value="available,reserved"><?php esc_html_e( 'Verfügbar + reserviert', 'immo-manager' ); ?></option></select>
+						</label>
+						<label><?php esc_html_e( 'Überschrift (optional)', 'immo-manager' ); ?>
+							<input type="text" name="title" placeholder="<?php esc_attr_e( 'z. B. Unsere Bauprojekte', 'immo-manager' ); ?>">
+						</label>
+						<label><?php esc_html_e( 'Links öffnen', 'immo-manager' ); ?>
+							<select name="target"><option value=""><?php esc_html_e( 'Im selben Tab', 'immo-manager' ); ?></option><option value="_blank"><?php esc_html_e( 'In neuem Tab', 'immo-manager' ); ?></option></select>
+						</label>
+						<label class="immo-embed-gen-wide"><?php esc_html_e( 'Detail-Links auf eigene Seite umleiten (optional)', 'immo-manager' ); ?>
+							<input type="text" name="linkTemplate" placeholder="https://kunde.at/immobilie/{slug}">
+						</label>
+					</div>
+					<p><strong><?php esc_html_e( 'Dein Snippet:', 'immo-manager' ); ?></strong> <button type="button" class="button button-small immo-embed-copy"><?php esc_html_e( 'In Zwischenablage kopieren', 'immo-manager' ); ?></button> <span class="immo-embed-copied" hidden><?php esc_html_e( 'Kopiert ✓', 'immo-manager' ); ?></span></p>
+					<textarea class="immo-embed-snippet large-text code" rows="7" readonly></textarea>
+					<p><strong><?php esc_html_e( 'Live-Vorschau:', 'immo-manager' ); ?></strong></p>
+					<div class="immo-embed-preview"></div>
+				</div>
+				<style>
+					.immo-embed-gen { background:#f9fafb; border:1px solid #e5e7eb; padding:16px; border-radius:6px; }
+					.immo-embed-gen-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px 14px; margin-bottom:12px; }
+					.immo-embed-gen-grid label { display:flex; flex-direction:column; gap:4px; font-size:12px; font-weight:600; color:#374151; }
+					.immo-embed-gen-grid label[hidden] { display:none; }
+					.immo-embed-gen-grid select, .immo-embed-gen-grid input { width:100%; }
+					.immo-embed-gen-wide { grid-column: 1 / -1; }
+					.immo-embed-preview { background:#fff; border:1px dashed #cbd5e1; padding:16px; border-radius:6px; min-height:60px; }
+				</style>
+				<script src="<?php echo esc_url( $embed_url ); ?>" defer></script>
+				<script>
+				(function () {
+					var gen = document.getElementById('immo-embed-gen');
+					if (!gen) { return; }
+					var items = {};
+					try { items = JSON.parse(gen.getAttribute('data-items') || '{}'); } catch (e) {}
+					var embedUrl = gen.getAttribute('data-embed-url');
+					var f = function (n) { return gen.querySelector('[name="' + n + '"]'); };
+					var snippetEl = gen.querySelector('.immo-embed-snippet');
+					var preview = gen.querySelector('.immo-embed-preview');
+
+					function fill(sel, list, fallback) {
+						sel.innerHTML = '';
+						(list || []).forEach(function (it) {
+							var o = document.createElement('option');
+							o.value = it.slug || String(it.id);
+							o.textContent = it.title + ' (' + it.slug + ')';
+							sel.appendChild(o);
+						});
+						if (!sel.options.length) { var o2 = document.createElement('option'); o2.value = fallback; o2.textContent = fallback; sel.appendChild(o2); }
+					}
+					fill(f('projectRef'), items.projects, 'mein-bauprojekt');
+					fill(f('propertyRef'), items.properties, 'meine-immobilie');
+
+					function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+
+					function build() {
+						var type = f('type').value;
+						gen.querySelectorAll('label[data-for]').forEach(function (l) {
+							l.hidden = l.getAttribute('data-for').split(' ').indexOf(type) === -1;
+						});
+						var attrs = { 'data-immo-embed': type };
+						if (type === 'units') { attrs['data-project'] = f('projectRef').value; }
+						if (type === 'project') { attrs['data-slug'] = f('projectRef').value; }
+						if (type === 'property') { attrs['data-slug'] = f('propertyRef').value; }
+						if (type === 'projects' || type === 'properties') { attrs['data-columns'] = f('columns').value; attrs['data-limit'] = f('limit').value; }
+						if (type === 'properties') { if (f('mode').value) { attrs['data-mode'] = f('mode').value; } if (f('filters').value) { attrs['data-filters'] = '1'; } }
+						if ((type === 'units' || type === 'project') && f('status').value) { attrs['data-status'] = f('status').value; }
+						if (f('title').value) { attrs['data-title'] = f('title').value; }
+						if (f('target').value) { attrs['data-target'] = f('target').value; }
+						if (f('linkTemplate').value) { attrs['data-link-template'] = f('linkTemplate').value; }
+
+						var attrStr = Object.keys(attrs).map(function (k) { return k + '="' + esc(attrs[k]) + '"'; }).join(' ');
+						snippetEl.value = '<!-- 1) einmal pro Seite, z. B. vor </body> -->\n<script src="' + embedUrl + '" defer><\/script>\n\n<!-- 2) dort einfügen, wo das Widget erscheinen soll -->\n<div ' + attrStr + '></div>';
+
+						// Live-Vorschau neu rendern.
+						preview.innerHTML = '';
+						var el = document.createElement('div');
+						Object.keys(attrs).forEach(function (k) { el.setAttribute(k, attrs[k]); });
+						preview.appendChild(el);
+						if (window.ImmoEmbed) { window.ImmoEmbed.render(el); } else { window.addEventListener('load', function () { if (window.ImmoEmbed) { window.ImmoEmbed.render(el); } }); }
+					}
+
+					gen.addEventListener('change', build);
+					var t;
+					gen.addEventListener('input', function (e) { if (e.target.tagName === 'INPUT') { clearTimeout(t); t = setTimeout(build, 400); } });
+					gen.querySelector('.immo-embed-copy').addEventListener('click', function () {
+						var done = function () { var c = gen.querySelector('.immo-embed-copied'); c.hidden = false; setTimeout(function () { c.hidden = true; }, 2000); };
+						if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(snippetEl.value).then(done); }
+						else { snippetEl.select(); document.execCommand('copy'); done(); }
+					});
+					build();
+				})();
+				</script>
+
+				<h3><?php esc_html_e( 'Widget-Typen und Attribute', 'immo-manager' ); ?></h3>
+				<table>
+					<thead><tr><th>data-immo-embed</th><th><?php esc_html_e( 'Zeigt', 'immo-manager' ); ?></th><th><?php esc_html_e( 'Attribute', 'immo-manager' ); ?></th></tr></thead>
+					<tbody>
+						<tr><td><code>properties</code></td><td><?php esc_html_e( 'Immobilien-Grid mit optionaler Filterleiste (Angebot, Bundesland, Zimmer, Preis) und „Mehr laden"', 'immo-manager' ); ?></td><td><code>data-limit</code> (1–50), <code>data-columns</code> (1–4), <code>data-status</code>, <code>data-mode</code> (sale|rent), <code>data-type</code>, <code>data-region</code>, <code>data-orderby</code> (newest|price_asc|price_desc|area_desc), <code>data-project</code>, <code>data-price-min</code>/<code>-max</code>, <code>data-rooms</code>, <code>data-filters="1"</code>, <code>data-pagination="0"</code></td></tr>
+						<tr><td><code>projects</code></td><td><?php esc_html_e( 'Bauprojekte als Cards mit Status, Einheiten-Statistik und Flächenspanne', 'immo-manager' ); ?></td><td><code>data-limit</code>, <code>data-columns</code>, <code>data-status</code> (planning|building|completed)</td></tr>
+						<tr><td><code>units</code></td><td><?php esc_html_e( 'Wohneinheiten-Tabelle eines Bauprojekts mit Status-Filter-Pills', 'immo-manager' ); ?></td><td><code>data-project</code> (ID oder Slug, Pflicht), <code>data-status</code>, <code>data-orderby</code> (unit_number|floor|area|price|rooms|status), <code>data-limit</code>, <code>data-stats="0"</code></td></tr>
+						<tr><td><code>property</code></td><td><?php esc_html_e( 'Detailkarte einer Immobilie (Bild, Galerie, Preis, Eckdaten, Energieausweis, Ausstattung, Beschreibung, Kontakt)', 'immo-manager' ); ?></td><td><code>data-id</code> oder <code>data-slug</code>, <code>data-description="0"</code></td></tr>
+						<tr><td><code>project</code></td><td><?php esc_html_e( 'Bauprojekt-Kopf mit Statistiken plus Wohneinheiten-Tabelle', 'immo-manager' ); ?></td><td><code>data-id</code> oder <code>data-slug</code>, <code>data-status</code>, <code>data-description="0"</code></td></tr>
+						<tr><td><em><?php esc_html_e( 'alle Typen', 'immo-manager' ); ?></em></td><td></td><td><code>data-title</code>, <code>data-primary</code>, <code>data-accent</code>, <code>data-radius</code> (z. B. 8 oder 8px), <code>data-target="_blank"</code>, <code>data-lang="de|en"</code>, <code>data-link-template</code>, <code>data-project-link-template</code>, <code>data-no-shadow="1"</code>, <code>data-api</code></td></tr>
+					</tbody>
+				</table>
+				<p><?php esc_html_e( 'Attribute können auch global am <script>-Tag gesetzt werden (data-api, data-lang, data-primary, data-accent, data-radius, data-target, data-link-template) und gelten dann für alle Widgets der Seite.', 'immo-manager' ); ?></p>
+
+				<h3><?php esc_html_e( 'Detail-Links auf die Kundenseite umleiten', 'immo-manager' ); ?></h3>
+				<p><?php esc_html_e( 'Standardmäßig führen „Details ansehen"-Links zur Detailseite dieser WordPress-Installation. Soll die externe Seite eigene Detailseiten haben, gibst du ein Link-Template mit Platzhaltern {slug} und {id} an:', 'immo-manager' ); ?></p>
+				<pre><code>&lt;div data-immo-embed="properties" data-link-template="https://kunde.at/immobilie/{slug}"&gt;&lt;/div&gt;
+&lt;!-- und auf https://kunde.at/immobilie/… dann: --&gt;
+&lt;div data-immo-embed="property" data-slug="SLUG-AUS-DER-URL"&gt;&lt;/div&gt;</code></pre>
+
+				<h3><?php esc_html_e( 'Schritt-für-Schritt nach Plattform (ohne WordPress)', 'immo-manager' ); ?></h3>
+				<table>
+					<thead><tr><th><?php esc_html_e( 'Plattform', 'immo-manager' ); ?></th><th><?php esc_html_e( 'So fügst du Script und Platzhalter ein', 'immo-manager' ); ?></th></tr></thead>
+					<tbody>
+						<tr><td><strong><?php esc_html_e( 'Reines HTML / statische Seite', 'immo-manager' ); ?></strong></td><td><?php esc_html_e( 'Script-Zeile vor </body> einfügen, Platzhalter-&lt;div&gt; an der gewünschten Stelle im HTML. Funktioniert auch bei Hugo, Jekyll, Astro, Eleventy oder Netlify/Vercel-Static-Sites.', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>Webflow</strong></td><td><?php esc_html_e( 'Element „Embed" (Code Embed) auf die Seite ziehen und den Platzhalter-&lt;div&gt; hineinkopieren. Die Script-Zeile unter Project Settings → Custom Code → „Footer Code" eintragen (gilt dann für alle Seiten) – oder direkt mit in dasselbe Embed-Element.', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>Wix</strong></td><td><?php esc_html_e( 'Hinzufügen → Einbetten → „HTML-Code einbetten" → Modus „Code": beide Teile (Script + div) in das Feld kopieren. Hinweis: Wix rendert HTML-Embeds in einem iFrame mit fester Höhe – Höhe im Editor so groß wählen, dass das Widget Platz hat. Alternative ohne iFrame: Wix Studio/Velo „Custom Element" oder Settings → Custom Code (Script) + HTML-Embed (div).', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>Jimdo</strong></td><td><?php esc_html_e( 'Element „Widget/HTML" hinzufügen und Script-Zeile plus Platzhalter-&lt;div&gt; einfügen. Bei Jimdo Dolphin: „HTML"-Block.', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>Squarespace</strong></td><td><?php esc_html_e( '„Code"-Block auf der Seite einfügen (Platzhalter-div, Typ HTML). Script-Zeile unter Einstellungen → Erweitert → Code-Injection → Footer. Code-Blöcke erfordern einen Business-Plan oder höher.', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>Typo3</strong></td><td><?php esc_html_e( 'Inhaltselement „HTML" (bzw. „Reines HTML") mit dem Platzhalter-div anlegen. Script-Zeile im Fluid-Layout/Page-Template vor </body> oder per TypoScript page.includeJSFooter einbinden.', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>Joomla</strong></td><td><?php esc_html_e( 'Modul „Eigenes HTML" (Custom) mit dem Platzhalter-div anlegen; im Editor den Code-Modus nutzen, damit nichts entfernt wird (ggf. Editor „None" oder Plugin wie Sourcerer). Script-Zeile im Template (index.php) vor </body>.', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>Shopify</strong></td><td><?php esc_html_e( 'Theme anpassen → Abschnitt „Custom Liquid" hinzufügen und Script + Platzhalter-div einfügen. Für alle Seiten: Script-Zeile in theme.liquid vor </body>.', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>HubSpot CMS / Google Sites</strong></td><td><?php esc_html_e( 'HubSpot: Modul „Embed/HTML" bzw. Site-Footer-HTML. Google Sites: Einfügen → Einbetten → „Code einbetten" (läuft in einem iFrame mit fester Höhe).', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong>React / Vue / Angular / Next.js</strong></td><td><?php esc_html_e( 'Script einmal laden (z. B. im Root-Layout). Platzhalter-divs im JSX/Template setzen und nach dem Mounten window.ImmoEmbed.init(containerElement) aufrufen – bei Client-seitigem Routing nach jedem Seitenwechsel erneut. Bei Server-Side-Rendering nur im Browser ausführen (useEffect / onMounted).', 'immo-manager' ); ?></td></tr>
+						<tr><td><strong><?php esc_html_e( 'Andere WordPress-Seite', 'immo-manager' ); ?></strong></td><td><?php esc_html_e( 'Block „Individuelles HTML" (Gutenberg) oder Elementor „HTML"-Widget mit Script + div. Für viele Seiten alternativ ein Snippet-Plugin für den Footer.', 'immo-manager' ); ?></td></tr>
+					</tbody>
+				</table>
+
+				<h3><?php esc_html_e( 'Voraussetzungen & Sicherheit', 'immo-manager' ); ?></h3>
+				<ul>
+					<li><strong><?php esc_html_e( 'CORS:', 'immo-manager' ); ?></strong> <?php esc_html_e( 'Die Zieldomain muss unter ', 'immo-manager' ); ?><a href="<?php echo esc_url( $settings_url . '#tab-api' ); ?>"><?php esc_html_e( 'Einstellungen → API & Integration → Erlaubte Origins', 'immo-manager' ); ?></a><?php esc_html_e( ' erlaubt sein. Standard ist * (alle Domains). Für eine feste Kundenliste eine Origin pro Zeile eintragen, z. B. https://kunde.at.', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'HTTPS:', 'immo-manager' ); ?></strong> <?php esc_html_e( 'Diese Installation muss per HTTPS erreichbar sein, sonst blockieren Browser das Laden auf HTTPS-Seiten (Mixed Content).', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'Nur lesender Zugriff:', 'immo-manager' ); ?></strong> <?php esc_html_e( 'Das Widget nutzt ausschließlich öffentliche GET-Endpunkte. Es enthält absichtlich kein Anfrage-Formular, weil der API-Key nie in eine fremde Seite gehört – „Details"-Links führen zur Anfrage auf dieser Installation.', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'Datenschutz:', 'immo-manager' ); ?></strong> <?php esc_html_e( 'Das Widget setzt keine Cookies und lädt keine Drittanbieter-Ressourcen; Bilder und Daten kommen von dieser Domain. Die Zielseite sollte das Nachladen von Inhalten von dieser Domain in ihrer Datenschutzerklärung erwähnen.', 'immo-manager' ); ?></li>
+					<li><strong><?php esc_html_e( 'Content Security Policy:', 'immo-manager' ); ?></strong> <?php esc_html_e( 'Falls die Zielseite eine CSP nutzt, müssen script-src, connect-src und img-src diese Domain erlauben.', 'immo-manager' ); ?></li>
+				</ul>
+
+				<h3><?php esc_html_e( 'Fehlersuche', 'immo-manager' ); ?></h3>
+				<table>
+					<thead><tr><th><?php esc_html_e( 'Symptom', 'immo-manager' ); ?></th><th><?php esc_html_e( 'Ursache & Lösung', 'immo-manager' ); ?></th></tr></thead>
+					<tbody>
+						<tr><td><?php esc_html_e( 'Es erscheint gar nichts', 'immo-manager' ); ?></td><td><?php esc_html_e( 'Der Baukasten-Editor hat das <script>-Tag entfernt (normaler Text-Editor statt HTML/Code-Block) oder das Script ist nicht geladen. Browser-Konsole (F12) prüfen: dort meldet [ImmoEmbed] jede Ursache.', 'immo-manager' ); ?></td></tr>
+						<tr><td><?php esc_html_e( '„Inhalte konnten nicht geladen werden"', 'immo-manager' ); ?></td><td><?php esc_html_e( 'Meist CORS (Origin nicht erlaubt), ein Caching-/Security-Plugin, das /wp-json blockiert, oder eine falsche API-URL. Direkt im Browser testen: https://DEINE-DOMAIN/wp-json/immo-manager/v1/projects muss JSON liefern. Bei abweichender REST-URL data-api am <script> setzen.', 'immo-manager' ); ?></td></tr>
+						<tr><td><?php esc_html_e( 'Widget ist abgeschnitten (Wix, Google Sites)', 'immo-manager' ); ?></td><td><?php esc_html_e( 'Diese Baukästen rendern HTML-Embeds in einem iFrame fester Höhe. Höhe des Embed-Elements vergrößern oder eine Variante ohne iFrame (Custom Element / Custom Code) verwenden.', 'immo-manager' ); ?></td></tr>
+						<tr><td><?php esc_html_e( 'Dynamisch eingefügte Platzhalter bleiben leer', 'immo-manager' ); ?></td><td><?php esc_html_e( 'Nach dem Einfügen window.ImmoEmbed.init(element) aufrufen; das Script scannt die Seite nur einmal beim Laden.', 'immo-manager' ); ?></td></tr>
+						<tr><td><?php esc_html_e( 'Farben passen nicht zur Zielseite', 'immo-manager' ); ?></td><td><?php esc_html_e( 'data-primary, data-accent und data-radius am Element oder Script setzen; data-no-shadow="1" rendert ohne Shadow DOM, sodass das CSS der Zielseite durchgreift (dann greifen aber auch deren Resets).', 'immo-manager' ); ?></td></tr>
+						<tr><td><?php esc_html_e( 'Änderungen erscheinen nicht', 'immo-manager' ); ?></td><td><?php esc_html_e( 'Ein Caching-Plugin oder CDN cached die REST-Antworten – Cache leeren bzw. /wp-json vom Cache ausnehmen.', 'immo-manager' ); ?></td></tr>
+					</tbody>
+				</table>
+			</div>
+
 			<div class="immo-help-section" style="background: #f9fafb; text-align: center;">
 				<p style="margin:0; font-size: 0.9em; color: #6b7280;">
 					<?php
@@ -1039,6 +1277,8 @@ fetch('<?php echo esc_url( $api_url ); ?>/properties?ids=42;17;93&status=availab
 			array( 'wp-color-picker' ),
 			IMMO_MANAGER_VERSION
 		);
+		// Design-System-Variablen (--immo-*) nur auf Plugin-Screens ausgeben.
+		wp_add_inline_style( 'immo-manager-admin', Plugin::instance()->get_shortcodes()->get_design_css() );
 
 		// Metabox-Styles (nur auf CPT-Edit-Screens nötig).
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;

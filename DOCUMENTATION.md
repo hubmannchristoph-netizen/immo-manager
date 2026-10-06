@@ -28,16 +28,23 @@ Dieses Plugin bietet eine professionelle, vollständig integrierte Immobilien-Ve
 Das Plugin nutzt eine hybride Datenbank-Architektur, um maximale WordPress-Kompatibilität bei gleichzeitig höchster Performance für relationale Abfragen zu gewährleisten.
 
 ### Custom Post Types (CPTs)
-- `immo_property` — Eigenständige Immobilien. Meta-Daten in `wp_postmeta` (Prefix `_immo_`).
-- `immo_project` — Bauprojekte als Container. Meta-Daten ebenfalls in `wp_postmeta`.
+- `immo_mgr_property` — Eigenständige Immobilien. Meta-Daten in `wp_postmeta` (Prefix `_immo_`).
+- `immo_mgr_project` — Bauprojekte als Container. Meta-Daten ebenfalls in `wp_postmeta`.
+
+(Ältere Installationen mit den Slugs `immo_property`/`immo_project` werden beim ersten Laden automatisch migriert.)
 
 ### Custom Tables (für Performance & Relationen)
-- `wp_immo_units` — Wohneinheiten innerhalb eines Bauprojekts. Verknüpft per `project_id` mit `immo_project`-Posts und optional mit `property_id` (Verknüpfung zu eigenständiger Property).
+- `wp_immo_units` — Wohneinheiten innerhalb eines Bauprojekts. Verknüpft per `project_id` mit Bauprojekt-Posts und optional mit `property_id` (Verknüpfung zu eigenständiger Property).
 - `wp_immo_inquiries` — Eingehende Kundenanfragen mit Status-Workflow.
-- `wp_immo_openimmo_sync_log` — OpenImmo Import/Export-Historie.
-- `wp_immo_openimmo_conflicts` — Erkannte Konflikte aus dem OpenImmo-Import.
+- `wp_immo_sync_log` — OpenImmo Import/Export-Historie.
+- `wp_immo_conflicts` — Erkannte Konflikte aus dem OpenImmo-Import.
 
-Alle Tabellen werden bei Plugin-Aktivierung via `dbDelta()` angelegt und versioniert.
+Alle Tabellen werden bei Plugin-Aktivierung via `dbDelta()` angelegt und versioniert (DB-Version 1.6.0). `dbDelta()` arbeitet rein additiv – ein Update löscht niemals Spalten oder Zeilen.
+
+### Datensicherheit bei Installation, Update und Löschung
+- **Installation/Update** (auch ZIP-Upload mit „Vorhandenes ersetzen"): Tabellen werden angelegt/ergänzt, Posts, Meta und Einstellungen bleiben unverändert.
+- **Deaktivierung**: entfernt nur Cron-Events, flusht Permalinks.
+- **Löschen über Plugins → Löschen**: standardmäßig bleiben alle Daten erhalten. Erst mit aktivierter Option *Einstellungen → Module → „Beim Löschen des Plugins alle Daten entfernen"* werden Tabellen, Options und Immobilien/Bauprojekte gelöscht.
 
 ### Codeorganisation
 
@@ -117,13 +124,31 @@ Statt klassischer Metaboxen leitet das Plugin beim Anlegen/Bearbeiten in einen 7
 |---|---|
 | 1. Typ | Immobilientyp, Modus (Miete/Kauf/beides), Status |
 | 2. Lage | Adresse, PLZ, Ort, Bundesland, Bezirk, Geo-Koordinaten |
-| 3. Details | Fläche, Zimmer, Bäder, Etage, Baujahr, Sanierung, Energieklasse, HWB, Heizung |
+| 3. Details | Fläche, Zimmer, Bäder, Etage, Baujahr, Sanierung, Energieausweis (Klasse, HWB, EEB, fGEE), Heizung |
 | 4. Preis | Kaufpreis, Miete, Betriebskosten, Kaution, Provisionsfrei-Toggle, Verfügbarkeit |
 | 5. Ausstattung | Klickbare Feature-Tags (Innen/Außen/Sicherheit/Sonstiges) + freier Text |
 | 6. Medien | Hauptbild, Galerie, Dokumente (Exposé-PDF), Video |
 | 7. Kontakt | Ansprechpartner-Daten + Foto (für Anfrage-Lightbox) |
 
 **Auto-Save-Schutz:** Verlässt der User den Wizard mit ungespeicherten Änderungen, warnt das Plugin per `beforeunload`-Dialog.
+
+### Energieausweis-Pflichtangaben (EAVG § 3, Novelle 1. Juli 2026)
+
+Seit 1.7.2026 müssen Immobilien-Inserate in Österreich die **Energieeffizienzklasse (A–G)**, den **Heizwärmebedarf HWB** (kWh/m²a) und den **Endenergiebedarf EEB** (kWh/m²a) enthalten. Der bisherige **fGEE** entfällt als Pflichtangabe und ist nur noch für Energieausweise nach altem Recht zulässig (Übergangsregel). Verstöße: Verwaltungsstrafe bis 1.450 €.
+
+Umsetzung im Plugin (identisch zur Vividomo-Plattform):
+
+| Feld | Meta-Key | REST | OpenImmo |
+|---|---|---|---|
+| Energieeffizienzklasse (A++/A+ für Altausweise, sonst A–G) | `_immo_energy_class` | `meta.energy_class` | `energiepass/hwbklasse` |
+| Heizwärmebedarf HWB | `_immo_energy_hwb` | `meta.energy_hwb` | `energiepass/hwbwert` |
+| Endenergiebedarf EEB **(neu)** | `_immo_energy_eeb` | `meta.energy_eeb` | `energiepass/endenergiebedarf` |
+| fGEE (nur Altausweis) | `_immo_energy_fgee` | `meta.energy_fgee` | `energiepass/fgeewert` |
+
+- **Vollständigkeitsregel:** Klasse **und** HWB **und** (EEB **oder** fGEE). Helper: `MetaFields::missing_energy_fields( $meta )`.
+- **Wizard:** Veröffentlichen einer Immobilie ist nur mit vollständigem Energieausweis möglich (Entwürfe dürfen unvollständig sein). Unbebaute Grundstücke sind ausgenommen; anpassbar per Filter `immo_manager_energy_certificate_required`.
+- **Metabox:** zeigt bei veröffentlichten Immobilien eine Warnung, wenn Pflichtangaben fehlen.
+- **Ausgabe:** Detailseite (Akkordeon „Energieausweis & Technik"), Listing-Cards (`HWB 68 · EEB 118`), AJAX-Filter, Embed-Widget, Schema.org (`PropertyValue` HWB/EEB/fGEE), OpenImmo-Export/-Import.
 
 **Bauprojekt-Spezifikum:** Nach Schritt 7 erscheint eine Tabelle für die Wohneinheiten — anlegen, sortieren (Drag & Drop) und löschen passiert per AJAX, ohne Page-Reload.
 
@@ -142,6 +167,21 @@ Statt klassischer Metaboxen leitet das Plugin beim Anlegen/Bearbeiten in einen 7
 | `[immo_featured count="3"]` | Featured (markierte) Immobilien |
 | `[immo_count]` | Reine Zahl: aktuell verfügbare Immobilien |
 | `[immo_search]` | Inline-Suchformular (Header/Hero) |
+| `[immo_projects]` | Bauprojekte-Übersicht. Attribute: `count` (1–50), `status` (`planning`,`building`,`completed`, kommagetrennt), `columns` (1–4), `layout` (`grid`,`list`,`slider`), `title`, `link` |
+| `[immo_units project="123"]` | Wohneinheiten-Tabelle eines Bauprojekts. `project` = ID oder Slug (leer = aktuelles Bauprojekt). Attribute: `status`, `orderby` (`unit_number`,`floor`,`area`,`price`,`rooms`,`status`), `limit`, `title`, `show_stats` |
+| `[immo_wizard]` | Frontend-Eingabe-Wizard (eingeloggte Nutzer; `allow_guests="1"` für Gäste) |
+
+Bauprojekte sind außerdem automatisch unter dem Archiv `/projekte/` (Template `archive-immo_mgr_project.php`) und einzeln unter `/projekte/{slug}/` erreichbar. Alle drei Darstellungen (Archiv, Shortcode, Elementor-Widget) nutzen dasselbe Card-Template `templates/parts/project-card.php`.
+
+### Asset-Loading (Performance)
+
+Frontend-CSS/JS (ca. 90 KB CSS, 60 KB JS, Leaflet 150 KB) wird **nur** geladen, wenn die Seite Plugin-Inhalte darstellt: auf CPT-Einzel-/Archivseiten, auf Seiten/Beiträgen mit einem Plugin-Shortcode im Inhalt sowie zur Render-Zeit durch Shortcodes und Elementor-Widgets (z. B. in Widget-Areas oder Theme-Templates). Für Sonderfälle (Page-Builder mit eigener Content-Speicherung) kann das Laden per Filter erzwungen werden:
+
+```php
+add_filter( 'immo_manager_load_frontend_assets', '__return_true' );
+```
+
+Leaflet wird lokal aus `public/vendor/leaflet/` ausgeliefert (kein CDN). Google Fonts lassen sich unter *Einstellungen → Module* abschalten; es greifen dann die System-Font-Stacks.
 
 ### Elementor-Widgets
 
@@ -265,7 +305,7 @@ Settings-Tabs:
 |---|---|
 | ⚙️ Allgemein | Währung, Symbol, Position, Dezimalen, Trennzeichen, Items pro Seite, Default-View |
 | 🎨 Design & Layout | Farben, Schriften, Border-Radius, Card-Stil, Default-Detail-Layout, Default-Galerie, Hero-Stil |
-| 🧩 Module | An-/Aus-Schalter für Anfragen, Karten, Galerie, Schema.org, Demo-Daten etc. |
+| 🧩 Module | An-/Aus-Schalter für Wizard, Filter, Bauprojekte, Anfragen, Quick-Info-Button, Google Fonts (extern), Daten-Löschung beim Plugin-Löschen |
 | 📧 Kontakt | Globaler Empfänger für Anfragen, Mail-Template, Reply-To-Logik |
 | 🗺️ Karten | Provider (Leaflet/OSM oder Google Maps), API-Keys, Default-Zoom |
 | 🧮 Rechner | Sätze, Toggles, Notar-Modus, Finanz-Defaults, Tilgungsplan |
@@ -367,9 +407,42 @@ Namespace: `/wp-json/immo-manager/v1/`
 ### Authentifizierung
 
 - GET-Endpunkte: öffentlich
-- POST `/inquiries`: API-Key erforderlich (falls in Settings konfiguriert)
+- POST `/inquiries`: API-Key erforderlich (falls in Settings konfiguriert); das eigene Frontend nutzt alternativ den WP-REST-Nonce
 - Header: `X-Immo-API-Key: DEIN_KEY`
-- CORS-Origins in den Settings konfigurierbar
+- Die optionalen Felder `notify_email` (abweichender Empfänger) und `skip_notifications` (Client versendet Mails selbst) werden **nur** bei Requests mit gültigem API-Key berücksichtigt – anonyme Requests können den Empfänger nicht umbiegen.
+- CORS-Origins in den Settings konfigurierbar (`*` oder eine Origin pro Zeile)
+
+### Embed-Widget für fremde Webseiten
+
+Seit 1.4.0 liegt unter `public/embed/immo-embed.js` ein eigenständiges Widget-Script (keine Abhängigkeiten, ~40 KB), das Immobilien, Bauprojekte und Wohneinheiten in **jede** Webseite einbettet – WordPress, Webflow, Jimdo, Typo3 oder statisches HTML. Es spricht ausschließlich die öffentliche REST-API an und rendert in einem Shadow DOM, sodass das CSS der Zielseite nicht kollidiert.
+
+```html
+<!-- einmal pro Seite -->
+<script src="https://IHRE-WP-SEITE.at/wp-content/plugins/immo-manager/public/embed/immo-embed.js" defer></script>
+
+<!-- Platzhalter -->
+<div data-immo-embed="projects" data-columns="3" data-title="Unsere Bauprojekte"></div>
+<div data-immo-embed="units" data-project="bauprojekt-graz"></div>
+<div data-immo-embed="properties" data-mode="sale" data-limit="6" data-filters="1"></div>
+<div data-immo-embed="property" data-slug="penthouse-wien"></div>
+<div data-immo-embed="project" data-id="123"></div>
+```
+
+| Typ | Attribute |
+|---|---|
+| `properties` | `data-limit` (1–50), `data-columns` (1–4), `data-status`, `data-mode`, `data-type`, `data-region`, `data-orderby`, `data-project`, `data-price-min/-max`, `data-rooms`, `data-filters="1"` (Filterleiste: Angebot, Bundesland, Zimmer, Preis), `data-pagination="0"` |
+| `projects` | `data-limit`, `data-columns`, `data-status` |
+| `units` | `data-project` (ID oder Slug), `data-status`, `data-orderby`, `data-limit`, `data-stats="0"` |
+| `property` / `project` | `data-id` oder `data-slug`, `data-description="0"` |
+| alle | `data-title`, `data-primary`, `data-accent`, `data-radius`, `data-target="_blank"`, `data-lang="de|en"`, `data-link-template="https://kunde.at/immobilie/{slug}"`, `data-no-shadow="1"`, `data-api` |
+
+- Die API-URL wird aus der Script-URL abgeleitet (auch bei WordPress in einem Unterverzeichnis); `data-api` am `<script>` überschreibt sie.
+- Farben kommen aus `/settings/public` (Primär-/Akzentfarbe der Design-Einstellungen), sofern nicht per Attribut gesetzt.
+- Alle Texte werden escaped, Beschreibungen auf reine Textformatierung reduziert, `javascript:`-Links neutralisiert.
+- Anfrage-Formulare sind absichtlich nicht enthalten (der API-Key dürfte nicht in einer fremden Seite liegen). „Details"-Links führen zur Detailseite dieser Installation oder per `data-link-template` auf eigene Seiten des Kunden.
+- Voraussetzung: CORS-Origin erlaubt (Standard `*`). JavaScript-API: `ImmoEmbed.init(root)` rendert nachträglich eingefügte Platzhalter, `ImmoEmbed.render(el)` ein einzelnes Element.
+- Headless-Test: `node bin/embed-test.cjs . http://localhost:8089/wp-json/immo-manager/v1` gegen die Docker-Testinstanz (`KEEP=1 bash bin/smoke-test.sh`).
+- **Bedienungsanleitung:** WP-Admin → *Immo Manager → API & Hilfe → Kapitel 12 „Embed-Widgets"* mit Snippet-Generator (inkl. Live-Vorschau), Attribut-Referenz, Plattform-Anleitungen (reines HTML, Webflow, Wix, Jimdo, Squarespace, Typo3, Joomla, Shopify, HubSpot, React/Vue/Next.js) und Fehlersuche. Eine eigenständige Anleitung mit Live-Demo liegt unter `public/embed/anleitung.html` (öffentlich unter `/wp-content/plugins/immo-manager/public/embed/anleitung.html`).
 
 ### Endpunkte
 

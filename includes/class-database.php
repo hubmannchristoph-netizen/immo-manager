@@ -28,11 +28,13 @@ class Database {
 	public const DB_VERSION_OPTION = 'immo_manager_db_version';
 
 	/**
-	 * Konstruktor – registriert Migrations-Check.
+	 * Konstruktor.
+	 *
+	 * Der Migrations-Check läuft über Plugin::on_init() -> maybe_upgrade().
+	 * (Ein früherer plugins_loaded-Hook hier war wirkungslos, weil die
+	 * Instanz erst während `init` erzeugt wird.)
 	 */
-	public function __construct() {
-		add_action( 'plugins_loaded', array( $this, 'maybe_upgrade' ), 5 );
-	}
+	public function __construct() {}
 
 	/**
 	 * Prefix für die Custom Tables.

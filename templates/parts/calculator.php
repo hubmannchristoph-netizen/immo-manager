@@ -19,7 +19,9 @@ defined( 'ABSPATH' ) || exit;
 $ctx             = $calc_context ?? array();
 $base_price      = (float) ( $ctx['base_price'] ?? 0 );
 $commission_free = (bool) ( $ctx['commission_free'] ?? false );
-$units           = (array) ( $ctx['units'] ?? array() );
+// Eigener Variablenname: die inkludierenden Templates (Bauprojekt-/Immobilien-Detailseite)
+// nutzen $units weiter unten noch (Anfrage-Lightbox) – ein gemeinsames $units würde es überschreiben.
+$calc_unit_opts  = (array) ( $ctx['units'] ?? array() );
 $parking         = (array) ( $ctx['parking'] ?? array() );
 
 // Stellplatz-Konfig auf Projekt-Ebene (nur wenn verfügbar einbinden).
@@ -57,13 +59,13 @@ $default_int   = (float) \ImmoManager\Settings::get( 'calc_default_interest_rate
 $default_term  = (int)   \ImmoManager\Settings::get( 'calc_default_term_years', 25 );
 $default_extra = (int)   \ImmoManager\Settings::get( 'calc_default_extra_payment', 0 );
 
-$units_json = ! empty( $units ) ? wp_json_encode( $units ) : '';
+$units_json = ! empty( $calc_unit_opts ) ? wp_json_encode( $calc_unit_opts ) : '';
 
 /**
  * Render-Helper: Unit-Dropdown.
  */
-$render_unit_select = function () use ( $units ) {
-	if ( empty( $units ) ) {
+$render_unit_select = function () use ( $calc_unit_opts ) {
+	if ( empty( $calc_unit_opts ) ) {
 		return;
 	}
 	?>
@@ -72,7 +74,7 @@ $render_unit_select = function () use ( $units ) {
 			<?php esc_html_e( 'Wohneinheit', 'immo-manager' ); ?>
 		</label>
 		<select class="immo-calc-unit-select">
-			<?php foreach ( $units as $u ) : ?>
+			<?php foreach ( $calc_unit_opts as $u ) : ?>
 				<option value="<?php echo esc_attr( (string) $u['id'] ); ?>"
 					data-price="<?php echo esc_attr( (string) $u['price'] ); ?>"
 					data-commission-free="<?php echo esc_attr( ! empty( $u['commission_free'] ) ? '1' : '0' ); ?>">

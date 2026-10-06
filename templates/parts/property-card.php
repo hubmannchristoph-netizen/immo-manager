@@ -116,7 +116,21 @@ $unit_avail = (int) ( $property['unit_stats']['available'] ?? 0 );
 				<li><span aria-hidden="true">📐</span> <?php echo esc_html( number_format_i18n( $display_area, 0 ) . ' m²' ); ?></li>
 			<?php endif; ?>
 			<?php if ( $meta['energy_class'] ) : ?>
-				<li><span aria-hidden="true">⚡</span> <?php echo esc_html( $meta['energy_class'] ); ?></li>
+				<li title="<?php esc_attr_e( 'Energieeffizienzklasse', 'immo-manager' ); ?>"><span aria-hidden="true">⚡</span> <?php echo esc_html( $meta['energy_class'] ); ?></li>
+			<?php endif; ?>
+			<?php
+			// EAVG § 3: HWB + EEB gehören in jedes Inserat – kompakt auch auf der Card.
+			$energy_bits = array();
+			if ( ! empty( $meta['energy_hwb'] ) ) {
+				$energy_bits[] = 'HWB ' . number_format_i18n( (float) $meta['energy_hwb'], 0 );
+			}
+			if ( ! empty( $meta['energy_eeb'] ) ) {
+				$energy_bits[] = 'EEB ' . number_format_i18n( (float) $meta['energy_eeb'], 0 );
+			} elseif ( ! empty( $meta['energy_fgee'] ) ) {
+				$energy_bits[] = 'fGEE ' . number_format_i18n( (float) $meta['energy_fgee'], 2 );
+			}
+			if ( $energy_bits ) : ?>
+				<li class="immo-card-energy" title="<?php esc_attr_e( 'Energieausweis (kWh/m²a)', 'immo-manager' ); ?>"><span aria-hidden="true">📊</span> <?php echo esc_html( implode( ' · ', $energy_bits ) ); ?></li>
 			<?php endif; ?>
 			<?php if ( $unit_total > 0 ) : ?>
 				<li>

@@ -690,7 +690,11 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 
 			document.getElementById('immo-qi-built').innerHTML = data.built_year > 0 ? '📅 ' + data.built_year : '';
-			document.getElementById('immo-qi-energy').innerHTML = data.energy_class ? '⚡ ' + data.energy_class : '';
+			var energyParts = [];
+			if (data.energy_class) { energyParts.push('⚡ ' + data.energy_class); }
+			if (data.energy_hwb > 0) { energyParts.push('HWB ' + data.energy_hwb); }
+			if (data.energy_eeb > 0) { energyParts.push('EEB ' + data.energy_eeb); }
+			document.getElementById('immo-qi-energy').innerHTML = energyParts.join(' · ');
 
 			// Zusatzflächen (Balkon, Loggia, Terrasse, Garten, Keller) + Stellplatz-Inkludierung
 			const extras = document.getElementById('immo-qi-extras');

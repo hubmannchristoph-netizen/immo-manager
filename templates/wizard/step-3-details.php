@@ -56,7 +56,7 @@ $p = $prefill;
 </div>
 
 <div class="immo-wizard-section immo-property-only">
-	<h3><?php esc_html_e( 'Baujahr & Energie', 'immo-manager' ); ?></h3>
+	<h3><?php esc_html_e( 'Baujahr & Heizung', 'immo-manager' ); ?></h3>
 	<div class="immo-wizard-fields">
 		<div class="immo-field immo-field--quarter">
 			<label for="wiz_built"><?php esc_html_e( 'Baujahr', 'immo-manager' ); ?></label>
@@ -67,21 +67,6 @@ $p = $prefill;
 			<label for="wiz_renov"><?php esc_html_e( 'Sanierungsjahr', 'immo-manager' ); ?></label>
 			<input type="number" min="1500" max="2100" id="wiz_renov" name="_immo_renovation_year" class="immo-wizard-input immo-input"
 				value="<?php echo esc_attr( (string) ( $p['_immo_renovation_year'] ?? '' ) ); ?>" placeholder="2020">
-		</div>
-		<div class="immo-field immo-field--quarter">
-			<label for="wiz_energy"><?php esc_html_e( 'Energieklasse', 'immo-manager' ); ?></label>
-			<select id="wiz_energy" name="_immo_energy_class" class="immo-wizard-input immo-select-full">
-				<?php foreach ( array( '', 'A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G' ) as $cls ) : ?>
-					<option value="<?php echo esc_attr( $cls ); ?>" <?php selected( $p['_immo_energy_class'] ?? '', $cls ); ?>>
-						<?php echo $cls ? esc_html( $cls ) : esc_html__( '— Klasse —', 'immo-manager' ); ?>
-					</option>
-				<?php endforeach; ?>
-			</select>
-		</div>
-		<div class="immo-field immo-field--quarter">
-			<label for="wiz_hwb"><?php esc_html_e( 'HWB (kWh/m²a)', 'immo-manager' ); ?></label>
-			<input type="number" step="0.1" min="0" id="wiz_hwb" name="_immo_energy_hwb" class="immo-wizard-input immo-input"
-				value="<?php echo esc_attr( (string) ( $p['_immo_energy_hwb'] ?? '' ) ); ?>">
 		</div>
 		<div class="immo-field immo-field--half">
 			<label for="wiz_heating_select"><?php esc_html_e( 'Heizungsart', 'immo-manager' ); ?></label>
@@ -94,6 +79,47 @@ $p = $prefill;
 			);
 			include IMMO_MANAGER_PLUGIN_DIR . 'templates/parts/heating-field.php';
 			?>
+		</div>
+	</div>
+</div>
+
+<div class="immo-wizard-section immo-property-only immo-energy-section">
+	<h3><?php esc_html_e( 'Energieausweis', 'immo-manager' ); ?></h3>
+	<p class="immo-field-hint">
+		<?php esc_html_e( 'Pflichtangaben im Inserat seit 1. Juli 2026 (EAVG-Novelle): Energieeffizienzklasse, Heizwärmebedarf (HWB) und Endenergiebedarf (EEB). Der fGEE gilt nur noch für Energieausweise nach altem Recht. Ohne vollständige Angaben kann die Immobilie nicht veröffentlicht werden (Entwurf ist möglich); Strafrahmen bis 1.450 €.', 'immo-manager' ); ?>
+	</p>
+	<div class="immo-wizard-fields">
+		<div class="immo-field immo-field--quarter">
+			<label for="wiz_energy"><?php esc_html_e( 'Energieeffizienzklasse', 'immo-manager' ); ?> <span class="immo-required">*</span></label>
+			<select id="wiz_energy" name="_immo_energy_class" class="immo-wizard-input immo-select-full">
+				<option value="" <?php selected( $p['_immo_energy_class'] ?? '', '' ); ?>><?php esc_html_e( '— Klasse —', 'immo-manager' ); ?></option>
+				<?php foreach ( \ImmoManager\MetaFields::energy_classes() as $cls ) : ?>
+					<option value="<?php echo esc_attr( $cls ); ?>" <?php selected( $p['_immo_energy_class'] ?? '', $cls ); ?>>
+						<?php echo esc_html( $cls ); ?><?php echo in_array( $cls, array( 'A++', 'A+' ), true ) ? ' ' . esc_html__( '(nur Altausweis)', 'immo-manager' ) : ''; ?>
+					</option>
+				<?php endforeach; ?>
+			</select>
+			<div class="immo-field-error" data-field="_immo_energy_class" hidden></div>
+		</div>
+		<div class="immo-field immo-field--quarter">
+			<label for="wiz_hwb"><?php esc_html_e( 'HWB (kWh/m²a)', 'immo-manager' ); ?> <span class="immo-required">*</span></label>
+			<input type="number" step="0.1" min="0" id="wiz_hwb" name="_immo_energy_hwb" class="immo-wizard-input immo-input" placeholder="z. B. 68"
+				value="<?php echo esc_attr( (string) ( $p['_immo_energy_hwb'] ?? '' ) ); ?>">
+			<small class="immo-field-hint"><?php esc_html_e( 'Heizwärmebedarf', 'immo-manager' ); ?></small>
+			<div class="immo-field-error" data-field="_immo_energy_hwb" hidden></div>
+		</div>
+		<div class="immo-field immo-field--quarter">
+			<label for="wiz_eeb"><?php esc_html_e( 'EEB (kWh/m²a)', 'immo-manager' ); ?> <span class="immo-required">*</span></label>
+			<input type="number" step="0.1" min="0" id="wiz_eeb" name="_immo_energy_eeb" class="immo-wizard-input immo-input" placeholder="z. B. 118"
+				value="<?php echo esc_attr( (string) ( $p['_immo_energy_eeb'] ?? '' ) ); ?>">
+			<small class="immo-field-hint"><?php esc_html_e( 'Endenergiebedarf – neu seit 2026', 'immo-manager' ); ?></small>
+			<div class="immo-field-error" data-field="_immo_energy_eeb" hidden></div>
+		</div>
+		<div class="immo-field immo-field--quarter">
+			<label for="wiz_fgee"><?php esc_html_e( 'fGEE (nur Altausweis)', 'immo-manager' ); ?></label>
+			<input type="number" step="0.01" min="0" id="wiz_fgee" name="_immo_energy_fgee" class="immo-wizard-input immo-input" placeholder="z. B. 0,85"
+				value="<?php echo esc_attr( (string) ( $p['_immo_energy_fgee'] ?? '' ) ); ?>">
+			<small class="immo-field-hint"><?php esc_html_e( 'Ersetzt den EEB nur bei Ausweisen nach altem Recht', 'immo-manager' ); ?></small>
 		</div>
 	</div>
 </div>

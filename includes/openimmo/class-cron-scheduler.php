@@ -61,6 +61,18 @@ class CronScheduler {
 	}
 
 	/**
+	 * Fehlende Cron-Events nachregistrieren (idempotent, günstig: nur Option-Lookups).
+	 *
+	 * @return void
+	 */
+	public static function ensure_scheduled(): void {
+		if ( ! function_exists( 'wp_next_scheduled' ) ) {
+			return;
+		}
+		self::on_activation();
+	}
+
+	/**
 	 * Auf Plugin-Deaktivierung – Hook entfernen.
 	 *
 	 * @return void

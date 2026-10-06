@@ -159,6 +159,7 @@ class Units {
 		$sanitized['updated_at'] = current_time( 'mysql' );
 
 		$result = $wpdb->insert( Database::units_table(), $sanitized, self::column_formats( $sanitized ) );
+		self::flush_stats_cache();
 
 		return $result ? (int) $wpdb->insert_id : false;
 	}
@@ -183,6 +184,7 @@ class Units {
 			self::column_formats( $sanitized ),
 			array( '%d' )
 		);
+		self::flush_stats_cache();
 
 		return false !== $result;
 	}
@@ -197,6 +199,7 @@ class Units {
 	public static function delete( int $id ): bool {
 		global $wpdb;
 		$result = $wpdb->delete( Database::units_table(), array( 'id' => $id ), array( '%d' ) );
+		self::flush_stats_cache();
 		return (bool) $result;
 	}
 
@@ -210,7 +213,27 @@ class Units {
 	public static function delete_by_project( int $project_id ): int {
 		global $wpdb;
 		$result = $wpdb->delete( Database::units_table(), array( 'project_id' => $project_id ), array( '%d' ) );
+		self::flush_stats_cache();
 		return (int) $result;
+	}
+
+	/**
+	 * Request-Cache für Aggregat-Abfragen (Status-Counts, Flächen-Range) pro Projekt.
+	 *
+	 * Verhindert N+1-Queries, wenn viele Properties/Units desselben Projekts in
+	 * einer Liste formatiert werden. Wird bei jedem Schreibzugriff geleert.
+	 *
+	 * @var array{counts: array<int, array<string, int>>, areas: array<int, array{min: float, max: float}>}
+	 */
+	private static $stats_cache = array( 'counts' => array(), 'areas' => array() );
+
+	/**
+	 * Aggregat-Cache leeren (nach create/update/delete).
+	 *
+	 * @return void
+	 */
+	public static function flush_stats_cache(): void {
+		self::$stats_cache = array( 'counts' => array(), 'areas' => array() );
 	}
 
 	/**
@@ -221,6 +244,10 @@ class Units {
 	 * @return array<string, int>
 	 */
 	public static function count_by_status( int $project_id ): array {
+		if ( isset( self::$stats_cache['counts'][ $project_id ] ) ) {
+			return self::$stats_cache['counts'][ $project_id ];
+		}
+
 		global $wpdb;
 		$table = Database::units_table();
 
@@ -239,6 +266,8 @@ class Units {
 				$counts[ $status ] = (int) $row['cnt'];
 			}
 		}
+
+		self::$stats_cache['counts'][ $project_id ] = $counts;
 
 		return $counts;
 	}
@@ -315,6 +344,10 @@ class Units {
 	 * @return array{min: float, max: float} Min/Max in m². 0/0 wenn keine Units mit Fläche.
 	 */
 	public static function area_range( int $project_id ): array {
+		if ( isset( self::$stats_cache['areas'][ $project_id ] ) ) {
+			return self::$stats_cache['areas'][ $project_id ];
+		}
+
 		global $wpdb;
 		$table = Database::units_table();
 
@@ -326,10 +359,14 @@ class Units {
 			ARRAY_A
 		);
 
-		return array(
+		$range = array(
 			'min' => (float) ( $row['area_min'] ?? 0 ),
 			'max' => (float) ( $row['area_max'] ?? 0 ),
 		);
+
+		self::$stats_cache['areas'][ $project_id ] = $range;
+
+		return $range;
 	}
 
 	/**

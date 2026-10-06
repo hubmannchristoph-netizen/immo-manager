@@ -92,7 +92,10 @@ $key_facts = array_filter( array(
 	array( 'icon' => '🚿', 'label' => __( 'Badezimmer',  'immo-manager' ), 'value' => $meta['bathrooms'] ?: null ),
 	array( 'icon' => '🏢', 'label' => __( 'Etage',       'immo-manager' ), 'value' => ( isset( $meta['floor'] ) && $meta['floor'] !== 0 ) ? $meta['floor'] : null ),
 	array( 'icon' => '📅', 'label' => __( 'Baujahr',     'immo-manager' ), 'value' => $meta['built_year'] ?: null ),
-	array( 'icon' => '⚡', 'label' => __( 'Energie',     'immo-manager' ), 'value' => $meta['energy_class'] ?: null ),
+	array( 'icon' => '⚡', 'label' => __( 'Energieklasse', 'immo-manager' ), 'value' => $meta['energy_class'] ?: null ),
+	// EAVG § 3 (seit 1.7.2026): HWB + EEB muessen im Inserat sichtbar sein – daher auch hier oben, nicht nur im Akkordeon.
+	array( 'icon' => '📊', 'label' => __( 'HWB',         'immo-manager' ), 'value' => ! empty( $meta['energy_hwb'] ) ? number_format_i18n( (float) $meta['energy_hwb'], 1 ) . ' kWh/m²a' : null ),
+	array( 'icon' => '🔋', 'label' => __( 'EEB',         'immo-manager' ), 'value' => ! empty( $meta['energy_eeb'] ) ? number_format_i18n( (float) $meta['energy_eeb'], 1 ) . ' kWh/m²a' : ( ! empty( $meta['energy_fgee'] ) ? 'fGEE ' . number_format_i18n( (float) $meta['energy_fgee'], 2 ) : null ) ),
 	array( 'icon' => '🔥', 'label' => __( 'Heizung',     'immo-manager' ), 'value' => $meta['heating'] ?: null ),
 	array( 'icon' => '💰', 'label' => __( 'BK/Monat',    'immo-manager' ), 'value' => $meta['operating_costs'] ? number_format_i18n( (float) $meta['operating_costs'] ) . ' ' . $currency : null ),
 	array( 'icon' => '📋', 'label' => __( 'Verfügbar ab', 'immo-manager' ), 'value' => $meta['available_from'] ? date_i18n( 'd.m.Y', strtotime( $meta['available_from'] ) ) : null ),
@@ -305,14 +308,17 @@ $key_facts = array_filter( array(
 				</div>
 			<?php endif; ?>
 
-			<?php if ( $meta['energy_class'] || $meta['heating'] ) : ?>
+			<?php if ( $meta['energy_class'] || $meta['heating'] || ! empty( $meta['energy_hwb'] ) || ! empty( $meta['energy_eeb'] ) ) : ?>
 				<div class="immo-accordion">
-					<button class="immo-accordion-header" aria-expanded="false"><?php esc_html_e( 'Energie & Technik', 'immo-manager' ); ?><span class="immo-accordion-icon" aria-hidden="true"></span></button>
+					<button class="immo-accordion-header" aria-expanded="false"><?php esc_html_e( 'Energieausweis & Technik', 'immo-manager' ); ?><span class="immo-accordion-icon" aria-hidden="true"></span></button>
 					<div class="immo-accordion-body" hidden>
 						<div class="immo-detail-facts">
 							<?php foreach ( array_filter( array(
-								array( 'icon' => '⚡', 'label' => __( 'Energieklasse', 'immo-manager' ), 'value' => $meta['energy_class'] ?: null ),
-								array( 'icon' => '📊', 'label' => __( 'HWB', 'immo-manager' ), 'value' => $meta['energy_hwb'] ? number_format_i18n( (float) $meta['energy_hwb'], 1 ) . ' kWh/m²a' : null ),
+								array( 'icon' => '⚡', 'label' => __( 'Energieeffizienzklasse', 'immo-manager' ), 'value' => $meta['energy_class'] ?: null ),
+								array( 'icon' => '📊', 'label' => __( 'Heizwärmebedarf (HWB)', 'immo-manager' ), 'value' => $meta['energy_hwb'] ? number_format_i18n( (float) $meta['energy_hwb'], 1 ) . ' kWh/m²a' : null ),
+								array( 'icon' => '🔋', 'label' => __( 'Endenergiebedarf (EEB)', 'immo-manager' ), 'value' => ! empty( $meta['energy_eeb'] ) ? number_format_i18n( (float) $meta['energy_eeb'], 1 ) . ' kWh/m²a' : null ),
+								// fGEE nur anzeigen, wenn kein EEB vorliegt (Altausweis / Übergangsregel).
+								array( 'icon' => '📈', 'label' => __( 'fGEE (Altausweis)', 'immo-manager' ), 'value' => ( empty( $meta['energy_eeb'] ) && ! empty( $meta['energy_fgee'] ) ) ? number_format_i18n( (float) $meta['energy_fgee'], 2 ) : null ),
 								array( 'icon' => '🔥', 'label' => __( 'Heizung', 'immo-manager' ), 'value' => $meta['heating'] ?: null ),
 								array( 'icon' => '📅', 'label' => __( 'Baujahr', 'immo-manager' ), 'value' => $meta['built_year'] ?: null ),
 								array( 'icon' => '🔨', 'label' => __( 'Saniert', 'immo-manager' ), 'value' => $meta['renovation_year'] ?: null ),

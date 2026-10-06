@@ -327,6 +327,11 @@ class Schema {
 			$out[] = array( '@type' => 'PropertyValue', 'name' => 'HWB', 'value' => $hwb, 'unitText' => 'kWh/m²a' );
 		}
 
+		$eeb = (float) get_post_meta( $post_id, '_immo_energy_eeb', true );
+		if ( $eeb > 0 ) {
+			$out[] = array( '@type' => 'PropertyValue', 'name' => 'EEB', 'value' => $eeb, 'unitText' => 'kWh/m²a' );
+		}
+
 		$fgee = (float) get_post_meta( $post_id, '_immo_energy_fgee', true );
 		if ( $fgee > 0 ) {
 			$out[] = array( '@type' => 'PropertyValue', 'name' => 'fGEE', 'value' => $fgee );

@@ -26,6 +26,17 @@ class RestApi {
 	public const NAMESPACE = 'immo-manager/v1';
 
 	/**
+	 * Request-Cache: Projekt-Kurzinfo pro Projekt-ID.
+	 *
+	 * In Listen-Antworten referenzieren oft viele Properties dasselbe
+	 * Bauprojekt. Ohne Cache würde pro Property get_post() + get_post_meta()
+	 * + Units::count_by_status() erneut ausgeführt (N+1).
+	 *
+	 * @var array<int, array<string, mixed>|null>
+	 */
+	private $project_summary_cache = array();
+
+	/**
 	 * Konstruktor.
 	 */
 	public function __construct() {
@@ -640,15 +651,19 @@ class RestApi {
 	public function create_inquiry( \WP_REST_Request $request ) {
 		// API-Key-Prüfung für schreibende Endpunkte.
 		$api_key_hash = Settings::get( 'api_key_hash', '' );
-		if ( ! empty( $api_key_hash ) ) {
+		$provided_key = (string) $request->get_header( 'x-immo-api-key' );
+
+		// Wurde der Request mit gültigem API-Key authentifiziert? Nur dann dürfen
+		// Client-Overrides (notify_email, skip_notifications) berücksichtigt werden –
+		// sonst könnte jeder anonyme Besucher den Server als Mail-Relay missbrauchen.
+		// wp_check_password ist sicher gegen Timing-Attacken.
+		$via_api_key = ! empty( $api_key_hash ) && '' !== $provided_key && wp_check_password( $provided_key, $api_key_hash );
+
+		if ( ! empty( $api_key_hash ) && ! $via_api_key ) {
 			// Lokale Anfragen aus dem eigenen Frontend via Nonce erlauben.
 			$nonce = $request->get_header( 'x-wp-nonce' );
 			if ( ! $nonce || ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
-				$provided_key = $request->get_header( 'x-immo-api-key' );
-				// wp_check_password ist sicher gegen Timing-Attacken.
-				if ( ! $provided_key || ! wp_check_password( $provided_key, $api_key_hash ) ) {
-					return new \WP_Error( 'rest_unauthorized', __( 'Ungültiger oder fehlender API-Key.', 'immo-manager' ), array( 'status' => 401 ) );
-				}
+				return new \WP_Error( 'rest_unauthorized', __( 'Ungültiger oder fehlender API-Key.', 'immo-manager' ), array( 'status' => 401 ) );
 			}
 		}
 
@@ -689,13 +704,15 @@ class RestApi {
 		}
 
 		// Optionaler Override-Empfänger (vom Client-Plugin gesteuert).
+		// SICHERHEIT: nur für API-Key-authentifizierte Requests – anonyme oder
+		// Nonce-Requests dürfen den Empfänger nicht umbiegen (Spam-Relay-Schutz).
 		$notify_email = '';
-		if ( ! empty( $body['notify_email'] ) && is_email( $body['notify_email'] ) ) {
+		if ( $via_api_key && ! empty( $body['notify_email'] ) && is_email( $body['notify_email'] ) ) {
 			$notify_email = sanitize_email( (string) $body['notify_email'] );
 		}
 
-		// Wenn ein verbundener Client-Site die Mails selbst versendet.
-		$skip_notifications = ! empty( $body['skip_notifications'] );
+		// Wenn ein verbundener Client-Site die Mails selbst versendet (ebenfalls nur mit API-Key).
+		$skip_notifications = $via_api_key && ! empty( $body['skip_notifications'] );
 
 		// Quelle (Client-Site, falls die Anfrage von einem ImmoClient kommt).
 		$source_url = '';
@@ -703,14 +720,15 @@ class RestApi {
 			$source_url = esc_url_raw( (string) $body['source_url'] );
 		}
 
-		// Speichern.
+		// Speichern. Felder werden hier bereits bereinigt, weil $data auch für die
+		// E-Mail-Benachrichtigung (Reply-To-Header!) verwendet wird.
 		$data = array(
 			'property_id'      => absint( $body['property_id'] ),
 			'unit_id'          => isset( $body['unit_id'] ) ? absint( $body['unit_id'] ) : null,
-			'inquirer_name'    => (string) $body['inquirer_name'],
-			'inquirer_email'   => (string) $body['inquirer_email'],
-			'inquirer_phone'   => (string) ( $body['inquirer_phone'] ?? '' ),
-			'inquirer_message' => (string) ( $body['inquirer_message'] ?? '' ),
+			'inquirer_name'    => substr( sanitize_text_field( (string) $body['inquirer_name'] ), 0, 255 ),
+			'inquirer_email'   => sanitize_email( (string) $body['inquirer_email'] ),
+			'inquirer_phone'   => substr( sanitize_text_field( (string) ( $body['inquirer_phone'] ?? '' ) ), 0, 50 ),
+			'inquirer_message' => sanitize_textarea_field( (string) ( $body['inquirer_message'] ?? '' ) ),
 			'status'           => 'new',
 			'ip_address'       => $this->get_client_ip(),
 			'user_agent'       => isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 255 ) : '',
@@ -779,7 +797,7 @@ class RestApi {
 			}
 		}
 
-		header( 'Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS' );
+		header( 'Access-Control-Allow-Methods: GET, POST, OPTIONS' );
 		header( 'Access-Control-Allow-Headers: Content-Type, X-Immo-API-Key, X-WP-Nonce' );
 		header( 'Access-Control-Max-Age: 86400' );
 
@@ -1034,27 +1052,7 @@ class RestApi {
 			}
 		}
 
-		$project_data = null;
-		if ( $project_id > 0 ) {
-			$proj_post = get_post( $project_id );
-			if ( $proj_post && 'publish' === $proj_post->post_status ) {
-				$proj_meta   = get_post_meta( $project_id );
-				$proj_img_id = get_post_thumbnail_id( $project_id );
-				$proj_counts = Units::count_by_status( $project_id );
-				
-				$project_data = array(
-					'id'              => $project_id,
-					'title'           => get_the_title( $proj_post ),
-					'permalink'       => get_permalink( $proj_post ),
-					'image'           => $proj_img_id ? wp_get_attachment_image_url( $proj_img_id, 'medium_large' ) : '',
-					'status'          => $proj_meta['_immo_project_status'][0] ?? '',
-					'completion'      => $proj_meta['_immo_project_completion'][0] ?? '',
-					'description'     => $proj_post->post_content,
-					'total_units'     => array_sum( $proj_counts ),
-					'available_units' => $proj_counts['available'] ?? 0,
-				);
-			}
-		}
+		$project_data = $project_id > 0 ? $this->project_summary( $project_id ) : null;
 
 		$result = array(
 			'id'             => $id,
@@ -1088,6 +1086,8 @@ class RestApi {
 				'renovation_year'       => (int)   $m( '_immo_renovation_year', 0 ),
 				'energy_class'          => (string) $m( '_immo_energy_class', '' ),
 				'energy_hwb'            => (float) $m( '_immo_energy_hwb', 0 ),
+				'energy_eeb'            => (float) $m( '_immo_energy_eeb', 0 ),
+				'energy_fgee'           => (float) $m( '_immo_energy_fgee', 0 ),
 				'heating'               => (string) $m( '_immo_heating', '' ),
 				'price'                 => $price,
 				'price_formatted'       => $price > 0 ? $this->format_price( $price ) : null,
@@ -1143,6 +1143,43 @@ class RestApi {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Kurzinfo eines Bauprojekts (für Property-Antworten), pro Request gecached.
+	 *
+	 * @param int $project_id Projekt-ID.
+	 *
+	 * @return array<string, mixed>|null Null, wenn Projekt nicht veröffentlicht.
+	 */
+	private function project_summary( int $project_id ): ?array {
+		if ( array_key_exists( $project_id, $this->project_summary_cache ) ) {
+			return $this->project_summary_cache[ $project_id ];
+		}
+
+		$project_data = null;
+		$proj_post    = get_post( $project_id );
+		if ( $proj_post && PostTypes::POST_TYPE_PROJECT === $proj_post->post_type && 'publish' === $proj_post->post_status ) {
+			$proj_meta   = get_post_meta( $project_id );
+			$proj_img_id = get_post_thumbnail_id( $project_id );
+			$proj_counts = Units::count_by_status( $project_id );
+
+			$project_data = array(
+				'id'              => $project_id,
+				'title'           => get_the_title( $proj_post ),
+				'permalink'       => get_permalink( $proj_post ),
+				'image'           => $proj_img_id ? wp_get_attachment_image_url( $proj_img_id, 'medium_large' ) : '',
+				'status'          => $proj_meta['_immo_project_status'][0] ?? '',
+				'completion'      => $proj_meta['_immo_project_completion'][0] ?? '',
+				'description'     => $proj_post->post_content,
+				'total_units'     => array_sum( $proj_counts ),
+				'available_units' => $proj_counts['available'] ?? 0,
+			);
+		}
+
+		$this->project_summary_cache[ $project_id ] = $project_data;
+
+		return $project_data;
 	}
 
 	/**
@@ -1307,6 +1344,8 @@ class RestApi {
 					'floor'     => isset( $prop_meta['_immo_floor'][0] ) ? (int) $prop_meta['_immo_floor'][0] : null,
 					'built_year' => (int) ( $prop_meta['_immo_built_year'][0] ?? 0 ),
 					'energy_class'    => (string) ( $prop_meta['_immo_energy_class'][0] ?? '' ),
+					'energy_hwb'      => (float) ( $prop_meta['_immo_energy_hwb'][0] ?? 0 ),
+					'energy_eeb'      => (float) ( $prop_meta['_immo_energy_eeb'][0] ?? 0 ),
 					'commission_free' => '1' === (string) ( $prop_meta['_immo_commission_free'][0] ?? '0' ),
 					'commission_free_label' => (string) Settings::get( 'commission_free_label', __( 'Provisionsfrei', 'immo-manager' ) ),
 				);

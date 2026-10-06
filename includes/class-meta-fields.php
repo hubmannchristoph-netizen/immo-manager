@@ -60,8 +60,12 @@ class MetaFields {
 			'_immo_renovation_year'   => array( 'type' => 'integer', 'default' => 0 ),
 
 			// Energie.
+			// Energieausweis (EAVG § 3, Novelle 1.7.2026): Pflicht im Inserat sind
+			// Energieeffizienzklasse, HWB und Endenergiebedarf (EEB). fGEE nur noch bei
+			// Ausweisen nach altem Recht (Übergangsregel) – bleibt als Legacy-Feld erhalten.
 			'_immo_energy_class'      => array( 'type' => 'string',  'enum' => array( '', 'A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G' ), 'default' => '' ),
 			'_immo_energy_hwb'        => array( 'type' => 'number',  'default' => 0 ),
+			'_immo_energy_eeb'        => array( 'type' => 'number',  'default' => 0 ),
 			'_immo_energy_fgee'       => array( 'type' => 'number',  'default' => 0 ),
 			'_immo_heating'           => array( 'type' => 'string',  'default' => '' ),
 
@@ -151,6 +155,65 @@ class MetaFields {
 			'_immo_parking_outdoor_required'  => array( 'type' => 'boolean', 'default' => false ),
 			'_immo_parking_notes'             => array( 'type' => 'string',  'default' => '' ),
 		);
+	}
+
+	/**
+	 * Energieeffizienzklassen (Auswahlliste).
+	 *
+	 * Neue Skala laut OIB-Richtlinie 6:2025 ist A–G; A++ und A+ bleiben für
+	 * Ausweise nach altem Recht (OIB 6:2019/2023) auswählbar.
+	 *
+	 * @return array<int, string>
+	 */
+	public static function energy_classes(): array {
+		return array( 'A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G' );
+	}
+
+	/**
+	 * Prüft, ob die Energieausweis-Pflichtangaben für ein Inserat vollständig sind.
+	 *
+	 * Regel (EAVG § 3 i. d. F. 2026, identisch zu Vividomo isEnergyDataComplete):
+	 * Energieklasse UND HWB UND (EEB ODER fGEE als Übergangsregel für Altausweise).
+	 *
+	 * @param array<string, mixed> $meta Meta-Array mit _immo_energy_*-Keys.
+	 *
+	 * @return array<int, string> Liste fehlender Angaben (leer = vollständig).
+	 */
+	public static function missing_energy_fields( array $meta ): array {
+		$missing = array();
+		if ( '' === (string) ( $meta['_immo_energy_class'] ?? '' ) ) {
+			$missing[] = __( 'Energieeffizienzklasse', 'immo-manager' );
+		}
+		if ( (float) ( $meta['_immo_energy_hwb'] ?? 0 ) <= 0 ) {
+			$missing[] = __( 'Heizwärmebedarf (HWB)', 'immo-manager' );
+		}
+		if ( (float) ( $meta['_immo_energy_eeb'] ?? 0 ) <= 0 && (float) ( $meta['_immo_energy_fgee'] ?? 0 ) <= 0 ) {
+			$missing[] = __( 'Endenergiebedarf (EEB) – bzw. fGEE bei Altausweis', 'immo-manager' );
+		}
+		return $missing;
+	}
+
+	/**
+	 * Ist für diesen Immobilientyp ein Energieausweis erforderlich?
+	 *
+	 * Unbebaute Grundstücke brauchen keinen Energieausweis. Über den Filter
+	 * `immo_manager_energy_certificate_required` anpassbar.
+	 *
+	 * @param string $property_type Immobilientyp (Freitext, z. B. "Grundstück").
+	 *
+	 * @return bool
+	 */
+	public static function energy_certificate_required( string $property_type ): bool {
+		$type     = mb_strtolower( $property_type );
+		$required = '' === $type || false === strpos( $type, 'grund' );
+
+		/**
+		 * Steuert, ob die Energieausweis-Pflichtangaben für diesen Typ erzwungen werden.
+		 *
+		 * @param bool   $required      Pflicht ja/nein.
+		 * @param string $property_type Immobilientyp.
+		 */
+		return (bool) apply_filters( 'immo_manager_energy_certificate_required', $required, $property_type );
 	}
 
 	/**
