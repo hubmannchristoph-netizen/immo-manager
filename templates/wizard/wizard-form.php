@@ -276,10 +276,12 @@ $step_slugs = array( 1 => 'type', 2 => 'location', 3 => 'details', 4 => 'price',
 								<input type="radio" name="entity_type" value="property" <?php checked( 'property', $entity_type ); ?> style="display:none;">
 								<div class="immo-tile-content"><strong><?php esc_html_e( 'Eigene Immobilie', 'immo-manager' ); ?></strong><br><small style="color:#666;"><?php esc_html_e( 'Haus, Wohnung, etc.', 'immo-manager' ); ?></small></div>
 							</label>
+							<?php if ( \ImmoManager\ProjectsAccess::user_has_access() ) : ?>
 							<label class="immo-entity-option <?php echo 'project' === $entity_type ? 'selected' : ''; ?>">
 								<input type="radio" name="entity_type" value="project" <?php checked( 'project', $entity_type ); ?> style="display:none;">
 								<div class="immo-tile-content"><strong><?php esc_html_e( 'Bauprojekt', 'immo-manager' ); ?></strong><br><small style="color:#666;"><?php esc_html_e( 'Container für Einheiten', 'immo-manager' ); ?></small></div>
 							</label>
+							<?php endif; ?>
 						</div>
 					</div>
 				<?php endif; ?>

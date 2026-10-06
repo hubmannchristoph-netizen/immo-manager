@@ -45,6 +45,7 @@ if ( ! isset( $stats ) || ! is_array( $stats ) ) {
 			<div class="label"><?php esc_html_e( 'Veröffentlicht', 'immo-manager' ); ?></div>
 		</div>
 
+		<?php if ( \ImmoManager\ProjectsAccess::user_has_access() ) : ?>
 		<div class="immo-stat-card">
 			<div class="number"><?php echo esc_html( number_format_i18n( $stats['total_projects'] ) ); ?></div>
 			<div class="label"><?php esc_html_e( 'Bauprojekte', 'immo-manager' ); ?></div>
@@ -54,6 +55,7 @@ if ( ! isset( $stats ) || ! is_array( $stats ) ) {
 			<div class="number"><?php echo esc_html( number_format_i18n( $stats['total_units'] ) ); ?></div>
 			<div class="label"><?php esc_html_e( 'Wohneinheiten', 'immo-manager' ); ?></div>
 		</div>
+		<?php endif; ?>
 
 		<div class="immo-stat-card">
 			<div class="number"><?php echo esc_html( number_format_i18n( $stats['drafts'] ) ); ?></div>
@@ -75,9 +77,11 @@ if ( ! isset( $stats ) || ! is_array( $stats ) ) {
 			<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=' . \ImmoManager\PostTypes::POST_TYPE_PROPERTY ) ); ?>" class="button">
 				<?php esc_html_e( 'Alle Immobilien', 'immo-manager' ); ?>
 			</a>
+			<?php if ( \ImmoManager\ProjectsAccess::user_has_access() ) : ?>
 			<a href="<?php echo esc_url( admin_url( 'post-new.php?post_type=' . \ImmoManager\PostTypes::POST_TYPE_PROJECT ) ); ?>" class="button">
 				<?php esc_html_e( '+ Neues Bauprojekt', 'immo-manager' ); ?>
 			</a>
+			<?php endif; ?>
 			<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . \ImmoManager\Settings::MENU_SLUG ) ); ?>" class="button">
 				<?php esc_html_e( 'Einstellungen', 'immo-manager' ); ?>
 			</a>

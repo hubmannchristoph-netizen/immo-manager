@@ -82,6 +82,13 @@ class UnitsWidget extends Widget_Base {
 		$settings   = $this->get_settings_for_display();
 		$project_id = (int) ( $settings['project_id'] ?? 0 );
 
+		if ( ! \ImmoManager\ProjectsAccess::module_enabled() ) {
+			if ( current_user_can( 'manage_options' ) ) {
+				echo '<p><em>' . esc_html__( 'Bauprojekte-Paket ist deaktiviert (Immo Manager → Einstellungen → Module).', 'immo-manager' ) . '</em></p>';
+			}
+			return;
+		}
+
 		if ( ! $project_id ) {
 			$project_id = (int) get_the_ID();
 		}

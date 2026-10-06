@@ -191,6 +191,14 @@ class Wizard {
 				. esc_html__( 'Anmelden', 'immo-manager' ) . '</a></div>';
 		}
 
+		// Bauprojekte-Paket: ohne Freischaltung kann der Wizard nur Immobilien anlegen.
+		$projects_access = ProjectsAccess::user_has_access();
+		if ( 'project' === $entity_type && ! $projects_access ) {
+			return '<div class="immo-wizard-notice"><p>'
+				. esc_html__( 'Das Bauprojekte-Paket ist für dich nicht freigeschaltet. Du kannst ausschließlich Immobilien verwalten.', 'immo-manager' )
+				. '</p></div>';
+		}
+
 		$prefill = array();
 		if ( $post_id && in_array( get_post_type( $post_id ), array( PostTypes::POST_TYPE_PROPERTY, PostTypes::POST_TYPE_PROJECT ), true ) ) {
 			$prefill     = $this->load_post_data( $post_id );
@@ -221,13 +229,13 @@ class Wizard {
 			wp_enqueue_media();
 		}
 
-		$projects = get_posts( array(
+		$projects = $projects_access ? get_posts( array(
 			'post_type'      => PostTypes::POST_TYPE_PROJECT,
 			'post_status'    => array( 'publish', 'draft', 'private' ),
 			'posts_per_page' => 200,
 			'orderby'        => 'title',
 			'order'          => 'ASC',
-		) );
+		) ) : array();
 
 		ob_start();
 		$nonce      = wp_create_nonce( self::NONCE_ACTION );
@@ -270,6 +278,7 @@ class Wizard {
 
 		$data    = $this->collect_post_data();
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+		$this->guard_projects_access( $data );
 		$errors  = $this->validate( $data, true );
 
 		if ( $errors ) {
@@ -312,6 +321,7 @@ class Wizard {
 		}
 
 		$data    = $this->collect_post_data();
+		$this->guard_projects_access( $data );
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 		$entity  = $data['entity_type'] ?? 'property';
 
@@ -337,6 +347,7 @@ class Wizard {
 		$this->verify_nonce();
 
 		$data   = $this->collect_post_data();
+		$this->guard_projects_access( $data );
 		$errors = $this->validate( $data );
 
 		if ( $errors ) {
@@ -558,6 +569,23 @@ class Wizard {
 	 *
 	 * @return array<string, string> Fehler (Key → Meldung).
 	 */
+	/**
+	 * Bauprojekt-bezogene Speichervorgänge ohne freigeschaltetes Paket abweisen.
+	 *
+	 * @param array<string, mixed> $data Gesammelte Wizard-Daten.
+	 *
+	 * @return void Sendet bei Verstoß eine JSON-Fehlerantwort und beendet den Request.
+	 */
+	private function guard_projects_access( array $data ): void {
+		$entity = $data['entity_type'] ?? 'property';
+		if ( 'project' === $entity && ! ProjectsAccess::user_has_access() ) {
+			wp_send_json_error( array( 'message' => __( 'Das Bauprojekte-Paket ist für dich nicht freigeschaltet.', 'immo-manager' ) ), 403 );
+		}
+		if ( ! ProjectsAccess::user_has_access() && ! empty( $data['_immo_project_id'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Zuordnung zu einem Bauprojekt ist ohne freigeschaltetes Paket nicht möglich.', 'immo-manager' ) ), 403 );
+		}
+	}
+
 	private function validate( array $data, bool $publishing = false ): array {
 		$errors = array();
 		$entity = $data['entity_type'] ?? 'property';

@@ -75,6 +75,9 @@ foreach ( array(
 	delete_option( $immo_option );
 }
 
+// --- 6b. Benutzer-Freischaltungen des Bauprojekte-Pakets entfernen. ---
+delete_metadata( 'user', 0, 'immo_projects_access', '', true );
+
 // --- 7. Restliche Plugin-Transients entfernen. ---
 $wpdb->query(
 	"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_immo_%' OR option_name LIKE '_transient_timeout_immo_%'"

@@ -107,6 +107,18 @@ Container für mehrere Wohneinheiten. Eigenes Bild, Beschreibung, Adresse, Statu
 ### Wohneinheit (Unit)
 Top innerhalb eines Bauprojekts. Eigene Felder: Top-Nummer, Etage, Fläche, Zimmer, Preis/Miete, Status, Grundriss-Bild. Eine Unit kann zusätzlich mit einer normalen `immo_property` verknüpft werden — dann erscheint sie sowohl in der Bauprojekt-Seite ALS AUCH in der globalen Immobilien-Liste, ohne Doppelpflege.
 
+### Bauprojekte als freischaltbares Paket
+
+Das Plugin kann als reine Immobilienverwaltung betrieben werden. Das Paket „Bauprojekte mit Wohneinheiten" wird auf drei Ebenen gesteuert:
+
+| Ebene | Wo | Wirkung |
+|---|---|---|
+| **Global** | Einstellungen → Module → „Bauprojekte-Paket aktivieren" | Aus = Bauprojekte verschwinden aus Admin-Menü, Dashboard, Wizard, Metabox-Zuordnung, Frontend (`/projekte/` liefert 404), Shortcodes `[immo_projects]`/`[immo_units]`, Elementor-Widgets und REST-API (`/projects*` → 404, `meta.project` = null). Daten bleiben vollständig erhalten; Wiedereinschalten stellt alles wieder her. |
+| **Rolle** | Einstellungen → Module → „Bauprojekte-Paket freigeschaltet für" | Checkboxen pro Rolle (Default: alle Rollen; Administratoren immer). Nicht freigeschaltete Rollen sehen und bearbeiten nur Immobilien. |
+| **Benutzer** | Benutzer → Profil → „Bauprojekte verwalten" | Übersteuert die Rolle: *Standard (nach Rolle)*, *Freigeschaltet* oder *Gesperrt*. Nur für Benutzer mit `promote_users` sichtbar. |
+
+Technisch nutzt der Bauprojekt-Post-Type eigene Capabilities (`edit_immo_projects`, `publish_immo_projects`, …), die `ProjectsAccess` zur Laufzeit aus den normalen Post-Rechten des Benutzers ableitet, sofern das Paket für ihn freigeschaltet ist. Damit greift die Sperre konsistent in Menü, Edit-Screens, Admin-Bar, AJAX-Endpunkten (Units-CRUD) und im Wizard. Filter für Lizenz-/Abo-Erweiterungen: `immo_manager_projects_user_has_access( bool $has_access, WP_User $user )`.
+
 ### Verknüpfungs-Logik
 
 ```
@@ -305,7 +317,7 @@ Settings-Tabs:
 |---|---|
 | ⚙️ Allgemein | Währung, Symbol, Position, Dezimalen, Trennzeichen, Items pro Seite, Default-View |
 | 🎨 Design & Layout | Farben, Schriften, Border-Radius, Card-Stil, Default-Detail-Layout, Default-Galerie, Hero-Stil |
-| 🧩 Module | An-/Aus-Schalter für Wizard, Filter, Bauprojekte, Anfragen, Quick-Info-Button, Google Fonts (extern), Daten-Löschung beim Plugin-Löschen |
+| 🧩 Module | An-/Aus-Schalter für Wizard, Filter, Bauprojekte-Paket (global + Rollen-Freischaltung), Anfragen, Quick-Info-Button, Google Fonts (extern), Daten-Löschung beim Plugin-Löschen |
 | 📧 Kontakt | Globaler Empfänger für Anfragen, Mail-Template, Reply-To-Logik |
 | 🗺️ Karten | Provider (Leaflet/OSM oder Google Maps), API-Keys, Default-Zoom |
 | 🧮 Rechner | Sätze, Toggles, Notar-Modus, Finanz-Defaults, Tilgungsplan |

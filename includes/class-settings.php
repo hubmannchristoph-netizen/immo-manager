@@ -111,6 +111,8 @@ class Settings {
 			'enable_wizard'       => 1,
 			'enable_filter'       => 1,
 			'enable_projects'     => 1,
+			// Bauprojekte-Paket: freigeschaltete Rollen ('*' = alle; Administratoren immer).
+			'projects_roles'      => array( '*' ),
 			'enable_inquiries'    => 1,
 			'quick_info_show_details_button' => 1,
 			// Google Fonts extern laden (DSGVO: bei 0 greifen die System-Font-Stacks).
@@ -788,7 +790,7 @@ class Settings {
 		$toggles = array(
 			'enable_wizard'                  => __( 'Wizard für Immobilien-Eingabe aktivieren', 'immo-manager' ),
 			'enable_filter'                  => __( 'Filter-Sidebar im Frontend aktivieren', 'immo-manager' ),
-			'enable_projects'                => __( 'Bauprojekte mit Wohneinheiten aktivieren', 'immo-manager' ),
+			'enable_projects'                => __( 'Bauprojekte-Paket aktivieren (global). Aus = reine Immobilienverwaltung: Bauprojekte und Wohneinheiten verschwinden aus Backend, Frontend, Shortcodes, Widgets und REST-API. Vorhandene Daten bleiben erhalten.', 'immo-manager' ),
 			'enable_inquiries'               => __( 'Anfragen-System aktivieren', 'immo-manager' ),
 			'quick_info_show_details_button' => __( 'Details-Button in Quick-Info-Lightbox anzeigen', 'immo-manager' ),
 			'load_google_fonts'              => __( 'Google Fonts extern laden (deaktivieren für DSGVO-konformes Hosting ohne Drittanbieter-Requests; es greifen dann System-Schriften)', 'immo-manager' ),
@@ -808,6 +810,48 @@ class Settings {
 				)
 			);
 		}
+
+		add_settings_field(
+			'projects_roles',
+			__( 'Bauprojekte-Paket freigeschaltet für', 'immo-manager' ),
+			array( $this, 'render_projects_roles_field' ),
+			self::MENU_SLUG,
+			$section
+		);
+	}
+
+	/**
+	 * Rollen-Checkboxen für das Bauprojekte-Paket rendern.
+	 *
+	 * @return void
+	 */
+	public function render_projects_roles_field(): void {
+		$allowed = ProjectsAccess::allowed_roles();
+		$all     = in_array( ProjectsAccess::ROLES_ALL, $allowed, true );
+		?>
+		<fieldset class="immo-projects-roles">
+			<input type="hidden" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[projects_roles_submitted]" value="1">
+			<label style="display:block;margin-bottom:6px;">
+				<input type="checkbox" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[projects_roles][]" value="<?php echo esc_attr( ProjectsAccess::ROLES_ALL ); ?>" <?php checked( $all ); ?>>
+				<strong><?php esc_html_e( 'Alle Rollen', 'immo-manager' ); ?></strong>
+			</label>
+			<label style="display:block;margin-bottom:6px;color:#6b7280;">
+				<input type="checkbox" checked disabled> <?php esc_html_e( 'Administrator (immer freigeschaltet)', 'immo-manager' ); ?>
+			</label>
+			<?php foreach ( ProjectsAccess::assignable_roles() as $key => $name ) : ?>
+				<label style="display:block;margin-bottom:6px;">
+					<input type="checkbox" name="<?php echo esc_attr( self::OPTION_NAME ); ?>[projects_roles][]" value="<?php echo esc_attr( $key ); ?>" <?php checked( in_array( $key, $allowed, true ) ); ?> <?php disabled( $all ); ?>>
+					<?php echo esc_html( $name ); ?> <code style="font-size:11px;"><?php echo esc_html( $key ); ?></code>
+				</label>
+			<?php endforeach; ?>
+			<p class="description">
+				<?php esc_html_e( 'Benutzer dieser Rollen können Bauprojekte und Wohneinheiten anlegen und bearbeiten; alle anderen verwalten nur Immobilien. Zusätzlich lässt sich das Paket pro Benutzer im Benutzerprofil („Bauprojekte verwalten") freischalten oder sperren. Keine Rolle gewählt = nur Administratoren und einzeln freigeschaltete Benutzer.', 'immo-manager' ); ?>
+			</p>
+		</fieldset>
+		<script>
+		(function(){var f=document.querySelector('.immo-projects-roles');if(!f){return;}var all=f.querySelector('input[value="*"]');if(!all){return;}all.addEventListener('change',function(){f.querySelectorAll('input[type=checkbox]:not([value="*"]):not([disabled][checked][name=""])').forEach(function(c){if(c.name){c.disabled=all.checked;}});});})();
+		</script>
+		<?php
 	}
 
 	/**
@@ -1686,6 +1730,22 @@ class Settings {
 		// Feature-Toggles (Checkboxes).
 		foreach ( array( 'enable_wizard', 'enable_filter', 'enable_projects', 'enable_inquiries', 'quick_info_show_details_button', 'admin_notifications', 'map_enabled', 'load_google_fonts', 'delete_data_on_uninstall' ) as $toggle ) {
 			$sanitized[ $toggle ] = ! empty( $input[ $toggle ] ) ? 1 : 0;
+		}
+
+		// Bauprojekte-Paket umgeschaltet → Permalinks beim nächsten Request neu schreiben.
+		if ( (int) self::get( 'enable_projects', 1 ) !== (int) $sanitized['enable_projects'] ) {
+			update_option( 'immo_flush_needed', 1 );
+		}
+
+		// Bauprojekte-Paket: freigeschaltete Rollen.
+		$valid_roles = array_merge( array( ProjectsAccess::ROLES_ALL ), array_keys( wp_roles()->roles ) );
+		if ( isset( $input['projects_roles'] ) && is_array( $input['projects_roles'] ) ) {
+			$roles = array_values( array_intersect( array_map( 'sanitize_key', $input['projects_roles'] ), $valid_roles ) );
+			$sanitized['projects_roles'] = in_array( ProjectsAccess::ROLES_ALL, $roles, true ) ? array( ProjectsAccess::ROLES_ALL ) : $roles;
+		} elseif ( ! empty( $input['projects_roles_submitted'] ) ) {
+			$sanitized['projects_roles'] = array(); // Formular gesendet, nichts gewählt → nur Administratoren.
+		} else {
+			$sanitized['projects_roles'] = ProjectsAccess::allowed_roles(); // z. B. AJAX-API-Key-Pfad: Wert beibehalten.
 		}
 
 		// Kontakt.

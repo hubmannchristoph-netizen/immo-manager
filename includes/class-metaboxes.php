@@ -155,6 +155,7 @@ class Metaboxes {
 					<input type="number" min="1500" max="2100" name="immo_meta[_immo_renovation_year]" value="<?php echo esc_attr( (string) $meta['_immo_renovation_year'] ); ?>" class="small-text" placeholder="<?php esc_attr_e( 'Sanierung', 'immo-manager' ); ?>" />
 				</td>
 			</tr>
+			<?php if ( ProjectsAccess::user_has_access() ) : ?>
 			<tr>
 				<th><label for="_immo_project_id"><?php esc_html_e( 'Teil eines Bauprojekts?', 'immo-manager' ); ?></label></th>
 				<td>
@@ -162,6 +163,10 @@ class Metaboxes {
 					<p class="description"><?php esc_html_e( 'Optional: Ordne diese Immobilie einem Bauprojekt zu.', 'immo-manager' ); ?></p>
 				</td>
 			</tr>
+			<?php else : ?>
+				<?php // Ohne Bauprojekte-Paket: bestehende Zuordnung unverändert durchreichen. ?>
+				<input type="hidden" name="immo_meta[_immo_project_id]" value="<?php echo esc_attr( (string) (int) $meta['_immo_project_id'] ); ?>">
+			<?php endif; ?>
 		</table>
 		<?php
 	}

@@ -29,6 +29,11 @@ class AdminPages {
 	public const CAPABILITY = 'manage_options';
 
 	/**
+	 * Capability für Menü-Eintrag und Dashboard (alle, die Immobilien bearbeiten dürfen).
+	 */
+	public const EDITOR_CAPABILITY = 'edit_posts';
+
+	/**
 	 * Konstruktor registriert Hooks.
 	 */
 	public function __construct() {
@@ -44,10 +49,14 @@ class AdminPages {
 	 */
 	public function register_menus(): void {
 		// Top-Level-Menü.
+		// Top-Level + Dashboard mit edit_posts statt manage_options: Sonst sperrt WordPress
+		// Nicht-Administratoren (Redakteure, Autoren) auch von den darunter hängenden
+		// CPT-Listen aus (Menü-Eltern ohne Berechtigung => "Du darfst diese Seite nicht aufrufen").
+		// Einstellungen, OpenImmo und Hilfe bleiben manage_options.
 		add_menu_page(
 			__( 'Immo Manager', 'immo-manager' ),
 			__( 'Immo Manager', 'immo-manager' ),
-			self::CAPABILITY,
+			self::EDITOR_CAPABILITY,
 			self::MENU_SLUG,
 			array( $this, 'render_dashboard_page' ),
 			'dashicons-admin-home',
@@ -59,7 +68,7 @@ class AdminPages {
 			self::MENU_SLUG,
 			__( 'Dashboard', 'immo-manager' ),
 			__( 'Dashboard', 'immo-manager' ),
-			self::CAPABILITY,
+			self::EDITOR_CAPABILITY,
 			self::MENU_SLUG,
 			array( $this, 'render_dashboard_page' )
 		);
@@ -68,12 +77,12 @@ class AdminPages {
 		// werden NICHT hier registriert – WordPress fügt diese automatisch
 		// als Submenüs ein, da die CPTs show_in_menu => 'immo-manager' haben.
 
-		// Wohneinheiten – Plugin-eigene Übersichtsseite.
+		// Wohneinheiten – Plugin-eigene Übersichtsseite (nur mit freigeschaltetem Bauprojekte-Paket).
 		add_submenu_page(
 			self::MENU_SLUG,
 			__( 'Wohneinheiten', 'immo-manager' ),
 			__( 'Wohneinheiten', 'immo-manager' ),
-			'edit_posts',
+			'edit_immo_projects',
 			'immo-units',
 			array( $this, 'render_units_page' )
 		);
@@ -151,7 +160,7 @@ class AdminPages {
 	 * @return void
 	 */
 	public function render_dashboard_page(): void {
-		if ( ! current_user_can( self::CAPABILITY ) ) {
+		if ( ! current_user_can( self::EDITOR_CAPABILITY ) ) {
 			wp_die( esc_html__( 'Du hast keine Berechtigung, diese Seite aufzurufen.', 'immo-manager' ), 403 );
 		}
 

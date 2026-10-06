@@ -58,6 +58,7 @@ Eine WordPress-Installation dient als Datenquelle. Externe Websites laden Immobi
 == Changelog ==
 
 = 1.4.0 =
+* Neu: Bauprojekte als freischaltbares Paket – global abschaltbar (reine Immobilienverwaltung, Daten bleiben erhalten), Freischaltung pro Rolle (Einstellungen → Module) und pro Benutzer (Benutzerprofil); eigene Capabilities edit_immo_projects etc.
 * Neu: Energieausweis-Pflichtangaben laut EAVG-Novelle (1.7.2026): Feld Endenergiebedarf (EEB) in Wizard, Metabox, REST (meta.energy_eeb/energy_fgee), Schema.org, OpenImmo (endenergiebedarf) und allen Ausgaben; fGEE nur noch als Altausweis-Angabe; Veröffentlichen im Wizard erfordert Klasse + HWB + EEB/fGEE (Grundstücke ausgenommen); Hinweis-/Warntexte im Backend
 * Neu: Bedienungsanleitung für Embed-Widgets im Backend (API & Hilfe, Kapitel 12) mit Snippet-Generator + Live-Vorschau, Plattform-Anleitungen für Nicht-WordPress-Seiten und Fehlersuche; eigenständige Anleitungsseite public/embed/anleitung.html mit Live-Demo
 * Neu: Embed-Widget public/embed/immo-embed.js – Immobilien, Bauprojekte, Wohneinheiten und Detailkarten per Script-Snippet auf JEDER externen Webseite (Shadow DOM, Filterleiste, „Mehr laden", Link-Templates, de/en); Snippet-Generator unter API & Hilfe
@@ -70,6 +71,7 @@ Eine WordPress-Installation dient als Datenquelle. Externe Websites laden Immobi
 * Sicherheit: notify_email / skip_notifications bei POST /inquiries nur noch mit gültigem API-Key wirksam (kein anonymes Mail-Relay)
 * Sicherheit: Anfrage-Felder werden vor Mailversand bereinigt
 * Fix: Elementor-Widget „Wohneinheiten" verursachte Fehler (Array-/Objekt-Zugriff)
+* Fix: Nicht-Administratoren (Redakteure, Autoren) erhielten im Immo-Manager-Menü „Du darfst diese Seite nicht aufrufen“ – Top-Level-Menü und Dashboard verlangen jetzt edit_posts statt manage_options
 * Fix: Elementor-Widget „Bauprojekte" zeigte rohe Status-Keys statt Labels
 * Fix: Autoloader unterstützt Sub-Namespaces (OpenImmo, Elementor)
 * Datensicherheit: Beim Löschen des Plugins bleiben alle Daten erhalten, sofern nicht explizit in den Einstellungen aktiviert

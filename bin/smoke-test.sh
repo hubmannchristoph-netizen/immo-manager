@@ -98,7 +98,7 @@ PSLUG=$(WP post get $PID --field=post_name 2>/dev/null | tr -d '\r')
 echo "  Test-Projekt: ID=$PID slug=$PSLUG"
 
 echo "== Test-Seiten anlegen =="
-SC_PAGE=$(WP post create --post_type=page --post_status=publish --post_title="Projekte Shortcodes" --post_content="[immo_projects title=\"Unsere Bauprojekte\" columns=\"2\"] [immo_units project=\"$PID\" title=\"Einheiten\"] [immo_list]" --porcelain 2>/dev/null | tr -d '\r')
+SC_PAGE=$(WP post create --post_type=page --post_status=publish --post_title="Widget Testseite" --post_content="[immo_projects title=\"Unsere Bauprojekte\" columns=\"2\"] [immo_units project=\"$PID\" title=\"Einheiten\"] [immo_list]" --porcelain 2>/dev/null | tr -d '\r')
 PLAIN_PAGE=$(WP post create --post_type=page --post_status=publish --post_title="Plain" --post_content="<p>Nur Text ohne Plugin.</p>" --porcelain 2>/dev/null | tr -d '\r')
 SC_URL=$(WP post get $SC_PAGE --field=url 2>/dev/null | tr -d '\r'); PLAIN_URL=$(WP post get $PLAIN_PAGE --field=url 2>/dev/null | tr -d '\r')
 PROJ_URL=$(WP post get $PID --field=url 2>/dev/null | tr -d '\r')
@@ -188,6 +188,57 @@ grep -q "Snippet-Generator" $T/help.html && grep -q 'id="help-embed"' $T/help.ht
 grep -q -- '--immo-primary' $T/admin.html && ok "Design-Variablen auf Admin-Wizard-Seite" || fail "Design-Variablen auf Admin-Wizard-Seite"
 code=$(curl -s -b $T/cj -o $T/dash.html -w "%{http_code}" "http://localhost:$PORT/wp-admin/index.php")
 grep -q 'immo-manager-frontend\|public/css/frontend.css' $T/dash.html && fail "WP-Dashboard laedt KEIN Plugin-Frontend-CSS" || ok "WP-Dashboard laedt KEIN Plugin-Frontend-CSS"
+
+echo "== Bauprojekte-Paket: Rollen-/Benutzer-Freischaltung =="
+EDITOR_ID=$(WP user create redakteur redakteur@example.com --role=editor --user_pass=pw123456 --porcelain 2>/dev/null | tr -d '\r')
+AUTHOR_ID=$(WP user create autor autor@example.com --role=author --user_pass=pw123456 --porcelain 2>/dev/null | tr -d '\r')
+capcheck() { WP eval "echo user_can($1, '$2') ? 'yes' : 'no';" 2>/dev/null | tr -d '\r'; }
+[ "$(capcheck $EDITOR_ID edit_immo_projects)" = "yes" ] && ok "Default (alle Rollen): Redakteur darf Bauprojekte" || fail "Default: Redakteur darf Bauprojekte"
+[ "$(capcheck 1 edit_immo_projects)" = "yes" ] && ok "Admin darf Bauprojekte" || fail "Admin darf Bauprojekte"
+WP eval '$s = get_option("immo_manager_settings", []); $s["projects_roles"] = ["author"]; update_option("immo_manager_settings", $s);' >/dev/null 2>&1
+[ "$(capcheck $EDITOR_ID edit_immo_projects)" = "no" ] && ok "Nur Rolle author freigeschaltet: Redakteur gesperrt" || fail "Rollen-Freischaltung: Redakteur gesperrt"
+[ "$(capcheck $EDITOR_ID edit_posts)" = "yes" ] && ok "Redakteur darf weiterhin Immobilien (edit_posts)" || fail "Redakteur edit_posts"
+[ "$(capcheck $AUTHOR_ID edit_immo_projects)" = "yes" ] && ok "Autor (freigeschaltete Rolle) darf Bauprojekte" || fail "Autor darf Bauprojekte"
+[ "$(capcheck 1 edit_immo_projects)" = "yes" ] && ok "Admin bleibt freigeschaltet" || fail "Admin bleibt freigeschaltet"
+WP user meta update $EDITOR_ID immo_projects_access 1 >/dev/null 2>&1
+[ "$(capcheck $EDITOR_ID edit_immo_projects)" = "yes" ] && ok "Benutzer-Freischaltung uebersteuert Rolle (frei)" || fail "Benutzer-Freischaltung (frei)"
+WP user meta update $AUTHOR_ID immo_projects_access 0 >/dev/null 2>&1
+[ "$(capcheck $AUTHOR_ID edit_immo_projects)" = "no" ] && ok "Benutzer-Sperre uebersteuert Rolle (gesperrt)" || fail "Benutzer-Sperre (gesperrt)"
+# Redakteur ohne Paket: Admin-Menue ohne Bauprojekte, Edit-Screen verweigert
+WP user meta delete $EDITOR_ID immo_projects_access >/dev/null 2>&1
+curl -s -c $T/cj2 -b $T/cj2 -o /dev/null "http://localhost:$PORT/wp-login.php"
+curl -s -c $T/cj2 -b $T/cj2 -o /dev/null -d "log=redakteur&pwd=pw123456&wp-submit=Log+In&redirect_to=http://localhost:$PORT/wp-admin/&testcookie=1" "http://localhost:$PORT/wp-login.php"
+code=$(curl -s -b $T/cj2 -o $T/ed-menu.html -w "%{http_code}" "http://localhost:$PORT/wp-admin/edit.php?post_type=immo_mgr_property")
+grep -q "post_type=immo_mgr_property" $T/ed-menu.html && ok "Redakteur sieht Immobilien-Menue" || fail "Redakteur sieht Immobilien-Menue (HTTP $code)"
+grep -q "edit.php?post_type=immo_mgr_project" $T/ed-menu.html && fail "Redakteur sieht KEIN Bauprojekte-Menue" || ok "Redakteur sieht KEIN Bauprojekte-Menue"
+grep -q "page=immo-units" $T/ed-menu.html && fail "Redakteur sieht KEINE Wohneinheiten-Seite" || ok "Redakteur sieht KEINE Wohneinheiten-Seite"
+code=$(curl -s -L -b $T/cj2 -o /dev/null -w "%{http_code}" "http://localhost:$PORT/wp-admin/post.php?post=$PID&action=edit")
+[ "$code" = "403" ] && ok "Redakteur: Bauprojekt-Edit verweigert (403)" || fail "Redakteur: Bauprojekt-Edit verweigert (HTTP $code)"
+code=$(curl -s -L -b $T/cj2 -o /dev/null -w "%{http_code}" "http://localhost:$PORT/wp-admin/admin.php?page=immo-wizard&id=$PID")
+[ "$code" = "403" ] && ok "Redakteur: Admin-Wizard fuer Bauprojekt verweigert (403)" || fail "Redakteur: Admin-Wizard Bauprojekt (HTTP $code)"
+code=$(curl -s -L -b $T/cj2 -o /dev/null -w "%{http_code}" "http://localhost:$PORT/wp-admin/edit.php?post_type=immo_mgr_project")
+[ "$code" = "403" ] && ok "Redakteur: Bauprojekt-Liste verweigert (403)" || fail "Redakteur: Bauprojekt-Liste (HTTP $code)"
+code=$(curl -s -b $T/cj2 -o $T/ed-wiz.html -w "%{http_code}" "http://localhost:$PORT/wp-admin/admin.php?page=immo-wizard")
+grep -q 'value="project"' $T/ed-wiz.html && fail "Redakteur: Wizard ohne Bauprojekt-Kachel" || ok "Redakteur: Wizard ohne Bauprojekt-Kachel"
+WP eval '$s = get_option("immo_manager_settings", []); $s["projects_roles"] = ["*"]; update_option("immo_manager_settings", $s);' >/dev/null 2>&1
+
+echo "== Bauprojekte-Paket global AUS: reine Immobilienverwaltung =="
+WP eval '$s = get_option("immo_manager_settings", []); $s["enable_projects"] = 0; update_option("immo_manager_settings", $s); update_option("immo_flush_needed", 1);' >/dev/null 2>&1
+code=$(fetch "http://localhost:$PORT/wp-json/immo-manager/v1/projects" $T/p-off.json); [ "$code" = 404 ] && ok "REST /projects -> 404 bei deaktiviertem Paket" || fail "REST /projects bei Paket aus: HTTP $code"
+code=$(fetch "http://localhost:$PORT/wp-json/immo-manager/v1/properties?per_page=2" $T/pr-off.json); [ "$code" = 200 ] && ok "REST /properties weiterhin 200" || fail "REST /properties bei Paket aus: HTTP $code"
+code=$(curl -s -L -o $T/arch-off.html -w "%{http_code} %{url_effective}" "http://localhost:$PORT/projekte/"); case "$code" in 404*) ok "Archiv /projekte/ -> 404";; *) fail "Archiv /projekte/ bei Paket aus: $code";; esac
+code=$(curl -s -L -o $T/single-off.html -w "%{http_code} %{url_effective}" "$PROJ_URL"); case "$code" in 404*) ok "Bauprojekt-Einzelseite -> 404";; *) fail "Bauprojekt-Einzelseite bei Paket aus: $code";; esac
+code=$(fetch "$SC_URL" $T/sc-off.html); [ "$code" = 200 ] && ! grep -q "immo-project-card-item" $T/sc-off.html && grep -q "immo-list-container" $T/sc-off.html && ok "[immo_projects]/[immo_units] leer, [immo_list] weiterhin da" || fail "Shortcodes bei Paket aus"
+code=$(fetch "http://localhost:$PORT/immobilien/" $T/parch-off.html); [ "$code" = 200 ] && ok "Immobilien-Archiv weiterhin 200" || fail "Immobilien-Archiv bei Paket aus: HTTP $code"
+code=$(curl -s -b $T/cj -o $T/admin-off.html -w "%{http_code}" "http://localhost:$PORT/wp-admin/admin.php?page=immo-manager")
+grep -q "edit.php?post_type=immo_mgr_project" $T/admin-off.html && fail "Admin-Menue ohne Bauprojekte (Paket aus)" || ok "Admin-Menue ohne Bauprojekte (Paket aus)"
+res=$(curl -s -L -b $T/cj -o $T/list-off.html -w "%{http_code} %{url_effective}" "http://localhost:$PORT/wp-admin/edit.php?post_type=immo_mgr_project"); case "$res" in 200*immo_projects_disabled*) ok "Bauprojekt-Liste bei Paket aus -> Weiterleitung zu Einstellungen mit Hinweis";; *) fail "Bauprojekt-Liste bei Paket aus: $res";; esac
+grep -q "Bauprojekte-Paket ist deaktiviert" $T/list-off.html && ok "Hinweis-Notice angezeigt" || fail "Hinweis-Notice angezeigt"
+PROJS_OFF=$(WP post list --post_type=immo_mgr_project --post_status=publish --format=count 2>/dev/null | tr -d '\r')
+[ "$PROJS_OFF" = "$PROJS" ] && ok "Bauprojekt-Daten bleiben erhalten ($PROJS_OFF)" || fail "Bauprojekt-Daten bei Paket aus: $PROJS_OFF"
+WP eval '$s = get_option("immo_manager_settings", []); $s["enable_projects"] = 1; update_option("immo_manager_settings", $s); update_option("immo_flush_needed", 1);' >/dev/null 2>&1
+code=$(fetch "http://localhost:$PORT/wp-json/immo-manager/v1/projects" $T/p-on.json); [ "$code" = 200 ] && ok "Paket wieder AN: REST /projects 200" || fail "Paket wieder an: HTTP $code"
+code=$(fetch "http://localhost:$PORT/projekte/" $T/arch-on.html); [ "$code" = 200 ] && ok "Paket wieder AN: Archiv 200" || fail "Paket wieder an: Archiv HTTP $code"
 
 echo "== Re-Installation (Update per ZIP) erhält Daten =="
 WP plugin install /var/www/html/wp-content/$ZIP --force 2>&1 | tail -1

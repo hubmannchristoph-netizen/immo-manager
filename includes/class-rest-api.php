@@ -331,7 +331,10 @@ class RestApi {
 	 *
 	 * @return \WP_REST_Response
 	 */
-	public function get_projects( \WP_REST_Request $request ): \WP_REST_Response {
+	public function get_projects( \WP_REST_Request $request ) {
+		if ( ! ProjectsAccess::module_enabled() ) {
+			return self::projects_disabled_error();
+		}
 		$per_page = min( 50, max( 1, (int) ( $request->get_param( 'per_page' ) ?? 12 ) ) );
 		$page     = max( 1, (int) ( $request->get_param( 'page' ) ?? 1 ) );
 
@@ -372,6 +375,9 @@ class RestApi {
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public function get_project( \WP_REST_Request $request ) {
+		if ( ! ProjectsAccess::module_enabled() ) {
+			return self::projects_disabled_error();
+		}
 		$post = get_post( (int) $request->get_param( 'id' ) );
 		if ( ! $post || PostTypes::POST_TYPE_PROJECT !== $post->post_type || 'publish' !== $post->post_status ) {
 			return new \WP_Error( 'not_found', __( 'Bauprojekt nicht gefunden.', 'immo-manager' ), array( 'status' => 404 ) );
@@ -387,6 +393,9 @@ class RestApi {
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public function get_project_by_slug( \WP_REST_Request $request ) {
+		if ( ! ProjectsAccess::module_enabled() ) {
+			return self::projects_disabled_error();
+		}
 		$slug = sanitize_title( (string) $request->get_param( 'slug' ) );
 		if ( '' === $slug ) {
 			return new \WP_Error( 'not_found', __( 'Bauprojekt nicht gefunden.', 'immo-manager' ), array( 'status' => 404 ) );
@@ -415,7 +424,10 @@ class RestApi {
 	 *
 	 * @return \WP_REST_Response
 	 */
-	public function get_project_units( \WP_REST_Request $request ): \WP_REST_Response {
+	public function get_project_units( \WP_REST_Request $request ) {
+		if ( ! ProjectsAccess::module_enabled() ) {
+			return self::projects_disabled_error();
+		}
 		$id = (int) $request->get_param( 'id' );
 		return $this->build_units_response( $id, $request );
 	}
@@ -432,6 +444,9 @@ class RestApi {
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public function get_project_units_by_slug( \WP_REST_Request $request ) {
+		if ( ! ProjectsAccess::module_enabled() ) {
+			return self::projects_disabled_error();
+		}
 		$slug  = sanitize_title( (string) $request->get_param( 'slug' ) );
 		$posts = get_posts( array(
 			'post_type'      => PostTypes::POST_TYPE_PROJECT,
@@ -1152,7 +1167,19 @@ class RestApi {
 	 *
 	 * @return array<string, mixed>|null Null, wenn Projekt nicht veröffentlicht.
 	 */
+	/**
+	 * Fehlerantwort, wenn das Bauprojekte-Paket global deaktiviert ist.
+	 *
+	 * @return \WP_Error
+	 */
+	private static function projects_disabled_error(): \WP_Error {
+		return new \WP_Error( 'immo_projects_disabled', __( 'Das Bauprojekte-Modul ist auf dieser Installation deaktiviert.', 'immo-manager' ), array( 'status' => 404 ) );
+	}
+
 	private function project_summary( int $project_id ): ?array {
+		if ( ! ProjectsAccess::module_enabled() ) {
+			return null;
+		}
 		if ( array_key_exists( $project_id, $this->project_summary_cache ) ) {
 			return $this->project_summary_cache[ $project_id ];
 		}

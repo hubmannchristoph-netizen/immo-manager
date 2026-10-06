@@ -97,6 +97,13 @@ class ProjectsWidget extends Widget_Base {
 	protected function render() {
 		$settings = $this->get_settings_for_display();
 
+		if ( ! \ImmoManager\ProjectsAccess::module_enabled() ) {
+			if ( current_user_can( 'manage_options' ) ) {
+				echo '<p><em>' . esc_html__( 'Bauprojekte-Paket ist deaktiviert (Immo Manager → Einstellungen → Module).', 'immo-manager' ) . '</em></p>';
+			}
+			return;
+		}
+
 		// Plugin-Assets (CSS/JS) sicherstellen – Elementor rendert außerhalb des Post-Contents.
 		Plugin::instance()->get_shortcodes()->enqueue_assets();
 

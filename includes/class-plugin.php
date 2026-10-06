@@ -85,6 +85,13 @@ class Plugin {
 	private $shortcodes = null;
 
 	/**
+	 * Bauprojekte-Paket (Zugriffssteuerung).
+	 *
+	 * @var ProjectsAccess|null
+	 */
+	private $projects_access = null;
+
+	/**
 	 * Elementor-Integration.
 	 *
 	 * @var ElementorIntegration|null
@@ -264,6 +271,7 @@ class Plugin {
 	 * @return void
 	 */
 	public function init_shortcodes(): void {
+		$this->get_projects_access();
 		$this->get_shortcodes();
 		$this->get_wizard();
 		$this->get_templates();
@@ -306,6 +314,25 @@ class Plugin {
 
 		// Datenbank-Upgrade sicherstellen!
 		$this->get_database()->maybe_upgrade();
+
+		// Permalinks neu schreiben, wenn das Bauprojekte-Paket umgeschaltet wurde
+		// (Archiv /projekte/ erscheint bzw. verschwindet).
+		if ( get_option( 'immo_flush_needed' ) ) {
+			delete_option( 'immo_flush_needed' );
+			flush_rewrite_rules( false );
+		}
+	}
+
+	/**
+	 * Bauprojekte-Paket (Zugriffssteuerung) abrufen (Lazy Loading).
+	 *
+	 * @return ProjectsAccess
+	 */
+	public function get_projects_access(): ProjectsAccess {
+		if ( null === $this->projects_access ) {
+			$this->projects_access = new ProjectsAccess();
+		}
+		return $this->projects_access;
 	}
 
 	/**

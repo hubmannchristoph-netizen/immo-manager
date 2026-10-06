@@ -907,6 +907,10 @@ class Shortcodes {
 			'link'    => '',
 		), (array) $atts, 'immo_projects' );
 
+		if ( ! ProjectsAccess::module_enabled() ) {
+			return $this->module_disabled_notice();
+		}
+
 		$this->enqueue_assets();
 
 		$rest    = Plugin::instance()->get_rest_api();
@@ -991,6 +995,10 @@ class Shortcodes {
 			'show_stats' => 1,
 		), (array) $atts, 'immo_units' );
 
+		if ( ! ProjectsAccess::module_enabled() ) {
+			return $this->module_disabled_notice();
+		}
+
 		$this->enqueue_assets();
 
 		$project_id = $this->resolve_project_id( (string) $atts['project'] );
@@ -1067,6 +1075,19 @@ class Shortcodes {
 	 *
 	 * @return int 0 wenn nicht gefunden.
 	 */
+	/**
+	 * Hinweis für Redakteure, wenn ein Bauprojekt-Shortcode bei deaktiviertem Paket steht.
+	 * Besucher sehen nichts.
+	 *
+	 * @return string
+	 */
+	private function module_disabled_notice(): string {
+		if ( current_user_can( 'manage_options' ) ) {
+			return '<p class="immo-no-results"><em>' . esc_html__( 'Bauprojekte-Paket ist deaktiviert (Immo Manager → Einstellungen → Module). Dieser Hinweis ist nur für Administratoren sichtbar.', 'immo-manager' ) . '</em></p>';
+		}
+		return '';
+	}
+
 	private function resolve_project_id( string $ref ): int {
 		$ref = trim( $ref );
 
