@@ -118,6 +118,11 @@ class Templates {
 	 * @return void
 	 */
 	public function render_search_lightbox(): void {
+		// Nur auf Seiten, auf denen die Plugin-Assets geladen sind – sonst
+		// wäre das Markup ohne CSS/JS wirkungslos und bläht jede Seite auf.
+		if ( ! wp_script_is( 'immo-manager-frontend', 'enqueued' ) ) {
+			return;
+		}
 		?>
 		<div class="immo-lightbox" id="immo-global-search-lightbox" hidden>
 			<div class="immo-lightbox-overlay"></div>

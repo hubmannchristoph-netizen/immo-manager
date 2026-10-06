@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Immo Manager – Embed-Widgets: Anleitung & Live-Demo</title>
+<style>
+	:root { color-scheme: light; }
+	body { margin: 0; font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1f2937; background: #f8fafc; }
+	main { max-width: 980px; margin: 0 auto; padding: 32px 20px 64px; }
+	h1 { font-size: 2rem; margin: 0 0 6px; }
+	h2 { font-size: 1.35rem; margin: 40px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #6750A4; }
+	h3 { font-size: 1.05rem; margin: 24px 0 8px; }
+	p.lead { color: #4b5563; font-size: 1.05rem; }
+	pre { background: #111827; color: #e5e7eb; padding: 14px 16px; border-radius: 8px; overflow-x: auto; font-size: 13.5px; line-height: 1.5; }
+	code { font-family: Menlo, Consolas, monospace; }
+	p code, li code, td code { background: #eef2ff; color: #1e40af; padding: 1px 6px; border-radius: 4px; font-size: 90%; }
+	table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; background: #fff; }
+	th, td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; vertical-align: top; }
+	th { background: #f3f4f6; }
+	.demo { background: #fff; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 18px; margin: 12px 0 28px; }
+	.demo-label { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; margin: 0 0 10px; }
+	.note { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 14px 0; }
+	.ok { background: #f0fdf4; border-left-color: #10b981; }
+	.warn { background: #fffbeb; border-left-color: #f59e0b; }
+	ol li, ul li { margin-bottom: 6px; }
+	.toc a { display: inline-block; margin: 0 14px 6px 0; color: #6750A4; }
+	.copy { font: inherit; font-size: 13px; padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; cursor: pointer; margin-left: 8px; }
+	footer { margin-top: 48px; color: #6b7280; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+	<h1>Embed-Widgets – Anleitung &amp; Live-Demo</h1>
+	<p class="lead">Mit zwei Zeilen HTML zeigst du Immobilien, Bauprojekte und Wohneinheiten aus dem Immo Manager auf <strong>jeder</strong> Webseite – ohne WordPress, ohne Plugin, ohne Programmierung. Die Beispiele auf dieser Seite sind <em>echte</em> Widgets, die live aus dieser Installation laden.</p>
+
+	<div class="toc">
+		<a href="#funktion">So funktioniert es</a>
+		<a href="#schnellstart">Schnellstart</a>
+		<a href="#demo">Live-Demo</a>
+		<a href="#typen">Widget-Typen &amp; Attribute</a>
+		<a href="#plattformen">Nicht-WordPress-Seiten</a>
+		<a href="#links">Eigene Detailseiten</a>
+		<a href="#voraussetzungen">Voraussetzungen</a>
+		<a href="#fehler">Fehlersuche</a>
+	</div>
+
+	<h2 id="funktion">So funktioniert es</h2>
+	<ol>
+		<li>Ein kleines JavaScript (<code>immo-embed.js</code>, ca. 40 KB, keine Abhängigkeiten) wird einmal pro Seite eingebunden.</li>
+		<li>Überall, wo Inhalte erscheinen sollen, steht ein Platzhalter-Element <code>&lt;div data-immo-embed="…"&gt;</code>.</li>
+		<li>Das Script lädt die Daten über die öffentliche REST-API dieser Installation und rendert sie isoliert in einem Shadow DOM. Das CSS der Zielseite kann nichts kaputt machen – und umgekehrt.</li>
+		<li>Änderungen im Immo Manager (neue Immobilie, Status „verkauft", Preis) erscheinen sofort auf allen eingebundenen Seiten.</li>
+	</ol>
+
+	<h2 id="schnellstart">Schnellstart (2 Schritte)</h2>
+	<h3>1. Script einbinden – einmal pro Seite, am besten vor <code>&lt;/body&gt;</code></h3>
+	<pre><code id="snippet-script">&lt;script src="SCRIPT_URL" defer&gt;&lt;/script&gt;</code></pre>
+	<h3>2. Platzhalter dort einfügen, wo das Widget erscheinen soll</h3>
+	<pre><code>&lt;!-- Bauprojekte als Grid --&gt;
+&lt;div data-immo-embed="projects" data-columns="3" data-title="Unsere Bauprojekte"&gt;&lt;/div&gt;
+
+&lt;!-- Wohneinheiten eines Bauprojekts (ID oder Slug) --&gt;
+&lt;div data-immo-embed="units" data-project="<span id="ex-project-slug">mein-bauprojekt</span>"&gt;&lt;/div&gt;
+
+&lt;!-- Immobilien-Grid mit Filterleiste und „Mehr laden" --&gt;
+&lt;div data-immo-embed="properties" data-mode="sale" data-limit="6" data-filters="1"&gt;&lt;/div&gt;
+
+&lt;!-- Einzelne Immobilie / einzelnes Bauprojekt --&gt;
+&lt;div data-immo-embed="property" data-slug="<span id="ex-property-slug">meine-immobilie</span>"&gt;&lt;/div&gt;
+&lt;div data-immo-embed="project" data-slug="<span id="ex-project-slug2">mein-bauprojekt</span>"&gt;&lt;/div&gt;</code></pre>
+	<div class="note ok"><strong>Das war's.</strong> Beliebig viele Widgets pro Seite sind möglich. Im WordPress-Backend unter <em>Immo Manager → API &amp; Hilfe → Kapitel 12</em> gibt es einen Snippet-Generator mit Live-Vorschau, der die Slugs deiner echten Projekte und Immobilien einsetzt.</div>
+
+	<h2 id="demo">Live-Demo</h2>
+	<p>Die folgenden Widgets werden gerade live aus dieser Installation geladen:</p>
+
+	<p class="demo-label">Bauprojekte (<code>data-immo-embed="projects"</code>)</p>
+	<div class="demo"><div data-immo-embed="projects" data-columns="3" data-limit="3"><a href="../../">Bauprojekte ansehen</a></div></div>
+
+	<p class="demo-label">Wohneinheiten des ersten Bauprojekts (<code>data-immo-embed="units"</code>)</p>
+	<div class="demo" id="demo-units"><em>Lädt Bauprojekt …</em></div>
+
+	<p class="demo-label">Immobilien mit Filterleiste (<code>data-immo-embed="properties" data-filters="1"</code>)</p>
+	<div class="demo"><div data-immo-embed="properties" data-limit="3" data-columns="3" data-filters="1"></div></div>
+
+	<p class="demo-label">Detailkarte der ersten Immobilie (<code>data-immo-embed="property"</code>)</p>
+	<div class="demo" id="demo-property"><em>Lädt Immobilie …</em></div>
+
+	<h2 id="typen">Widget-Typen &amp; Attribute</h2>
+	<table>
+		<thead><tr><th>data-immo-embed</th><th>Zeigt</th><th>Attribute</th></tr></thead>
+		<tbody>
+			<tr><td><code>properties</code></td><td>Immobilien-Grid, optional mit Filterleiste (Angebot, Bundesland, Zimmer, Preis) und „Mehr laden"</td><td><code>data-limit</code> (1–50), <code>data-columns</code> (1–4), <code>data-status</code>, <code>data-mode</code> (sale|rent), <code>data-type</code>, <code>data-region</code>, <code>data-orderby</code>, <code>data-project</code>, <code>data-price-min</code>/<code>-max</code>, <code>data-rooms</code>, <code>data-filters="1"</code>, <code>data-pagination="0"</code></td></tr>
+			<tr><td><code>projects</code></td><td>Bauprojekte als Cards mit Status, Einheiten-Statistik und Flächenspanne</td><td><code>data-limit</code>, <code>data-columns</code>, <code>data-status</code> (planning|building|completed)</td></tr>
+			<tr><td><code>units</code></td><td>Wohneinheiten-Tabelle eines Bauprojekts mit Status-Filter</td><td><code>data-project</code> (ID oder Slug, Pflicht), <code>data-status</code>, <code>data-orderby</code>, <code>data-limit</code>, <code>data-stats="0"</code></td></tr>
+			<tr><td><code>property</code></td><td>Detailkarte einer Immobilie (Bild, Galerie, Preis, Eckdaten, Energieausweis, Ausstattung, Beschreibung, Kontakt)</td><td><code>data-id</code> oder <code>data-slug</code>, <code>data-description="0"</code></td></tr>
+			<tr><td><code>project</code></td><td>Bauprojekt-Kopf mit Statistiken plus Wohneinheiten-Tabelle</td><td><code>data-id</code> oder <code>data-slug</code>, <code>data-status</code>, <code>data-description="0"</code></td></tr>
+			<tr><td><em>alle Typen</em></td><td></td><td><code>data-title</code>, <code>data-primary</code>, <code>data-accent</code>, <code>data-radius</code>, <code>data-target="_blank"</code>, <code>data-lang="de|en"</code>, <code>data-link-template</code>, <code>data-project-link-template</code>, <code>data-no-shadow="1"</code>, <code>data-api</code></td></tr>
+		</tbody>
+	</table>
+	<p>Attribute lassen sich auch global am <code>&lt;script&gt;</code>-Tag setzen (<code>data-api</code>, <code>data-lang</code>, <code>data-primary</code>, <code>data-accent</code>, <code>data-radius</code>, <code>data-target</code>, <code>data-link-template</code>) und gelten dann für alle Widgets der Seite. Farben kommen sonst automatisch aus den Design-Einstellungen des Immo Managers.</p>
+
+	<h2 id="plattformen">Einbau auf Seiten ohne WordPress</h2>
+	<table>
+		<thead><tr><th>Plattform</th><th>So fügst du Script und Platzhalter ein</th></tr></thead>
+		<tbody>
+			<tr><td><strong>Reines HTML / statische Seite</strong><br><small>auch Hugo, Jekyll, Astro, Eleventy, Netlify, Vercel</small></td><td>Script-Zeile vor <code>&lt;/body&gt;</code>, Platzhalter-<code>&lt;div&gt;</code> an der gewünschten Stelle im HTML. Keine weiteren Schritte.</td></tr>
+			<tr><td><strong>Webflow</strong></td><td>Element „Embed" (Code Embed) auf die Seite ziehen, Platzhalter-<code>&lt;div&gt;</code> hineinkopieren. Script-Zeile unter <em>Project Settings → Custom Code → Footer Code</em> (gilt für alle Seiten) oder direkt mit in dasselbe Embed-Element.</td></tr>
+			<tr><td><strong>Wix</strong></td><td><em>Hinzufügen → Einbetten → HTML-Code einbetten</em>, Modus „Code": Script + div hineinkopieren. Wix rendert HTML-Embeds in einem iFrame mit fester Höhe – Höhe im Editor großzügig wählen. Ohne iFrame: Wix Studio/Velo „Custom Element" oder <em>Settings → Custom Code</em> (Script) plus HTML-Embed (div).</td></tr>
+			<tr><td><strong>Jimdo</strong></td><td>Element „Widget/HTML" (Dolphin: „HTML"-Block) hinzufügen, Script-Zeile plus Platzhalter-div einfügen.</td></tr>
+			<tr><td><strong>Squarespace</strong></td><td>„Code"-Block (Typ HTML) für den Platzhalter-div. Script-Zeile unter <em>Einstellungen → Erweitert → Code-Injection → Footer</em>. Erfordert Business-Plan oder höher.</td></tr>
+			<tr><td><strong>Typo3</strong></td><td>Inhaltselement „HTML" mit dem Platzhalter-div. Script-Zeile im Fluid-Layout vor <code>&lt;/body&gt;</code> oder per TypoScript <code>page.includeJSFooter</code>.</td></tr>
+			<tr><td><strong>Joomla</strong></td><td>Modul „Eigenes HTML" mit dem Platzhalter-div; Code-Modus des Editors nutzen (oder Editor „None"), damit nichts entfernt wird. Script-Zeile im Template <code>index.php</code> vor <code>&lt;/body&gt;</code>.</td></tr>
+			<tr><td><strong>Shopify</strong></td><td><em>Theme anpassen → Abschnitt „Custom Liquid"</em>: Script + Platzhalter-div einfügen. Für alle Seiten: Script in <code>theme.liquid</code> vor <code>&lt;/body&gt;</code>.</td></tr>
+			<tr><td><strong>HubSpot CMS / Google Sites</strong></td><td>HubSpot: Modul „Embed/HTML" bzw. Site-Footer-HTML. Google Sites: <em>Einfügen → Einbetten → Code einbetten</em> (läuft in einem iFrame fester Höhe).</td></tr>
+			<tr><td><strong>React / Vue / Angular / Next.js</strong></td><td>Script einmal laden (z. B. im Root-Layout). Platzhalter-divs im Template setzen und nach dem Mounten <code>window.ImmoEmbed.init(containerElement)</code> aufrufen – bei Client-Routing nach jedem Seitenwechsel erneut. Bei SSR nur im Browser ausführen (<code>useEffect</code> / <code>onMounted</code>).</td></tr>
+			<tr><td><strong>Andere WordPress-Seite</strong></td><td>Block „Individuelles HTML" oder Elementor „HTML"-Widget mit Script + div.</td></tr>
+		</tbody>
+	</table>
+
+	<h2 id="links">Eigene Detailseiten auf der Kundenseite</h2>
+	<p>Standardmäßig führen „Details ansehen"-Links zur Detailseite der Immo-Manager-Installation. Soll die externe Seite eigene Detailseiten haben, gibst du ein Link-Template mit <code>{slug}</code> bzw. <code>{id}</code> an:</p>
+	<pre><code>&lt;div data-immo-embed="properties" data-link-template="https://kunde.at/immobilie/{slug}"&gt;&lt;/div&gt;
+
+&lt;!-- auf https://kunde.at/immobilie/… dann: --&gt;
+&lt;div data-immo-embed="property" data-slug="SLUG-AUS-DER-URL"&gt;&lt;/div&gt;</code></pre>
+	<p>Für Bauprojekte analog <code>data-project-link-template="https://kunde.at/projekt/{slug}"</code>.</p>
+
+	<h2 id="voraussetzungen">Voraussetzungen &amp; Sicherheit</h2>
+	<ul>
+		<li><strong>CORS:</strong> Die Zieldomain muss im Immo Manager unter <em>Einstellungen → API &amp; Integration → Erlaubte Origins</em> erlaubt sein. Standard ist <code>*</code> (alle Domains).</li>
+		<li><strong>HTTPS:</strong> Die Immo-Manager-Installation muss per HTTPS erreichbar sein, sonst blockieren Browser das Laden auf HTTPS-Seiten.</li>
+		<li><strong>Nur lesend:</strong> Das Widget nutzt ausschließlich öffentliche GET-Endpunkte. Es enthält bewusst kein Anfrage-Formular, weil ein API-Key nie in eine fremde Seite gehört – Anfragen laufen über die Detailseite der Installation.</li>
+		<li><strong>Datenschutz:</strong> Keine Cookies, keine Drittanbieter-Ressourcen; Bilder und Daten kommen von der Immo-Manager-Domain. Die Zielseite sollte das Nachladen von Inhalten dieser Domain in ihrer Datenschutzerklärung erwähnen.</li>
+		<li><strong>Content Security Policy:</strong> Falls die Zielseite eine CSP nutzt, müssen <code>script-src</code>, <code>connect-src</code> und <code>img-src</code> die Immo-Manager-Domain erlauben.</li>
+	</ul>
+
+	<h2 id="fehler">Fehlersuche</h2>
+	<table>
+		<thead><tr><th>Symptom</th><th>Ursache &amp; Lösung</th></tr></thead>
+		<tbody>
+			<tr><td>Es erscheint gar nichts</td><td>Der Editor hat das <code>&lt;script&gt;</code>-Tag entfernt (Text- statt HTML-Block) oder das Script wird nicht geladen. Browser-Konsole (F12) prüfen – <code>[ImmoEmbed]</code> meldet dort jede Ursache.</td></tr>
+			<tr><td>„Inhalte konnten nicht geladen werden"</td><td>Meist CORS (Origin nicht erlaubt), ein Security-/Caching-Plugin, das <code>/wp-json</code> blockiert, oder eine falsche API-URL. Test im Browser: <code id="api-test">API_URL/projects</code> muss JSON liefern. Bei abweichender REST-URL <code>data-api</code> am Script setzen.</td></tr>
+			<tr><td>Widget abgeschnitten (Wix, Google Sites)</td><td>HTML-Embeds laufen dort in einem iFrame fester Höhe. Höhe vergrößern oder eine Variante ohne iFrame nutzen (Custom Element / Custom Code).</td></tr>
+			<tr><td>Dynamisch eingefügte Platzhalter bleiben leer</td><td>Nach dem Einfügen <code>window.ImmoEmbed.init(element)</code> aufrufen; das Script scannt die Seite nur einmal beim Laden.</td></tr>
+			<tr><td>Farben passen nicht</td><td><code>data-primary</code>, <code>data-accent</code>, <code>data-radius</code> setzen. <code>data-no-shadow="1"</code> rendert ohne Shadow DOM, dann greift das CSS der Zielseite (inklusive ihrer Resets).</td></tr>
+			<tr><td>Änderungen erscheinen nicht</td><td>Ein Caching-Plugin oder CDN cached die REST-Antworten – Cache leeren bzw. <code>/wp-json</code> vom Cache ausnehmen.</td></tr>
+		</tbody>
+	</table>
+
+	<footer>Immo Manager · Embed-Widget · <span id="api-base"></span></footer>
+</main>
+
+<script src="immo-embed.js" defer></script>
+<script>
+(function () {
+	// Script-URL und API-Basis dieser Installation in die Beispiele einsetzen.
+	var scriptUrl = new URL('immo-embed.js', window.location.href).href;
+	document.getElementById('snippet-script').textContent = '<script src="' + scriptUrl + '" defer><\/script>';
+
+	function onReady(fn) {
+		if (window.ImmoEmbed) { fn(); } else { window.addEventListener('load', function () { if (window.ImmoEmbed) { fn(); } }); }
+	}
+	onReady(function () {
+		var api = window.ImmoEmbed.config.api;
+		document.getElementById('api-base').textContent = api;
+		document.getElementById('api-test').textContent = api + '/projects';
+
+		function mount(containerId, attrs) {
+			var box = document.getElementById(containerId);
+			box.innerHTML = '';
+			var el = document.createElement('div');
+			Object.keys(attrs).forEach(function (k) { el.setAttribute(k, attrs[k]); });
+			box.appendChild(el);
+			window.ImmoEmbed.render(el);
+		}
+
+		fetch(api + '/projects?per_page=1').then(function (r) { return r.json(); }).then(function (d) {
+			var p = (d.projects || [])[0];
+			if (!p) { document.getElementById('demo-units').innerHTML = '<em>Noch kein Bauprojekt veröffentlicht.</em>'; return; }
+			document.getElementById('ex-project-slug').textContent = p.slug;
+			document.getElementById('ex-project-slug2').textContent = p.slug;
+			mount('demo-units', { 'data-immo-embed': 'units', 'data-project': p.slug });
+		}).catch(function () { document.getElementById('demo-units').innerHTML = '<em>Bauprojekte konnten nicht geladen werden.</em>'; });
+
+		fetch(api + '/properties?per_page=1').then(function (r) { return r.json(); }).then(function (d) {
+			var p = (d.properties || [])[0];
+			if (!p) { document.getElementById('demo-property').innerHTML = '<em>Noch keine Immobilie veröffentlicht.</em>'; return; }
+			document.getElementById('ex-property-slug').textContent = p.slug;
+			mount('demo-property', { 'data-immo-embed': 'property', 'data-slug': p.slug });
+		}).catch(function () { document.getElementById('demo-property').innerHTML = '<em>Immobilien konnten nicht geladen werden.</em>'; });
+	});
+})();
+</script>
+</body>
+</html>

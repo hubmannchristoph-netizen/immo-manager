@@ -242,24 +242,33 @@ class PostTypes {
 			'archives'              => __( 'Bauprojekt-Archiv', 'immo-manager' ),
 		);
 
+		// Bauprojekte-Paket: global abschaltbar. Bei deaktiviertem Paket bleibt der
+		// Post-Type registriert (Daten bleiben erhalten!), ist aber weder im Backend
+		// noch im Frontend sichtbar.
+		$enabled = ProjectsAccess::module_enabled();
+
 		$args = array(
 			'labels'             => $labels,
 			'description'        => __( 'Bauprojekte mit mehreren Wohneinheiten', 'immo-manager' ),
-			'public'             => true,
-			'publicly_queryable' => true,
-			'show_ui'            => true,
-			'show_in_menu'       => 'immo-manager', // Submenu unter Immo Manager.
-			'show_in_nav_menus'  => true,
-			'show_in_admin_bar'  => true,
-			'show_in_rest'       => true,
+			'public'             => $enabled,
+			'publicly_queryable' => $enabled,
+			'show_ui'            => $enabled,
+			'show_in_menu'       => $enabled ? 'immo-manager' : false, // Submenu unter Immo Manager.
+			'show_in_nav_menus'  => $enabled,
+			'show_in_admin_bar'  => $enabled,
+			'show_in_rest'       => $enabled,
 			'rest_base'          => 'immo-projects',
-			'query_var'          => true,
+			'query_var'          => $enabled,
 			'rewrite'            => array(
 				'slug'       => 'projekte',
 				'with_front' => false,
 			),
-			'capability_type'    => 'post',
-			'has_archive'        => true,
+			// Eigene Capabilities (edit_immo_projects …) – werden in ProjectsAccess
+			// dynamisch aus den Post-Rechten abgeleitet, wenn das Paket für den
+			// Benutzer freigeschaltet ist.
+			'capability_type'    => array( 'immo_project', 'immo_projects' ),
+			'map_meta_cap'       => true,
+			'has_archive'        => $enabled,
 			'hierarchical'       => false,
 			'menu_position'      => 21,
 			'menu_icon'          => 'dashicons-admin-multisite',

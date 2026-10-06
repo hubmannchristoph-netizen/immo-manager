@@ -97,54 +97,49 @@ class ProjectsWidget extends Widget_Base {
 	protected function render() {
 		$settings = $this->get_settings_for_display();
 
-		$args = array(
-			'post_type'      => PostTypes::POST_TYPE_PROJECT,
-			'posts_per_page' => (int) $settings['count'],
-			'post_status'    => 'publish',
-		);
-
-		if ( ! empty( $settings['status'] ) ) {
-			$args['meta_query'] = array(
-				array(
-					'key'   => '_immo_project_status',
-					'value' => $settings['status'],
-				),
-			);
+		if ( ! \ImmoManager\ProjectsAccess::module_enabled() ) {
+			if ( current_user_can( 'manage_options' ) ) {
+				echo '<p><em>' . esc_html__( 'Bauprojekte-Paket ist deaktiviert (Immo Manager → Einstellungen → Module).', 'immo-manager' ) . '</em></p>';
+			}
+			return;
 		}
 
-		$query = new \WP_Query( $args );
+		// Plugin-Assets (CSS/JS) sicherstellen – Elementor rendert außerhalb des Post-Contents.
+		Plugin::instance()->get_shortcodes()->enqueue_assets();
 
-		if ( ! $query->have_posts() ) {
+		$rest    = Plugin::instance()->get_rest_api();
+		$request = new \WP_REST_Request( 'GET', '/immo-manager/v1/projects' );
+		$request->set_query_params( array_filter( array(
+			'per_page' => max( 1, min( 50, (int) ( $settings['count'] ?? 3 ) ) ),
+			'status'   => sanitize_key( (string) ( $settings['status'] ?? '' ) ),
+		) ) );
+		$projects = $rest->get_projects( $request )->get_data()['projects'] ?? array();
+
+		if ( empty( $projects ) ) {
 			echo '<p>' . esc_html__( 'Keine Projekte gefunden.', 'immo-manager' ) . '</p>';
 			return;
 		}
 
-		echo '<div class="immo-elementor-widget immo-projects-widget">';
-		echo '<div class="immo-list-' . esc_attr( $settings['layout'] ) . '">';
+		$layout = in_array( $settings['layout'] ?? 'grid', array( 'grid', 'list', 'slider' ), true ) ? $settings['layout'] : 'grid';
+		switch ( $layout ) {
+			case 'list':
+				$wrapper_class = 'immo-widget-list-layout';
+				break;
+			case 'slider':
+				$wrapper_class = 'immo-list-slider columns-3';
+				break;
+			default:
+				$wrapper_class = 'immo-widget-grid immo-widget-cols-3';
+		}
 
-		while ( $query->have_posts() ) {
-			$query->the_post();
-			$post_id = get_the_ID();
-			$status  = get_post_meta( $post_id, '_immo_project_status', true );
-			$image   = get_the_post_thumbnail_url( $post_id, 'medium' );
-			?>
-			<div class="immo-project-card">
-				<?php if ( $image ) : ?>
-					<div class="immo-project-image">
-						<a href="<?php the_permalink(); ?>"><img src="<?php echo esc_url( $image ); ?>" alt="<?php the_title_attribute(); ?>"></a>
-					</div>
-				<?php endif; ?>
-				<div class="immo-project-content">
-					<h3 class="immo-project-title"><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h3>
-					<span class="immo-project-badge status-<?php echo esc_attr( $status ); ?>">
-						<?php echo esc_html( $status ); ?>
-					</span>
-				</div>
-			</div>
-			<?php
+		echo '<div class="immo-elementor-widget immo-projects-widget">';
+		echo '<div class="immo-projects-grid ' . esc_attr( $wrapper_class ) . '" role="list">';
+
+		foreach ( $projects as $project ) {
+			// Gemeinsames Card-Template (identisch mit Archiv und [immo_projects]).
+			include IMMO_MANAGER_PLUGIN_DIR . 'templates/parts/project-card.php';
 		}
 
 		echo '</div></div>';
-		wp_reset_postdata();
 	}
 }

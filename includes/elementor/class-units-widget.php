@@ -80,18 +80,31 @@ class UnitsWidget extends Widget_Base {
 
 	protected function render() {
 		$settings   = $this->get_settings_for_display();
-		$project_id = (int) $settings['project_id'];
+		$project_id = (int) ( $settings['project_id'] ?? 0 );
 
-		if ( ! $project_id ) {
-			$project_id = get_the_ID();
+		if ( ! \ImmoManager\ProjectsAccess::module_enabled() ) {
+			if ( current_user_can( 'manage_options' ) ) {
+				echo '<p><em>' . esc_html__( 'Bauprojekte-Paket ist deaktiviert (Immo Manager → Einstellungen → Module).', 'immo-manager' ) . '</em></p>';
+			}
+			return;
 		}
 
 		if ( ! $project_id ) {
+			$project_id = (int) get_the_ID();
+		}
+
+		if ( ! $project_id || \ImmoManager\PostTypes::POST_TYPE_PROJECT !== get_post_type( $project_id ) ) {
 			echo '<p>' . esc_html__( 'Kein Projekt gefunden.', 'immo-manager' ) . '</p>';
 			return;
 		}
 
-		$units = Units::get_by_project( $project_id );
+		// Plugin-Assets sicherstellen.
+		Plugin::instance()->get_shortcodes()->enqueue_assets();
+
+		// Units::get_by_project() liefert Arrays; format_unit() ergänzt Labels,
+		// formatierte Preise und die verknüpfte Property.
+		$rest  = Plugin::instance()->get_rest_api();
+		$units = array_map( array( $rest, 'format_unit' ), Units::get_by_project( $project_id ) );
 
 		if ( empty( $units ) ) {
 			echo '<p>' . esc_html__( 'Keine Wohneinheiten für dieses Projekt vorhanden.', 'immo-manager' ) . '</p>';
@@ -99,49 +112,53 @@ class UnitsWidget extends Widget_Base {
 		}
 
 		echo '<div class="immo-elementor-widget immo-units-widget">';
-		
-		if ( 'table' === $settings['layout'] ) {
-			$this->render_table( $units );
-		} else {
+
+		if ( 'list' === ( $settings['layout'] ?? 'table' ) ) {
 			$this->render_list( $units );
+		} else {
+			include IMMO_MANAGER_PLUGIN_DIR . 'templates/parts/units-table.php';
 		}
 
 		echo '</div>';
 	}
 
-	private function render_table( $units ) {
-		?>
-		<table class="immo-units-table">
-			<thead>
-				<tr>
-					<th><?php esc_html_e( 'Einheit', 'immo-manager' ); ?></th>
-					<th><?php esc_html_e( 'Fläche', 'immo-manager' ); ?></th>
-					<th><?php esc_html_e( 'Zimmer', 'immo-manager' ); ?></th>
-					<th><?php esc_html_e( 'Preis', 'immo-manager' ); ?></th>
-					<th><?php esc_html_e( 'Status', 'immo-manager' ); ?></th>
-				</tr>
-			</thead>
-			<tbody>
-				<?php foreach ( $units as $unit ) : ?>
-					<tr>
-						<td><strong><?php echo esc_html( $unit->unit_number ); ?></strong></td>
-						<td><?php echo number_format_i18n( $unit->area, 1 ); ?> m²</td>
-						<td><?php echo esc_html( $unit->rooms ); ?></td>
-						<td><?php echo $unit->price > 0 ? number_format_i18n( $unit->price ) . ' €' : '-'; ?></td>
-						<td><span class="immo-unit-status status-<?php echo esc_attr( $unit->status ); ?>"><?php echo esc_html( $unit->status ); ?></span></td>
-					</tr>
-				<?php endforeach; ?>
-			</tbody>
-		</table>
-		<?php
-	}
-
-	private function render_list( $units ) {
+	/**
+	 * Kompakte Listen-Darstellung.
+	 *
+	 * @param array<int, array<string, mixed>> $units format_unit()-Arrays.
+	 *
+	 * @return void
+	 */
+	private function render_list( array $units ): void {
 		foreach ( $units as $unit ) {
+			$price = '';
+			if ( (float) $unit['price'] > 0 ) {
+				$price = (string) $unit['price_formatted'];
+			} elseif ( (float) $unit['rent'] > 0 ) {
+				$price = $unit['rent_formatted'] . ' / ' . __( 'Monat', 'immo-manager' );
+			}
 			?>
 			<div class="immo-unit-list-item">
-				<h4><?php echo esc_html( $unit->unit_number ); ?></h4>
-				<p><?php printf( esc_html__( '%1$s m² | %2$s Zimmer', 'immo-manager' ), number_format_i18n( $unit->area, 1 ), $unit->rooms ); ?></p>
+				<h4>
+					<?php echo esc_html( $unit['unit_number'] ); ?>
+					<span class="immo-unit-status-pill status-<?php echo esc_attr( 'rented' === $unit['status'] ? 'sold' : $unit['status'] ); ?>"><?php echo esc_html( $unit['status_label'] ); ?></span>
+				</h4>
+				<p>
+					<?php
+					printf(
+						/* translators: 1: Fläche in m², 2: Zimmeranzahl */
+						esc_html__( '%1$s m² | %2$s Zimmer', 'immo-manager' ),
+						esc_html( number_format_i18n( (float) $unit['area'], 1 ) ),
+						esc_html( (string) (int) $unit['rooms'] )
+					);
+					if ( $price ) {
+						echo ' | <strong>' . esc_html( $price ) . '</strong>';
+					}
+					?>
+				</p>
+				<?php if ( ! empty( $unit['property']['permalink'] ) ) : ?>
+					<a href="<?php echo esc_url( $unit['property']['permalink'] ); ?>" class="immo-btn immo-btn-secondary immo-btn-sm"><?php esc_html_e( 'Details ansehen', 'immo-manager' ); ?></a>
+				<?php endif; ?>
 			</div>
 			<?php
 		}

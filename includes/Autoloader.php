@@ -55,18 +55,22 @@ class Autoloader {
 		// Namespace-Präfix entfernen.
 		$relative_class = substr( $class_name, strlen( self::NAMESPACE_PREFIX ) );
 
-		// Sub-Namespaces in Ordnerpfade umwandeln.
-		$relative_class = str_replace( '\\', DIRECTORY_SEPARATOR, $relative_class );
+		// Sub-Namespaces werden auf kleingeschriebene Unterordner gemappt:
+		// ImmoManager\OpenImmo\Export\ExportService -> openimmo/export/class-export-service.php
+		// ImmoManager\Elementor\ProjectsWidget        -> elementor/class-projects-widget.php
+		$parts       = explode( '\\', $relative_class );
+		$class_short = (string) array_pop( $parts );
+		$sub_dir     = $parts ? strtolower( implode( '/', $parts ) ) . '/' : '';
 
 		// Erst: WordPress-Naming-Convention (class-post-types.php).
-		$wp_style_file = self::$base_dir . 'class-' . self::camel_to_kebab( $relative_class ) . '.php';
+		$wp_style_file = self::$base_dir . $sub_dir . 'class-' . self::camel_to_kebab( $class_short ) . '.php';
 		if ( is_readable( $wp_style_file ) ) {
 			require_once $wp_style_file;
 			return;
 		}
 
-		// Fallback: PSR-4-Standard (PostTypes.php).
-		$psr4_file = self::$base_dir . $relative_class . '.php';
+		// Fallback: PSR-4-Standard (PostTypes.php bzw. OpenImmo/Export/ExportService.php).
+		$psr4_file = self::$base_dir . str_replace( '\\', '/', $relative_class ) . '.php';
 		if ( is_readable( $psr4_file ) ) {
 			require_once $psr4_file;
 		}
@@ -85,9 +89,6 @@ class Autoloader {
 		// Einen Bindestrich vor jedem Großbuchstaben einfügen, der nicht am Anfang steht.
 		$result = preg_replace( '/(?<!^)[A-Z]/', '-$0', $input );
 
-		// Backslashes in Bindestriche umwandeln (für Sub-Namespaces).
-		$result = str_replace( DIRECTORY_SEPARATOR, '-', (string) $result );
-
-		return strtolower( $result );
+		return strtolower( (string) $result );
 	}
 }

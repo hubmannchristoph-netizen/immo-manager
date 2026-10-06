@@ -66,6 +66,7 @@ class Metaboxes {
 		add_meta_box( 'immo_project_gallery',   __( 'Bildergalerie', 'immo-manager' ),             array( $this, 'render_gallery' ),           PostTypes::POST_TYPE_PROJECT,  'normal', 'high' );
 		add_meta_box( 'immo_project_video',     __( 'Video / Virtuelle Tour', 'immo-manager' ),    array( $this, 'render_video' ),             PostTypes::POST_TYPE_PROJECT,  'normal', 'high' );
 		add_meta_box( 'immo_project_features',  __( 'Gemeinschafts-Ausstattung', 'immo-manager' ), array( $this, 'render_features' ),          PostTypes::POST_TYPE_PROJECT,  'normal', 'default' );
+		add_meta_box( 'immo_project_parking',   __( 'Stellplätze', 'immo-manager' ),               array( $this, 'render_project_parking' ),   PostTypes::POST_TYPE_PROJECT,  'normal', 'default' );
 		add_meta_box( 'immo_project_units',     __( 'Wohneinheiten', 'immo-manager' ),             array( $this, 'render_project_units' ),     PostTypes::POST_TYPE_PROJECT,  'normal', 'default' );
 		add_meta_box( 'immo_project_display',   __( 'Darstellung & Layout', 'immo-manager' ),      array( $this, 'render_property_display' ),  PostTypes::POST_TYPE_PROJECT,  'side',   'default' );
 		add_meta_box( 'immo_project_contact',   __( 'Kontakt / Agent', 'immo-manager' ),           array( $this, 'render_contact' ),           PostTypes::POST_TYPE_PROJECT,  'side',   'default' );
@@ -115,15 +116,15 @@ class Metaboxes {
 				</td>
 			</tr>
 			<tr>
-				<th><label for="_immo_area"><?php esc_html_e( 'Gesamtfläche (m²)', 'immo-manager' ); ?></label></th>
+				<th><label for="_immo_area"><?php esc_html_e( 'Wohnfläche ca. (m²)', 'immo-manager' ); ?></label></th>
 				<td><input type="number" step="0.01" min="0" id="_immo_area" name="immo_meta[_immo_area]" value="<?php echo esc_attr( (string) $meta['_immo_area'] ); ?>" class="small-text" /></td>
 			</tr>
 			<tr>
-				<th><label for="_immo_usable_area"><?php esc_html_e( 'Wohnfläche (m²)', 'immo-manager' ); ?></label></th>
+				<th><label for="_immo_usable_area"><?php esc_html_e( 'Nutzfläche ca. (m²)', 'immo-manager' ); ?></label></th>
 				<td><input type="number" step="0.01" min="0" id="_immo_usable_area" name="immo_meta[_immo_usable_area]" value="<?php echo esc_attr( (string) $meta['_immo_usable_area'] ); ?>" class="small-text" /></td>
 			</tr>
 			<tr>
-				<th><label for="_immo_land_area"><?php esc_html_e( 'Grundstücksfläche (m²)', 'immo-manager' ); ?></label></th>
+				<th><label for="_immo_land_area"><?php esc_html_e( 'Grundstücksfläche ca. (m²)', 'immo-manager' ); ?></label></th>
 				<td><input type="number" step="0.01" min="0" id="_immo_land_area" name="immo_meta[_immo_land_area]" value="<?php echo esc_attr( (string) $meta['_immo_land_area'] ); ?>" class="small-text" /></td>
 			</tr>
 			<tr>
@@ -154,6 +155,7 @@ class Metaboxes {
 					<input type="number" min="1500" max="2100" name="immo_meta[_immo_renovation_year]" value="<?php echo esc_attr( (string) $meta['_immo_renovation_year'] ); ?>" class="small-text" placeholder="<?php esc_attr_e( 'Sanierung', 'immo-manager' ); ?>" />
 				</td>
 			</tr>
+			<?php if ( ProjectsAccess::user_has_access() ) : ?>
 			<tr>
 				<th><label for="_immo_project_id"><?php esc_html_e( 'Teil eines Bauprojekts?', 'immo-manager' ); ?></label></th>
 				<td>
@@ -161,6 +163,10 @@ class Metaboxes {
 					<p class="description"><?php esc_html_e( 'Optional: Ordne diese Immobilie einem Bauprojekt zu.', 'immo-manager' ); ?></p>
 				</td>
 			</tr>
+			<?php else : ?>
+				<?php // Ohne Bauprojekte-Paket: bestehende Zuordnung unverändert durchreichen. ?>
+				<input type="hidden" name="immo_meta[_immo_project_id]" value="<?php echo esc_attr( (string) (int) $meta['_immo_project_id'] ); ?>">
+			<?php endif; ?>
 		</table>
 		<?php
 	}
@@ -274,11 +280,21 @@ class Metaboxes {
 	 */
 	public function render_property_energy( \WP_Post $post ): void {
 		$meta    = $this->get_meta( $post->ID, MetaFields::property_fields() );
-		$classes = array( '', 'A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G' );
+		$classes = array_merge( array( '' ), MetaFields::energy_classes() );
+		$missing = MetaFields::missing_energy_fields( $meta );
 		?>
+		<p class="description">
+			<?php esc_html_e( 'Seit 1. Juli 2026 (EAVG-Novelle) müssen Inserate die Energieeffizienzklasse, den Heizwärmebedarf (HWB) und den Endenergiebedarf (EEB) enthalten. Der fGEE ist nur noch für Ausweise nach altem Recht zulässig. Fehlende Angaben können mit bis zu 1.450 € bestraft werden.', 'immo-manager' ); ?>
+		</p>
+		<?php if ( ! empty( $missing ) && 'publish' === $post->post_status && MetaFields::energy_certificate_required( (string) $meta['_immo_property_type'] ) ) : ?>
+			<div class="notice notice-warning inline" style="margin: 8px 0;"><p>
+				<strong><?php esc_html_e( 'Energieausweis unvollständig:', 'immo-manager' ); ?></strong>
+				<?php echo esc_html( implode( ', ', $missing ) ); ?>
+			</p></div>
+		<?php endif; ?>
 		<table class="form-table immo-form">
 			<tr>
-				<th><label for="_immo_energy_class"><?php esc_html_e( 'Energieklasse', 'immo-manager' ); ?></label></th>
+				<th><label for="_immo_energy_class"><?php esc_html_e( 'Energieeffizienzklasse', 'immo-manager' ); ?> <span class="immo-required">*</span></label></th>
 				<td>
 					<select id="_immo_energy_class" name="immo_meta[_immo_energy_class]">
 						<?php foreach ( $classes as $cls ) : ?>
@@ -290,16 +306,36 @@ class Metaboxes {
 				</td>
 			</tr>
 			<tr>
-				<th><label for="_immo_energy_hwb"><?php esc_html_e( 'HWB (kWh/m²·a)', 'immo-manager' ); ?></label></th>
+				<th><label for="_immo_energy_hwb"><?php esc_html_e( 'Heizwärmebedarf HWB (kWh/m²a)', 'immo-manager' ); ?> <span class="immo-required">*</span></label></th>
 				<td><input type="number" step="0.1" min="0" id="_immo_energy_hwb" name="immo_meta[_immo_energy_hwb]" value="<?php echo esc_attr( (string) $meta['_immo_energy_hwb'] ); ?>" class="small-text" /></td>
 			</tr>
 			<tr>
-				<th><label for="_immo_energy_fgee"><?php esc_html_e( 'fGEE', 'immo-manager' ); ?></label></th>
-				<td><input type="number" step="0.01" min="0" id="_immo_energy_fgee" name="immo_meta[_immo_energy_fgee]" value="<?php echo esc_attr( (string) $meta['_immo_energy_fgee'] ); ?>" class="small-text" /></td>
+				<th><label for="_immo_energy_eeb"><?php esc_html_e( 'Endenergiebedarf EEB (kWh/m²a)', 'immo-manager' ); ?> <span class="immo-required">*</span></label></th>
+				<td>
+					<input type="number" step="0.1" min="0" id="_immo_energy_eeb" name="immo_meta[_immo_energy_eeb]" value="<?php echo esc_attr( (string) $meta['_immo_energy_eeb'] ); ?>" class="small-text" />
+					<p class="description"><?php esc_html_e( 'Pflichtangabe seit 1.7.2026 (Ausweise nach OIB-Richtlinie 6:2025).', 'immo-manager' ); ?></p>
+				</td>
 			</tr>
 			<tr>
-				<th><label for="_immo_heating"><?php esc_html_e( 'Heizungsart', 'immo-manager' ); ?></label></th>
-				<td><input type="text" id="_immo_heating" name="immo_meta[_immo_heating]" value="<?php echo esc_attr( (string) $meta['_immo_heating'] ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'z. B. Gasetagenheizung, Fernwärme', 'immo-manager' ); ?>" /></td>
+				<th><label for="_immo_energy_fgee"><?php esc_html_e( 'fGEE (nur Altausweis)', 'immo-manager' ); ?></label></th>
+				<td>
+					<input type="number" step="0.01" min="0" id="_immo_energy_fgee" name="immo_meta[_immo_energy_fgee]" value="<?php echo esc_attr( (string) $meta['_immo_energy_fgee'] ); ?>" class="small-text" />
+					<p class="description"><?php esc_html_e( 'Gesamtenergieeffizienz-Faktor – nur bei Energieausweisen nach altem Recht anstelle des EEB.', 'immo-manager' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th><label for="mb_heating_select"><?php esc_html_e( 'Heizungsart', 'immo-manager' ); ?></label></th>
+				<td>
+					<?php
+					$heating_field = array(
+						'current_value' => (string) $meta['_immo_heating'],
+						'input_name'    => 'immo_meta[_immo_heating]',
+						'field_id'      => 'mb_heating',
+						'input_class'   => 'regular-text',
+					);
+					include IMMO_MANAGER_PLUGIN_DIR . 'templates/parts/heating-field.php';
+					?>
+				</td>
 			</tr>
 		</table>
 		<?php
@@ -525,6 +561,85 @@ class Metaboxes {
 					<input type="date" id="_immo_project_start_date" name="immo_meta[_immo_project_start_date]" value="<?php echo esc_attr( (string) $meta['_immo_project_start_date'] ); ?>" />
 					<input type="date"                              name="immo_meta[_immo_project_completion]"  value="<?php echo esc_attr( (string) $meta['_immo_project_completion'] ); ?>" />
 				</td>
+			</tr>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Metabox: Stellplatz-Konfiguration des Bauprojekts.
+	 *
+	 * @param \WP_Post $post Post.
+	 *
+	 * @return void
+	 */
+	public function render_project_parking( \WP_Post $post ): void {
+		$meta = $this->get_meta( $post->ID, MetaFields::project_fields() );
+		?>
+		<table class="form-table immo-form">
+			<tr><th colspan="2"><h3 style="margin: 0.5em 0;"><?php esc_html_e( 'Tiefgarage', 'immo-manager' ); ?></h3></th></tr>
+			<tr>
+				<th><?php esc_html_e( 'Verfügbar', 'immo-manager' ); ?></th>
+				<td>
+					<label>
+						<input type="hidden" name="immo_meta[_immo_parking_garage_available]" value="0">
+						<input type="checkbox" name="immo_meta[_immo_parking_garage_available]" value="1" <?php checked( ! empty( $meta['_immo_parking_garage_available'] ) ); ?>>
+						<?php esc_html_e( 'Tiefgaragenplätze sind im Projekt verfügbar', 'immo-manager' ); ?>
+					</label>
+				</td>
+			</tr>
+			<tr>
+				<th><label for="_immo_parking_garage_total"><?php esc_html_e( 'Anzahl gesamt', 'immo-manager' ); ?></label></th>
+				<td><input type="number" id="_immo_parking_garage_total" name="immo_meta[_immo_parking_garage_total]" min="0" step="1" value="<?php echo esc_attr( (string) ( $meta['_immo_parking_garage_total'] ?? 0 ) ); ?>"></td>
+			</tr>
+			<tr>
+				<th><label for="_immo_parking_garage_price"><?php esc_html_e( 'Preis pro Platz', 'immo-manager' ); ?></label></th>
+				<td><input type="number" id="_immo_parking_garage_price" name="immo_meta[_immo_parking_garage_price]" min="0" step="1" value="<?php echo esc_attr( (string) ( $meta['_immo_parking_garage_price'] ?? 0 ) ); ?>"> €</td>
+			</tr>
+			<tr>
+				<th><?php esc_html_e( 'Verpflichtend', 'immo-manager' ); ?></th>
+				<td>
+					<label>
+						<input type="hidden" name="immo_meta[_immo_parking_garage_required]" value="0">
+						<input type="checkbox" name="immo_meta[_immo_parking_garage_required]" value="1" <?php checked( ! empty( $meta['_immo_parking_garage_required'] ) ); ?>>
+						<?php esc_html_e( 'Beim Wohnungskauf verpflichtend zu erwerben', 'immo-manager' ); ?>
+					</label>
+				</td>
+			</tr>
+
+			<tr><th colspan="2"><h3 style="margin: 1.5em 0 0.5em;"><?php esc_html_e( 'Außen-Stellplatz', 'immo-manager' ); ?></h3></th></tr>
+			<tr>
+				<th><?php esc_html_e( 'Verfügbar', 'immo-manager' ); ?></th>
+				<td>
+					<label>
+						<input type="hidden" name="immo_meta[_immo_parking_outdoor_available]" value="0">
+						<input type="checkbox" name="immo_meta[_immo_parking_outdoor_available]" value="1" <?php checked( ! empty( $meta['_immo_parking_outdoor_available'] ) ); ?>>
+						<?php esc_html_e( 'Außen-Stellplätze sind im Projekt verfügbar', 'immo-manager' ); ?>
+					</label>
+				</td>
+			</tr>
+			<tr>
+				<th><label for="_immo_parking_outdoor_total"><?php esc_html_e( 'Anzahl gesamt', 'immo-manager' ); ?></label></th>
+				<td><input type="number" id="_immo_parking_outdoor_total" name="immo_meta[_immo_parking_outdoor_total]" min="0" step="1" value="<?php echo esc_attr( (string) ( $meta['_immo_parking_outdoor_total'] ?? 0 ) ); ?>"></td>
+			</tr>
+			<tr>
+				<th><label for="_immo_parking_outdoor_price"><?php esc_html_e( 'Preis pro Platz', 'immo-manager' ); ?></label></th>
+				<td><input type="number" id="_immo_parking_outdoor_price" name="immo_meta[_immo_parking_outdoor_price]" min="0" step="1" value="<?php echo esc_attr( (string) ( $meta['_immo_parking_outdoor_price'] ?? 0 ) ); ?>"> €</td>
+			</tr>
+			<tr>
+				<th><?php esc_html_e( 'Verpflichtend', 'immo-manager' ); ?></th>
+				<td>
+					<label>
+						<input type="hidden" name="immo_meta[_immo_parking_outdoor_required]" value="0">
+						<input type="checkbox" name="immo_meta[_immo_parking_outdoor_required]" value="1" <?php checked( ! empty( $meta['_immo_parking_outdoor_required'] ) ); ?>>
+						<?php esc_html_e( 'Beim Wohnungskauf verpflichtend zu erwerben', 'immo-manager' ); ?>
+					</label>
+				</td>
+			</tr>
+
+			<tr>
+				<th><label for="_immo_parking_notes"><?php esc_html_e( 'Hinweis (Freitext)', 'immo-manager' ); ?></label></th>
+				<td><textarea id="_immo_parking_notes" name="immo_meta[_immo_parking_notes]" rows="2" cols="60" placeholder="<?php esc_attr_e( 'z. B. „1 TG-Platz pro Einheit verpflichtend, weitere auf Anfrage."', 'immo-manager' ); ?>"><?php echo esc_textarea( (string) ( $meta['_immo_parking_notes'] ?? '' ) ); ?></textarea></td>
 			</tr>
 		</table>
 		<?php

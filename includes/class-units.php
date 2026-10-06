@@ -37,21 +37,88 @@ class Units {
 		$orderby  = in_array( $orderby, $allowed, true ) ? $orderby : 'unit_number';
 		$order    = strtoupper( $order ) === 'DESC' ? 'DESC' : 'ASC';
 
-		// Bei unit_number natürliche Sortierung erzwingen (1, 2, 10 statt 1, 10, 2).
+		// Bei unit_number: in PHP natürlich sortieren (H1-1, H1-2, …, H1-10, H2-1, …).
+		// SQL kann das nicht zuverlässig — daher hier neutral nach id holen und unten sortieren.
 		if ( 'unit_number' === $orderby ) {
-			$order_clause = "LENGTH(unit_number) {$order}, unit_number {$order}";
+			$order_clause = 'id ASC';
 		} else {
-			$order_clause = "{$orderby} {$order}";
+			$order_clause = "{$orderby} {$order}, id ASC";
 		}
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$sql = $wpdb->prepare(
-			"SELECT * FROM {$table} WHERE project_id = %d ORDER BY {$order_clause}, id ASC",
+			"SELECT * FROM {$table} WHERE project_id = %d ORDER BY {$order_clause}",
 			$project_id
 		);
 
-		$rows = $wpdb->get_results( $sql, ARRAY_A );
-		return is_array( $rows ) ? array_map( array( __CLASS__, 'hydrate' ), $rows ) : array();
+		$rows  = $wpdb->get_results( $sql, ARRAY_A );
+		$units = is_array( $rows ) ? array_map( array( __CLASS__, 'hydrate' ), $rows ) : array();
+
+		if ( 'unit_number' === $orderby && ! empty( $units ) ) {
+			usort(
+				$units,
+				static function ( $a, $b ) {
+					return strnatcasecmp(
+						(string) ( $a['unit_number'] ?? '' ),
+						(string) ( $b['unit_number'] ?? '' )
+					);
+				}
+			);
+			if ( 'DESC' === $order ) {
+				$units = array_reverse( $units );
+			}
+		}
+
+		return $units;
+	}
+
+	/**
+	 * Alle Units abrufen, die einer Property direkt zugeordnet sind.
+	 *
+	 * @param int    $property_id Property-Post-ID.
+	 * @param string $orderby     Sortierfeld.
+	 * @param string $order       ASC/DESC.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public static function get_by_property( int $property_id, string $orderby = 'unit_number', string $order = 'ASC' ): array {
+		global $wpdb;
+		$table   = Database::units_table();
+		$allowed = array( 'id', 'unit_number', 'floor', 'price', 'area', 'rooms', 'status', 'created_at' );
+		$orderby = in_array( $orderby, $allowed, true ) ? $orderby : 'unit_number';
+		$order   = strtoupper( $order ) === 'DESC' ? 'DESC' : 'ASC';
+
+		if ( 'unit_number' === $orderby ) {
+			$order_clause = 'id ASC';
+		} else {
+			$order_clause = "{$orderby} {$order}, id ASC";
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $wpdb->prepare(
+			"SELECT * FROM {$table} WHERE property_id = %d ORDER BY {$order_clause}",
+			$property_id
+		);
+
+		$rows  = $wpdb->get_results( $sql, ARRAY_A );
+		$units = is_array( $rows ) ? array_map( array( __CLASS__, 'hydrate' ), $rows ) : array();
+
+		if ( 'unit_number' === $orderby && ! empty( $units ) ) {
+			usort(
+				$units,
+				static function ( $a, $b ) {
+					return strnatcasecmp(
+						(string) ( $a['unit_number'] ?? '' ),
+						(string) ( $b['unit_number'] ?? '' )
+					);
+				}
+			);
+			if ( 'DESC' === $order ) {
+				$units = array_reverse( $units );
+			}
+		}
+
+		return $units;
 	}
 
 	/**
@@ -92,6 +159,7 @@ class Units {
 		$sanitized['updated_at'] = current_time( 'mysql' );
 
 		$result = $wpdb->insert( Database::units_table(), $sanitized, self::column_formats( $sanitized ) );
+		self::flush_stats_cache();
 
 		return $result ? (int) $wpdb->insert_id : false;
 	}
@@ -116,6 +184,7 @@ class Units {
 			self::column_formats( $sanitized ),
 			array( '%d' )
 		);
+		self::flush_stats_cache();
 
 		return false !== $result;
 	}
@@ -130,6 +199,7 @@ class Units {
 	public static function delete( int $id ): bool {
 		global $wpdb;
 		$result = $wpdb->delete( Database::units_table(), array( 'id' => $id ), array( '%d' ) );
+		self::flush_stats_cache();
 		return (bool) $result;
 	}
 
@@ -143,7 +213,27 @@ class Units {
 	public static function delete_by_project( int $project_id ): int {
 		global $wpdb;
 		$result = $wpdb->delete( Database::units_table(), array( 'project_id' => $project_id ), array( '%d' ) );
+		self::flush_stats_cache();
 		return (int) $result;
+	}
+
+	/**
+	 * Request-Cache für Aggregat-Abfragen (Status-Counts, Flächen-Range) pro Projekt.
+	 *
+	 * Verhindert N+1-Queries, wenn viele Properties/Units desselben Projekts in
+	 * einer Liste formatiert werden. Wird bei jedem Schreibzugriff geleert.
+	 *
+	 * @var array{counts: array<int, array<string, int>>, areas: array<int, array{min: float, max: float}>}
+	 */
+	private static $stats_cache = array( 'counts' => array(), 'areas' => array() );
+
+	/**
+	 * Aggregat-Cache leeren (nach create/update/delete).
+	 *
+	 * @return void
+	 */
+	public static function flush_stats_cache(): void {
+		self::$stats_cache = array( 'counts' => array(), 'areas' => array() );
 	}
 
 	/**
@@ -154,6 +244,10 @@ class Units {
 	 * @return array<string, int>
 	 */
 	public static function count_by_status( int $project_id ): array {
+		if ( isset( self::$stats_cache['counts'][ $project_id ] ) ) {
+			return self::$stats_cache['counts'][ $project_id ];
+		}
+
 		global $wpdb;
 		$table = Database::units_table();
 
@@ -173,7 +267,71 @@ class Units {
 			}
 		}
 
+		self::$stats_cache['counts'][ $project_id ] = $counts;
+
 		return $counts;
+	}
+
+	/**
+	 * Status-Counts pro Immobilie (direkt zugeordnete Wohneinheiten).
+	 *
+	 * @param int $property_id Property-Post-ID.
+	 *
+	 * @return array<string, int> Alle Stati aus self::STATUSES, fehlende mit 0.
+	 */
+	public static function count_by_property( int $property_id ): array {
+		global $wpdb;
+		$table = Database::units_table();
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT status, COUNT(*) AS cnt FROM {$table} WHERE property_id = %d GROUP BY status",
+				$property_id
+			),
+			ARRAY_A
+		);
+
+		$counts = array_fill_keys( self::STATUSES, 0 );
+		foreach ( (array) $rows as $row ) {
+			$status = (string) ( $row['status'] ?? '' );
+			if ( isset( $counts[ $status ] ) ) {
+				$counts[ $status ] = (int) $row['cnt'];
+			}
+		}
+
+		return $counts;
+	}
+
+	/**
+	 * Niedrigster Preis / niedrigste Miete der direkt zugeordneten Wohneinheiten.
+	 *
+	 * Berücksichtigt nur verfügbare Units (`status = 'available'`) und nur Werte > 0.
+	 * Das passt zur Auflistungs-Logik „ab X €" — verkaufte/reservierte Einheiten
+	 * sollen den ab-Preis nicht nach unten verzerren.
+	 *
+	 * @param int $property_id Property-Post-ID.
+	 *
+	 * @return array{price: float, rent: float} Min-Werte; 0 wenn keine passende Unit.
+	 */
+	public static function min_offer_by_property( int $property_id ): array {
+		global $wpdb;
+		$table = Database::units_table();
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT MIN(NULLIF(price,0)) AS min_price, MIN(NULLIF(rent,0)) AS min_rent
+				 FROM {$table}
+				 WHERE property_id = %d AND status = %s",
+				$property_id,
+				'available'
+			),
+			ARRAY_A
+		);
+
+		return array(
+			'price' => (float) ( $row['min_price'] ?? 0 ),
+			'rent'  => (float) ( $row['min_rent']  ?? 0 ),
+		);
 	}
 
 	/**
@@ -186,6 +344,10 @@ class Units {
 	 * @return array{min: float, max: float} Min/Max in m². 0/0 wenn keine Units mit Fläche.
 	 */
 	public static function area_range( int $project_id ): array {
+		if ( isset( self::$stats_cache['areas'][ $project_id ] ) ) {
+			return self::$stats_cache['areas'][ $project_id ];
+		}
+
 		global $wpdb;
 		$table = Database::units_table();
 
@@ -197,10 +359,14 @@ class Units {
 			ARRAY_A
 		);
 
-		return array(
+		$range = array(
 			'min' => (float) ( $row['area_min'] ?? 0 ),
 			'max' => (float) ( $row['area_max'] ?? 0 ),
 		);
+
+		self::$stats_cache['areas'][ $project_id ] = $range;
+
+		return $range;
 	}
 
 	/**
@@ -229,6 +395,15 @@ class Units {
 		$row['floor']        = (int) ( $row['floor'] ?? 0 );
 		$row['area']         = (float) ( $row['area'] ?? 0 );
 		$row['usable_area']  = (float) ( $row['usable_area'] ?? 0 );
+		$row['balcony_area'] = (float) ( $row['balcony_area'] ?? 0 );
+		$row['loggia_area']  = (float) ( $row['loggia_area']  ?? 0 );
+		$row['terrace_area'] = (float) ( $row['terrace_area'] ?? 0 );
+		$row['garden_area']  = (float) ( $row['garden_area']  ?? 0 );
+		$row['cellar_area']  = (float) ( $row['cellar_area']  ?? 0 );
+		$row['parking_garage_count']  = (int) ( $row['parking_garage_count']  ?? 0 );
+		$row['parking_outdoor_count'] = (int) ( $row['parking_outdoor_count'] ?? 0 );
+		$row['parking_garage_price_override']  = ( isset( $row['parking_garage_price_override'] )  && '' !== $row['parking_garage_price_override']  && null !== $row['parking_garage_price_override'] )  ? (float) $row['parking_garage_price_override']  : null;
+		$row['parking_outdoor_price_override'] = ( isset( $row['parking_outdoor_price_override'] ) && '' !== $row['parking_outdoor_price_override'] && null !== $row['parking_outdoor_price_override'] ) ? (float) $row['parking_outdoor_price_override'] : null;
 		$row['rooms']        = (int) ( $row['rooms'] ?? 0 );
 		$row['bedrooms']     = (int) ( $row['bedrooms'] ?? 0 );
 		$row['bathrooms']    = (int) ( $row['bathrooms'] ?? 0 );
@@ -301,6 +476,22 @@ class Units {
 		}
 		if ( isset( $data['usable_area'] ) ) {
 			$out['usable_area'] = max( 0, (float) $data['usable_area'] );
+		}
+		foreach ( array( 'balcony_area', 'loggia_area', 'terrace_area', 'garden_area', 'cellar_area' ) as $k ) {
+			if ( isset( $data[ $k ] ) ) {
+				$out[ $k ] = max( 0, (float) $data[ $k ] );
+			}
+		}
+		foreach ( array( 'parking_garage_count', 'parking_outdoor_count' ) as $k ) {
+			if ( isset( $data[ $k ] ) ) {
+				$out[ $k ] = max( 0, min( 255, (int) $data[ $k ] ) );
+			}
+		}
+		foreach ( array( 'parking_garage_price_override', 'parking_outdoor_price_override' ) as $k ) {
+			if ( array_key_exists( $k, $data ) ) {
+				$val       = $data[ $k ];
+				$out[ $k ] = ( '' === $val || null === $val ) ? null : max( 0, (float) $val );
+			}
 		}
 		foreach ( array( 'rooms', 'bedrooms', 'bathrooms' ) as $k ) {
 			if ( isset( $data[ $k ] ) ) {
@@ -382,6 +573,15 @@ class Units {
 			'floor'          => '%d',
 			'area'           => '%f',
 			'usable_area'    => '%f',
+			'balcony_area'   => '%f',
+			'loggia_area'    => '%f',
+			'terrace_area'   => '%f',
+			'garden_area'    => '%f',
+			'cellar_area'    => '%f',
+			'parking_garage_count'           => '%d',
+			'parking_outdoor_count'          => '%d',
+			'parking_garage_price_override'  => '%f',
+			'parking_outdoor_price_override' => '%f',
 			'rooms'          => '%d',
 			'bedrooms'       => '%d',
 			'bathrooms'      => '%d',

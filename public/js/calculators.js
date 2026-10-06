@@ -249,7 +249,23 @@
 		var state = {
 			price: parseFloat( calc.getAttribute( 'data-base-price' ) ) || 0,
 			commissionFree: calc.getAttribute( 'data-commission-free' ) === '1',
+			parkingGaragePrice:  parseFloat( calc.getAttribute( 'data-parking-garage-price' ) )  || 0,
+			parkingOutdoorPrice: parseFloat( calc.getAttribute( 'data-parking-outdoor-price' ) ) || 0,
+			parkingGarageCount:  0,
+			parkingOutdoorCount: 0,
 		};
+
+		// Initiale Counts aus Inputs lesen (Pflicht-Flag setzt min=1).
+		var pgInput0 = $( '.immo-calc-parking-garage', calc );
+		if ( pgInput0 ) { state.parkingGarageCount  = Math.max( 0, parseInt( pgInput0.value, 10 ) || 0 ); }
+		var poInput0 = $( '.immo-calc-parking-outdoor', calc );
+		if ( poInput0 ) { state.parkingOutdoorCount = Math.max( 0, parseInt( poInput0.value, 10 ) || 0 ); }
+
+		function effectivePrice() {
+			return state.price
+				+ state.parkingGarageCount  * state.parkingGaragePrice
+				+ state.parkingOutdoorCount * state.parkingOutdoorPrice;
+		}
 
 		var finCfg = settings.finance || {};
 		function readNum( el, def, isInt ) {
@@ -262,7 +278,7 @@
 		var finance = null;
 		if ( mode === 'financing' ) {
 			finance = {
-				price:      state.price,
+				price:      effectivePrice(),
 				equity:     readNum( $( '.immo-calc-equity', calc ),   ( finCfg.equityPct    || 20 ),  false ),
 				equityMode: 'pct',
 				interest:   readNum( $( '.immo-calc-interest', calc ), ( finCfg.interestRate || 3.5 ), false ),
@@ -290,7 +306,15 @@
 		var bindings = {
 			'.immo-calc-price': function ( v ) {
 				state.price = Math.max( 0, parseFloat( v ) || 0 );
-				if ( finance ) { finance.price = state.price; }
+				if ( finance ) { finance.price = effectivePrice(); }
+			},
+			'.immo-calc-parking-garage': function ( v ) {
+				state.parkingGarageCount = Math.max( 0, parseInt( v, 10 ) || 0 );
+				if ( finance ) { finance.price = effectivePrice(); }
+			},
+			'.immo-calc-parking-outdoor': function ( v ) {
+				state.parkingOutdoorCount = Math.max( 0, parseInt( v, 10 ) || 0 );
+				if ( finance ) { finance.price = effectivePrice(); }
 			},
 		};
 
@@ -319,7 +343,7 @@
 				if ( ! opt ) { return; }
 				var newPrice = parseFloat( opt.getAttribute( 'data-price' ) ) || 0;
 				state.price = newPrice;
-				if ( finance ) { finance.price = newPrice; }
+				if ( finance ) { finance.price = effectivePrice(); }
 				state.commissionFree = opt.getAttribute( 'data-commission-free' ) === '1';
 				var priceInput = $( '.immo-calc-price', calc );
 				if ( priceInput ) { priceInput.value = String( Math.round( newPrice ) ); }
@@ -328,11 +352,13 @@
 		}
 
 		function render() {
+			var totalPrice = effectivePrice();
 			if ( mode === 'costs' ) {
-				renderCostsPanel( calc, state.price, state.commissionFree );
+				renderCostsPanel( calc, totalPrice, state.commissionFree );
 			} else {
 				// Finanzierung: Nebenkosten intern berechnen, um Finanzierungsbedarf zu ermitteln.
-				var costs = calcCosts( state.price, state.commissionFree );
+				var costs = calcCosts( totalPrice, state.commissionFree );
+				if ( finance ) { finance.price = totalPrice; }
 				renderFinancingPanel( calc, costs, finance );
 			}
 		}

@@ -28,9 +28,56 @@ if ( ! empty( $gallery ) ) {
 	$all_images = array_merge( $all_images, $gallery );
 }
 
-// Preis
-$show_sale = in_array( $mode, array( 'sale', 'both' ), true ) && (float) $meta['price'] > 0;
-$show_rent = in_array( $mode, array( 'rent', 'both' ), true ) && (float) $meta['rent'] > 0;
+// Zugeordnete Wohneinheiten (Status-Counts) – beeinflusst die Preis-Darstellung.
+// Sind der Immobilie Units zugeordnet, wird der Property-Preis durch
+// "Preis siehe Preisliste" ersetzt; der Calculator bleibt aber sichtbar und
+// wird mit dem günstigsten Unit-Preis vorbelegt (Auswahl via Dropdown).
+$prop_unit_counts = \ImmoManager\Units::count_by_property( (int) $property['id'] );
+$prop_units_total = array_sum( $prop_unit_counts );
+$has_units        = $prop_units_total > 0;
+
+// Wohneinheiten einmalig laden (Tabelle weiter unten + Calculator-Dropdown nutzen die).
+$prop_units = $has_units
+	? \ImmoManager\Units::get_by_property( (int) $property['id'] )
+	: array();
+
+// Calculator-Unit-Liste vorbereiten: nur verfügbare Units mit Kaufpreis > 0,
+// nach Preis aufsteigend sortiert → günstigster steht ganz oben und ist Default.
+$calc_units = array();
+foreach ( $prop_units as $u ) {
+	$up = (float) ( $u['price'] ?? 0 );
+	$us = (string) ( $u['status'] ?? '' );
+	if ( $up <= 0 || 'available' !== $us ) {
+		continue;
+	}
+	$u_no   = (string) ( $u['unit_number'] ?? '' );
+	$u_area = (float)  ( $u['area'] ?? 0 );
+	$u_area_disp = $u_area > 0 ? number_format_i18n( $u_area, ( floor( $u_area ) == $u_area ) ? 0 : 1 ) . ' m²' : '';
+	$u_price_disp = number_format_i18n( $up, 0 ) . ' ' . $currency;
+	$label_parts  = array_filter( array(
+		'' !== $u_no ? sprintf( __( 'Whg. %s', 'immo-manager' ), $u_no ) : '',
+		$u_area_disp,
+		$u_price_disp,
+	) );
+	$calc_units[] = array(
+		'id'              => (int)  ( $u['id'] ?? 0 ),
+		'label'           => implode( ' · ', $label_parts ),
+		'price'           => $up,
+		'commission_free' => (bool) ( $u['commission_free'] ?? false ),
+	);
+}
+usort( $calc_units, static fn( $a, $b ) => $a['price'] <=> $b['price'] );
+$calc_min_price       = ! empty( $calc_units ) ? (float) $calc_units[0]['price'] : 0.0;
+$calc_commission_free = ! empty( $calc_units ) ? (bool)  $calc_units[0]['commission_free'] : false;
+
+// Preis-Hero: bei Units → "siehe Preisliste"; sonst klassisch.
+$show_sale = in_array( $mode, array( 'sale', 'both' ), true ) && (float) $meta['price'] > 0 && ! $has_units;
+$show_rent = in_array( $mode, array( 'rent', 'both' ), true ) && (float) $meta['rent'] > 0 && ! $has_units;
+
+// Calculator: sichtbar im Sale-Modus, sobald ein verbindlicher Preis existiert –
+// entweder Property-Preis (klassisch) oder mindestens eine verfügbare Unit mit Preis.
+$show_calculator = in_array( $mode, array( 'sale', 'both' ), true )
+	&& ( ( ! $has_units && (float) $meta['price'] > 0 ) || ( $has_units && $calc_min_price > 0 ) );
 
 // Layout-Konfiguration (mit Fallback auf globale Einstellungen).
 $detail_layout = ( ! empty( $meta['layout_type'] ) ) ? $meta['layout_type'] : \ImmoManager\Settings::get( 'default_detail_layout', 'standard' );
@@ -45,7 +92,10 @@ $key_facts = array_filter( array(
 	array( 'icon' => '🚿', 'label' => __( 'Badezimmer',  'immo-manager' ), 'value' => $meta['bathrooms'] ?: null ),
 	array( 'icon' => '🏢', 'label' => __( 'Etage',       'immo-manager' ), 'value' => ( isset( $meta['floor'] ) && $meta['floor'] !== 0 ) ? $meta['floor'] : null ),
 	array( 'icon' => '📅', 'label' => __( 'Baujahr',     'immo-manager' ), 'value' => $meta['built_year'] ?: null ),
-	array( 'icon' => '⚡', 'label' => __( 'Energie',     'immo-manager' ), 'value' => $meta['energy_class'] ?: null ),
+	array( 'icon' => '⚡', 'label' => __( 'Energieklasse', 'immo-manager' ), 'value' => $meta['energy_class'] ?: null ),
+	// EAVG § 3 (seit 1.7.2026): HWB + EEB muessen im Inserat sichtbar sein – daher auch hier oben, nicht nur im Akkordeon.
+	array( 'icon' => '📊', 'label' => __( 'HWB',         'immo-manager' ), 'value' => ! empty( $meta['energy_hwb'] ) ? number_format_i18n( (float) $meta['energy_hwb'], 1 ) . ' kWh/m²a' : null ),
+	array( 'icon' => '🔋', 'label' => __( 'EEB',         'immo-manager' ), 'value' => ! empty( $meta['energy_eeb'] ) ? number_format_i18n( (float) $meta['energy_eeb'], 1 ) . ' kWh/m²a' : ( ! empty( $meta['energy_fgee'] ) ? 'fGEE ' . number_format_i18n( (float) $meta['energy_fgee'], 2 ) : null ) ),
 	array( 'icon' => '🔥', 'label' => __( 'Heizung',     'immo-manager' ), 'value' => $meta['heating'] ?: null ),
 	array( 'icon' => '💰', 'label' => __( 'BK/Monat',    'immo-manager' ), 'value' => $meta['operating_costs'] ? number_format_i18n( (float) $meta['operating_costs'] ) . ' ' . $currency : null ),
 	array( 'icon' => '📋', 'label' => __( 'Verfügbar ab', 'immo-manager' ), 'value' => $meta['available_from'] ? date_i18n( 'd.m.Y', strtotime( $meta['available_from'] ) ) : null ),
@@ -153,7 +203,15 @@ $key_facts = array_filter( array(
 			</div>
 
 			<!-- PREIS – sehr prominent -->
-			<?php if ( $show_sale || $show_rent ) : ?>
+			<?php if ( $has_units ) : ?>
+				<div class="immo-price-hero immo-price-hero--pricelist">
+					<span class="immo-price-hero-label"><?php esc_html_e( 'Preis', 'immo-manager' ); ?></span>
+					<span class="immo-price-hero-value"><?php esc_html_e( 'siehe Preisliste', 'immo-manager' ); ?></span>
+					<?php if ( $meta['operating_costs'] ) : ?>
+						<span class="immo-price-hero-note">+ <?php echo esc_html( number_format_i18n( (float) $meta['operating_costs'] ) . ' ' . $currency ); ?> <?php esc_html_e( 'BK/Monat', 'immo-manager' ); ?></span>
+					<?php endif; ?>
+				</div>
+			<?php elseif ( $show_sale || $show_rent ) : ?>
 				<div class="immo-price-hero">
 					<?php if ( $show_sale ) : ?>
 						<span class="immo-price-hero-label"><?php esc_html_e( 'Kaufpreis', 'immo-manager' ); ?></span>
@@ -250,14 +308,17 @@ $key_facts = array_filter( array(
 				</div>
 			<?php endif; ?>
 
-			<?php if ( $meta['energy_class'] || $meta['heating'] ) : ?>
+			<?php if ( $meta['energy_class'] || $meta['heating'] || ! empty( $meta['energy_hwb'] ) || ! empty( $meta['energy_eeb'] ) ) : ?>
 				<div class="immo-accordion">
-					<button class="immo-accordion-header" aria-expanded="false"><?php esc_html_e( 'Energie & Technik', 'immo-manager' ); ?><span class="immo-accordion-icon" aria-hidden="true"></span></button>
+					<button class="immo-accordion-header" aria-expanded="false"><?php esc_html_e( 'Energieausweis & Technik', 'immo-manager' ); ?><span class="immo-accordion-icon" aria-hidden="true"></span></button>
 					<div class="immo-accordion-body" hidden>
 						<div class="immo-detail-facts">
 							<?php foreach ( array_filter( array(
-								array( 'icon' => '⚡', 'label' => __( 'Energieklasse', 'immo-manager' ), 'value' => $meta['energy_class'] ?: null ),
-								array( 'icon' => '📊', 'label' => __( 'HWB', 'immo-manager' ), 'value' => $meta['energy_hwb'] ? number_format_i18n( (float) $meta['energy_hwb'], 1 ) . ' kWh/m²a' : null ),
+								array( 'icon' => '⚡', 'label' => __( 'Energieeffizienzklasse', 'immo-manager' ), 'value' => $meta['energy_class'] ?: null ),
+								array( 'icon' => '📊', 'label' => __( 'Heizwärmebedarf (HWB)', 'immo-manager' ), 'value' => $meta['energy_hwb'] ? number_format_i18n( (float) $meta['energy_hwb'], 1 ) . ' kWh/m²a' : null ),
+								array( 'icon' => '🔋', 'label' => __( 'Endenergiebedarf (EEB)', 'immo-manager' ), 'value' => ! empty( $meta['energy_eeb'] ) ? number_format_i18n( (float) $meta['energy_eeb'], 1 ) . ' kWh/m²a' : null ),
+								// fGEE nur anzeigen, wenn kein EEB vorliegt (Altausweis / Übergangsregel).
+								array( 'icon' => '📈', 'label' => __( 'fGEE (Altausweis)', 'immo-manager' ), 'value' => ( empty( $meta['energy_eeb'] ) && ! empty( $meta['energy_fgee'] ) ) ? number_format_i18n( (float) $meta['energy_fgee'], 2 ) : null ),
 								array( 'icon' => '🔥', 'label' => __( 'Heizung', 'immo-manager' ), 'value' => $meta['heating'] ?: null ),
 								array( 'icon' => '📅', 'label' => __( 'Baujahr', 'immo-manager' ), 'value' => $meta['built_year'] ?: null ),
 								array( 'icon' => '🔨', 'label' => __( 'Saniert', 'immo-manager' ), 'value' => $meta['renovation_year'] ?: null ),
@@ -339,13 +400,114 @@ $key_facts = array_filter( array(
 			<?php endif; ?>
 
 			<?php
+			// === Wohneinheiten zu dieser Immobilie ===
+			// $prop_units wurde bereits am Anfang der Datei geladen (für Calculator-Dropdown).
+			if ( ! empty( $prop_units ) ) :
+				$prop_status_class = array(
+					'available' => 'status-available',
+					'reserved'  => 'status-reserved',
+					'sold'      => 'status-sold',
+					'rented'    => 'status-rented',
+				);
+				$prop_status_labels = array(
+					'available' => __( 'Verfügbar', 'immo-manager' ),
+					'reserved'  => __( 'Reserviert', 'immo-manager' ),
+					'sold'      => __( 'Verkauft', 'immo-manager' ),
+					'rented'    => __( 'Vermietet', 'immo-manager' ),
+				);
+				$currency_sym = (string) \ImmoManager\Settings::get( 'currency_symbol', '€' );
+				?>
+				<div class="immo-accordion">
+					<button class="immo-accordion-header" aria-expanded="true">
+						<?php esc_html_e( 'Wohneinheiten zu dieser Immobilie', 'immo-manager' ); ?>
+						<span class="immo-accordion-badge"><?php echo (int) count( $prop_units ); ?></span>
+						<span class="immo-accordion-icon" aria-hidden="true"></span>
+					</button>
+					<div class="immo-accordion-body">
+						<div class="immo-units-table-wrap">
+							<table class="immo-units-table">
+								<thead>
+									<tr>
+										<th><?php esc_html_e( 'Nr.', 'immo-manager' ); ?></th>
+										<th><?php esc_html_e( 'Etage', 'immo-manager' ); ?></th>
+										<th><?php esc_html_e( 'Fläche', 'immo-manager' ); ?></th>
+										<th><?php esc_html_e( 'Zi.', 'immo-manager' ); ?></th>
+										<th><?php esc_html_e( 'Preis', 'immo-manager' ); ?></th>
+										<th><?php esc_html_e( 'Status', 'immo-manager' ); ?></th>
+									</tr>
+								</thead>
+								<tbody>
+								<?php foreach ( $prop_units as $u ) :
+									$u_floor = (int) ( $u['floor'] ?? 0 );
+									$floor_disp = 0 === $u_floor ? __( 'EG', 'immo-manager' ) : $u_floor . '.';
+									$u_status = (string) ( $u['status'] ?? 'available' );
+									$u_status_label = $prop_status_labels[ $u_status ] ?? $u_status;
+									$u_status_class = $prop_status_class[ $u_status ] ?? '';
+									$u_area_val = (float) ( $u['area'] ?? 0 );
+									$u_area_dec = ( floor( $u_area_val ) == $u_area_val ) ? 0 : 1;
+									$u_price = (float) ( $u['price'] ?? 0 );
+									$u_rent  = (float) ( $u['rent']  ?? 0 );
+									if ( $u_price > 0 ) {
+										$u_price_disp = number_format_i18n( $u_price, 0 ) . ' ' . $currency_sym;
+									} elseif ( $u_rent > 0 ) {
+										$u_price_disp = number_format_i18n( $u_rent, 0 ) . ' ' . $currency_sym . '/Mo';
+									} else {
+										$u_price_disp = '—';
+									}
+								?>
+									<tr class="immo-units-row" data-status="<?php echo esc_attr( $u_status ); ?>">
+										<td class="immo-units-cell-number"><strong><?php echo esc_html( (string) ( $u['unit_number'] ?? '' ) ); ?></strong></td>
+										<td><?php echo esc_html( $floor_disp ); ?></td>
+										<td>
+											<?php echo $u_area_val > 0 ? esc_html( number_format_i18n( $u_area_val, $u_area_dec ) . ' m²' ) : '—'; ?>
+											<?php
+											$fmt_area_pill = static function ( $v ) {
+												$v = (float) $v;
+												return number_format_i18n( $v, ( floor( $v ) == $v ) ? 0 : 1 );
+											};
+											$u_extras = array();
+											if ( (float) ( $u['balcony_area'] ?? 0 ) > 0 ) { $u_extras[] = array( 'label' => __( 'Balkon', 'immo-manager' ),     'text' => '🪟 ' . $fmt_area_pill( $u['balcony_area'] ) . ' m²' ); }
+											if ( (float) ( $u['loggia_area']  ?? 0 ) > 0 ) { $u_extras[] = array( 'label' => __( 'Loggia', 'immo-manager' ),     'text' => '🏛️ ' . $fmt_area_pill( $u['loggia_area'] )  . ' m²' ); }
+											if ( (float) ( $u['terrace_area'] ?? 0 ) > 0 ) { $u_extras[] = array( 'label' => __( 'Terrasse', 'immo-manager' ),   'text' => '⛱️ ' . $fmt_area_pill( $u['terrace_area'] ) . ' m²' ); }
+											if ( (float) ( $u['garden_area']  ?? 0 ) > 0 ) { $u_extras[] = array( 'label' => __( 'Garten', 'immo-manager' ),     'text' => '🌳 ' . $fmt_area_pill( $u['garden_area'] )  . ' m²' ); }
+											if ( (float) ( $u['cellar_area']  ?? 0 ) > 0 ) { $u_extras[] = array( 'label' => __( 'Keller', 'immo-manager' ),     'text' => '📦 ' . $fmt_area_pill( $u['cellar_area'] )  . ' m²' ); }
+											if ( (int)   ( $u['parking_garage_count']  ?? 0 ) > 0 ) { $u_extras[] = array( 'label' => __( 'Tiefgaragenplatz', 'immo-manager' ),  'text' => '🅿️ ×' . (int) $u['parking_garage_count'] ); }
+											if ( (int)   ( $u['parking_outdoor_count'] ?? 0 ) > 0 ) { $u_extras[] = array( 'label' => __( 'Außen-Stellplatz',  'immo-manager' ), 'text' => '🚗 ×' . (int) $u['parking_outdoor_count'] ); }
+											if ( $u_extras ) :
+											?>
+												<span class="immo-unit-extras">
+													<?php foreach ( $u_extras as $e ) : ?>
+														<span class="immo-unit-extra" title="<?php echo esc_attr( $e['label'] ); ?>" aria-label="<?php echo esc_attr( $e['label'] . ': ' . $e['text'] ); ?>"><?php echo esc_html( $e['text'] ); ?></span>
+													<?php endforeach; ?>
+												</span>
+											<?php endif; ?>
+										</td>
+										<td><?php echo $u['rooms'] ? esc_html( (int) $u['rooms'] ) : '—'; ?></td>
+										<td class="immo-units-cell-price"><?php echo esc_html( $u_price_disp ); ?></td>
+										<td><span class="immo-unit-status-pill <?php echo esc_attr( $u_status_class ); ?>"><?php echo esc_html( $u_status_label ); ?></span></td>
+									</tr>
+								<?php endforeach; ?>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			<?php endif; ?>
+
+			<?php
 			// === Nebenkosten- & Finanzierungsrechner (am Ende der Akkordeons) ===
-			// $show_sale (Zeile ~32) prüft bereits: mode in (sale|both) UND price > 0.
-			if ( $show_sale ) {
+			// Bei Units: günstigste verfügbare Unit ist Default; Dropdown ermöglicht
+			// die Auswahl jeder verfügbaren Einheit (Preis + commission_free werden
+			// per JS umgeschaltet, siehe public/js/calculators.js).
+			if ( $show_calculator ) {
 				$calc_context = array(
-					'base_price'      => (float) ( $meta['price'] ?? 0 ),
-					'commission_free' => (bool) ( $meta['commission_free'] ?? false ),
-					'units'           => array(),
+					'base_price'      => $has_units
+						? $calc_min_price
+						: (float) ( $meta['price'] ?? 0 ),
+					'commission_free' => $has_units
+						? $calc_commission_free
+						: (bool) ( $meta['commission_free'] ?? false ),
+					'units'           => $calc_units,
 				);
 				include IMMO_MANAGER_PLUGIN_DIR . 'templates/parts/calculator.php';
 			}

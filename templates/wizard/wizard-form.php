@@ -276,10 +276,12 @@ $step_slugs = array( 1 => 'type', 2 => 'location', 3 => 'details', 4 => 'price',
 								<input type="radio" name="entity_type" value="property" <?php checked( 'property', $entity_type ); ?> style="display:none;">
 								<div class="immo-tile-content"><strong><?php esc_html_e( 'Eigene Immobilie', 'immo-manager' ); ?></strong><br><small style="color:#666;"><?php esc_html_e( 'Haus, Wohnung, etc.', 'immo-manager' ); ?></small></div>
 							</label>
+							<?php if ( \ImmoManager\ProjectsAccess::user_has_access() ) : ?>
 							<label class="immo-entity-option <?php echo 'project' === $entity_type ? 'selected' : ''; ?>">
 								<input type="radio" name="entity_type" value="project" <?php checked( 'project', $entity_type ); ?> style="display:none;">
 								<div class="immo-tile-content"><strong><?php esc_html_e( 'Bauprojekt', 'immo-manager' ); ?></strong><br><small style="color:#666;"><?php esc_html_e( 'Container für Einheiten', 'immo-manager' ); ?></small></div>
 							</label>
+							<?php endif; ?>
 						</div>
 					</div>
 				<?php endif; ?>
@@ -320,6 +322,13 @@ $step_slugs = array( 1 => 'type', 2 => 'location', 3 => 'details', 4 => 'price',
 								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Zimmer</label><input type="number" name="rooms" class="immo-input"></div>
 								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Kaufpreis</label><input type="number" step="0.01" name="price" class="immo-input"></div>
 								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Mietpreis</label><input type="number" step="0.01" name="rent" class="immo-input"></div>
+								<div class="immo-unit-balcony-field"><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Balkon (m²)</label><input type="number" step="0.01" min="0" name="balcony_area" class="immo-input"></div>
+								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Loggia (m²)</label><input type="number" step="0.01" min="0" name="loggia_area" class="immo-input"></div>
+								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Garten (m²)</label><input type="number" step="0.01" min="0" name="garden_area" class="immo-input immo-unit-garden-input"></div>
+								<div class="immo-unit-terrace-field"><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Terrasse (m²)</label><input type="number" step="0.01" min="0" name="terrace_area" class="immo-input"></div>
+								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Keller (m²)</label><input type="number" step="0.01" min="0" name="cellar_area" class="immo-input"></div>
+								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">TG-Plätze inkl.</label><input type="number" min="0" max="9" name="parking_garage_count" class="immo-input"></div>
+								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Außen-Stellplätze inkl.</label><input type="number" min="0" max="9" name="parking_outdoor_count" class="immo-input"></div>
 								<div><label style="display:block; font-weight:bold; margin-bottom:6px; font-size:0.95em;">Status</label>
 									<select name="status" class="immo-input" style="height: auto;">
 										<option value="available">Verfügbar</option>

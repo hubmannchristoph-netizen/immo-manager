@@ -25,6 +25,7 @@ if ( ! isset( $stats ) || ! is_array( $stats ) ) {
 			<span class="label"><?php esc_html_e( 'Veröffentlicht', 'immo-manager' ); ?>:</span>
 			<strong><?php echo esc_html( number_format_i18n( $stats['published'] ?? 0 ) ); ?></strong>
 		</li>
+		<?php if ( \ImmoManager\ProjectsAccess::user_has_access() ) : ?>
 		<li>
 			<span class="label"><?php esc_html_e( 'Bauprojekte', 'immo-manager' ); ?>:</span>
 			<strong><?php echo esc_html( number_format_i18n( $stats['total_projects'] ?? 0 ) ); ?></strong>
@@ -33,6 +34,7 @@ if ( ! isset( $stats ) || ! is_array( $stats ) ) {
 			<span class="label"><?php esc_html_e( 'Wohneinheiten', 'immo-manager' ); ?>:</span>
 			<strong><?php echo esc_html( number_format_i18n( $stats['total_units'] ?? 0 ) ); ?></strong>
 		</li>
+		<?php endif; ?>
 		<?php if ( ( $stats['new_inquiries'] ?? 0 ) > 0 ) : ?>
 		<li class="immo-stat-alert">
 			<span class="label"><?php esc_html_e( 'Neue Anfragen', 'immo-manager' ); ?>:</span>

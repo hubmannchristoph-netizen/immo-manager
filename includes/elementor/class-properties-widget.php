@@ -197,6 +197,9 @@ class PropertiesWidget extends Widget_Base {
 	protected function render() {
 		$settings = $this->get_settings_for_display();
 
+		// Plugin-Assets sicherstellen (Elementor rendert außerhalb des Post-Contents).
+		Plugin::instance()->get_shortcodes()->enqueue_assets();
+
 		// Daten abrufen (ähnlich wie im Shortcode).
 		$rest    = Plugin::instance()->get_rest_api();
 		$request = new \WP_REST_Request( 'GET', '/immo-manager/v1/properties' );
@@ -273,8 +276,9 @@ class PropertiesWidget extends Widget_Base {
 			}
 		}
 
-		wp_enqueue_style( 'leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', array(), '1.9.4' );
-		wp_enqueue_script( 'leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', array(), '1.9.4', true );
+		// Leaflet (lokal gebündelt, registriert in Shortcodes::register_assets()).
+		wp_enqueue_style( 'leaflet' );
+		wp_enqueue_script( 'leaflet' );
 
 		echo '<div class="immo-elementor-widget immo-map-widget">';
 		printf(

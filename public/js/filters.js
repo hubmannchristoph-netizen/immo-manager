@@ -248,6 +248,14 @@
 				return a > 0 ? '<li>📐 ' + escHtml(a.toLocaleString('de-AT')) + ' m²</li>' : '';
 			})()
 			+ (meta.energy_class ? '<li>⚡ ' + escHtml(meta.energy_class) + '</li>' : '')
+			+ (function () {
+				// EAVG § 3: HWB + EEB (bzw. fGEE bei Altausweis) auch in der AJAX-Card.
+				var bits = [];
+				if (meta.energy_hwb) { bits.push('HWB ' + Math.round(meta.energy_hwb)); }
+				if (meta.energy_eeb) { bits.push('EEB ' + Math.round(meta.energy_eeb)); }
+				else if (meta.energy_fgee) { bits.push('fGEE ' + Number(meta.energy_fgee).toFixed(2)); }
+				return bits.length ? '<li class="immo-card-energy">📊 ' + escHtml(bits.join(' · ')) + '</li>' : '';
+			})()
 			+ '</ul>'
 			+ (topFeat ? '<ul class="immo-card-features">' + topFeat + '</ul>' : '')
 			+ '<div class="immo-card-footer"><a href="' + escHtml(p.permalink) + '" class="immo-btn immo-btn-primary immo-btn-sm">Details ansehen</a></div>'

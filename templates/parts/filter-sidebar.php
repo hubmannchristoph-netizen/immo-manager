@@ -138,7 +138,7 @@ $states = $states ?? \ImmoManager\Regions::get_states();
 		<div class="immo-filter-group">
 			<h4 class="immo-filter-group-title"><?php esc_html_e( 'Energieklasse', 'immo-manager' ); ?></h4>
 			<div class="immo-filter-options immo-filter-buttons">
-				<?php foreach ( array( 'A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G' ) as $cls ) : ?>
+				<?php foreach ( \ImmoManager\MetaFields::energy_classes() as $cls ) : ?>
 					<label class="immo-filter-option immo-filter-btn-option">
 						<input type="checkbox" class="immo-filter-input" name="energy_class" value="<?php echo esc_attr( $cls ); ?>">
 						<span><?php echo esc_html( $cls ); ?></span>

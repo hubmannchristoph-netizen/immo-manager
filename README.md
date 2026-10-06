@@ -26,7 +26,7 @@ Das Plugin schedulet 3 Cron-Hooks beim Aktivieren:
 | `immo_manager_openimmo_hourly_pull` | stündlich | SFTP-Inbox-Check pro Portal mit `inbox_path` |
 | `immo_manager_openimmo_daily_cleanup` | täglich 04:00 | Retention-Cleanup |
 
-**Wichtig:** Bei Code-Updates Plugin einmal deaktivieren + reaktivieren, damit neue Hooks registriert werden.
+Fehlende Cron-Events werden seit 1.4.0 bei jedem Admin-Aufruf automatisch nachregistriert – ein Deaktivieren/Reaktivieren nach Updates ist nicht mehr nötig.
 
 ## OpenImmo-Settings
 
@@ -87,7 +87,25 @@ Hardcoded Defaults im täglichen Cleanup-Cron:
 | `wp_immo_sync_log` | Log aller Push/Pull/Import-Läufe |
 | `wp_immo_conflicts` | Konflikt-Queue |
 
-DB-Version: 1.5.0. Migrations laufen automatisch beim Plugin-Load.
+DB-Version: 1.6.0. Migrations laufen automatisch beim Plugin-Load (`dbDelta`, rein additiv – bestehende Daten werden nie gelöscht).
+
+## Installation / Update ohne Datenverlust
+
+- **Installation/Update** (ZIP-Upload, auch „Vorhandenes ersetzen"): legt fehlende Tabellen an bzw. ergänzt Spalten, Posts/Meta/Options bleiben unangetastet.
+- **Deaktivieren**: entfernt nur Cron-Events und flusht Permalinks.
+- **Löschen**: Daten bleiben standardmäßig erhalten. Nur wenn unter *Einstellungen → Module → „Beim Löschen des Plugins alle Daten entfernen"* zugestimmt wurde, werden Tabellen, Options und Immobilien/Bauprojekte gelöscht.
+
+## Embed-Widget (externe Webseiten)
+
+`public/embed/immo-embed.js` bettet Immobilien, Bauprojekte und Wohneinheiten per Script-Snippet in beliebige Webseiten ein (Shadow DOM, nur REST-API, keine Abhängigkeiten). Snippet und Attribut-Referenz: WP-Admin → *Immo Manager → API & Hilfe → Frontend-Einbindung* oder `DOCUMENTATION.md` Kapitel 12.
+
+## Release-ZIP bauen
+
+```bash
+python bin/build-zip.py      # -> immo-manager-<version>.zip im Repo-Root
+```
+
+Das ZIP enthält den Ordner `immo-manager/` mit allen Laufzeitdateien (inkl. `vendor/` und `vendor-schemas/`), ohne `.git`, `docs/`, `bin/` und IDE-Dateien. Installation über *Plugins → Installieren → Plugin hochladen*.
 
 ## Phasen-Status
 

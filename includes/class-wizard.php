@@ -137,8 +137,8 @@ class Wizard {
 
 	public function enqueue_admin_assets( string $hook ): void {
 		if ( isset( $_GET['page'] ) && 'immo-wizard' === $_GET['page'] ) {
-			// Assets des Shortcodes auch im Backend auf der Wizard-Seite laden
-			Plugin::instance()->get_shortcodes()->enqueue_assets();
+			// Frontend- + Wizard-Assets auch im Backend auf der Wizard-Seite laden
+			Plugin::instance()->get_shortcodes()->enqueue_wizard_assets();
 			// Media-Uploader für die Bildergalerie laden (verhindert JS-Fehler 'wp is not defined')
 			wp_enqueue_media();
 			// Metaboxes JS für die Wohneinheiten-Verwaltung laden
@@ -191,6 +191,14 @@ class Wizard {
 				. esc_html__( 'Anmelden', 'immo-manager' ) . '</a></div>';
 		}
 
+		// Bauprojekte-Paket: ohne Freischaltung kann der Wizard nur Immobilien anlegen.
+		$projects_access = ProjectsAccess::user_has_access();
+		if ( 'project' === $entity_type && ! $projects_access ) {
+			return '<div class="immo-wizard-notice"><p>'
+				. esc_html__( 'Das Bauprojekte-Paket ist für dich nicht freigeschaltet. Du kannst ausschließlich Immobilien verwalten.', 'immo-manager' )
+				. '</p></div>';
+		}
+
 		$prefill = array();
 		if ( $post_id && in_array( get_post_type( $post_id ), array( PostTypes::POST_TYPE_PROPERTY, PostTypes::POST_TYPE_PROJECT ), true ) ) {
 			$prefill     = $this->load_post_data( $post_id );
@@ -212,18 +220,22 @@ class Wizard {
 			$prefill['_immo_contact_image_id'] = (int) Settings::get( 'agent_image_id', 0 );
 		}
 
+		// Wizard-Assets (CSS/JS) nachladen – auch wenn der Shortcode außerhalb
+		// des Post-Contents gerendert wird.
+		Plugin::instance()->get_shortcodes()->enqueue_wizard_assets();
+
 		// Im Frontend ebenfalls den Media Uploader laden, falls Bilder hochgeladen werden
 		if ( is_user_logged_in() ) {
 			wp_enqueue_media();
 		}
 
-		$projects = get_posts( array(
+		$projects = $projects_access ? get_posts( array(
 			'post_type'      => PostTypes::POST_TYPE_PROJECT,
 			'post_status'    => array( 'publish', 'draft', 'private' ),
 			'posts_per_page' => 200,
 			'orderby'        => 'title',
 			'order'          => 'ASC',
-		) );
+		) ) : array();
 
 		ob_start();
 		$nonce      = wp_create_nonce( self::NONCE_ACTION );
@@ -266,7 +278,8 @@ class Wizard {
 
 		$data    = $this->collect_post_data();
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-		$errors  = $this->validate( $data );
+		$this->guard_projects_access( $data );
+		$errors  = $this->validate( $data, true );
 
 		if ( $errors ) {
 			wp_send_json_error(
@@ -308,6 +321,7 @@ class Wizard {
 		}
 
 		$data    = $this->collect_post_data();
+		$this->guard_projects_access( $data );
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 		$entity  = $data['entity_type'] ?? 'property';
 
@@ -333,6 +347,7 @@ class Wizard {
 		$this->verify_nonce();
 
 		$data   = $this->collect_post_data();
+		$this->guard_projects_access( $data );
 		$errors = $this->validate( $data );
 
 		if ( $errors ) {
@@ -554,7 +569,24 @@ class Wizard {
 	 *
 	 * @return array<string, string> Fehler (Key → Meldung).
 	 */
-	private function validate( array $data ): array {
+	/**
+	 * Bauprojekt-bezogene Speichervorgänge ohne freigeschaltetes Paket abweisen.
+	 *
+	 * @param array<string, mixed> $data Gesammelte Wizard-Daten.
+	 *
+	 * @return void Sendet bei Verstoß eine JSON-Fehlerantwort und beendet den Request.
+	 */
+	private function guard_projects_access( array $data ): void {
+		$entity = $data['entity_type'] ?? 'property';
+		if ( 'project' === $entity && ! ProjectsAccess::user_has_access() ) {
+			wp_send_json_error( array( 'message' => __( 'Das Bauprojekte-Paket ist für dich nicht freigeschaltet.', 'immo-manager' ) ), 403 );
+		}
+		if ( ! ProjectsAccess::user_has_access() && ! empty( $data['_immo_project_id'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Zuordnung zu einem Bauprojekt ist ohne freigeschaltetes Paket nicht möglich.', 'immo-manager' ) ), 403 );
+		}
+	}
+
+	private function validate( array $data, bool $publishing = false ): array {
 		$errors = array();
 		$entity = $data['entity_type'] ?? 'property';
 
@@ -572,6 +604,20 @@ class Wizard {
 			}
 			if ( in_array( $mode, array( 'rent', 'both' ), true ) && empty( $data['_immo_rent'] ) ) {
 				$errors['_immo_rent'] = __( 'Mietpreis ist ein Pflichtfeld.', 'immo-manager' );
+			}
+
+			// Energieausweis-Pflichtangaben (EAVG § 3, seit 1.7.2026) – nur beim Veröffentlichen,
+			// Entwürfe dürfen unvollständig sein. Unbebaute Grundstücke sind ausgenommen.
+			if ( $publishing && MetaFields::energy_certificate_required( (string) ( $data['_immo_property_type'] ?? '' ) ) ) {
+				if ( '' === (string) ( $data['_immo_energy_class'] ?? '' ) ) {
+					$errors['_immo_energy_class'] = __( 'Energieeffizienzklasse ist Pflichtangabe im Inserat (EAVG).', 'immo-manager' );
+				}
+				if ( (float) ( $data['_immo_energy_hwb'] ?? 0 ) <= 0 ) {
+					$errors['_immo_energy_hwb'] = __( 'Heizwärmebedarf (HWB) ist Pflichtangabe im Inserat (EAVG).', 'immo-manager' );
+				}
+				if ( (float) ( $data['_immo_energy_eeb'] ?? 0 ) <= 0 && (float) ( $data['_immo_energy_fgee'] ?? 0 ) <= 0 ) {
+					$errors['_immo_energy_eeb'] = __( 'Endenergiebedarf (EEB) ist seit 1.7.2026 Pflichtangabe – bei Altausweisen alternativ fGEE angeben.', 'immo-manager' );
+				}
 			}
 		}
 

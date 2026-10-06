@@ -118,6 +118,34 @@ $ajax_nonce      = wp_create_nonce( 'immo_units_ajax' );
 					<span><?php esc_html_e( 'Badezimmer', 'immo-manager' ); ?></span>
 					<input type="number" name="bathrooms" min="0" />
 				</label>
+				<label class="immo-unit-balcony-field">
+					<span><?php esc_html_e( 'Balkon (m²)', 'immo-manager' ); ?></span>
+					<input type="number" name="balcony_area" step="0.01" min="0" />
+				</label>
+				<label>
+					<span><?php esc_html_e( 'Loggia (m²)', 'immo-manager' ); ?></span>
+					<input type="number" name="loggia_area" step="0.01" min="0" />
+				</label>
+				<label>
+					<span><?php esc_html_e( 'Garten (m²)', 'immo-manager' ); ?></span>
+					<input type="number" name="garden_area" step="0.01" min="0" class="immo-unit-garden-input" />
+				</label>
+				<label class="immo-unit-terrace-field">
+					<span><?php esc_html_e( 'Terrasse (m²)', 'immo-manager' ); ?></span>
+					<input type="number" name="terrace_area" step="0.01" min="0" />
+				</label>
+				<label>
+					<span><?php esc_html_e( 'Keller (m²)', 'immo-manager' ); ?></span>
+					<input type="number" name="cellar_area" step="0.01" min="0" />
+				</label>
+				<label>
+					<span><?php esc_html_e( 'TG-Plätze inkl.', 'immo-manager' ); ?></span>
+					<input type="number" name="parking_garage_count" min="0" max="9" step="1" />
+				</label>
+				<label>
+					<span><?php esc_html_e( 'Außen-Stellplätze inkl.', 'immo-manager' ); ?></span>
+					<input type="number" name="parking_outdoor_count" min="0" max="9" step="1" />
+				</label>
 				<label>
 					<span><?php esc_html_e( 'Status', 'immo-manager' ); ?></span>
 					<select name="status">

@@ -223,6 +223,17 @@
 				valid = false;
 			}
 		}
+		if (step === 3 && this.publishing && entity === 'property') {
+			// Energieausweis-Pflichtangaben (EAVG § 3, seit 1.7.2026) – nur beim Veröffentlichen.
+			var ptype = String(this.getVal('_immo_property_type') || '').toLowerCase();
+			if (ptype.indexOf('grund') === -1) {
+				if (!this.getVal('_immo_energy_class')) { this.showError('_immo_energy_class', 'Energieeffizienzklasse ist Pflichtangabe im Inserat.'); valid = false; }
+				if (!(parseFloat(this.getVal('_immo_energy_hwb')) > 0)) { this.showError('_immo_energy_hwb', 'HWB ist Pflichtangabe im Inserat.'); valid = false; }
+				if (!(parseFloat(this.getVal('_immo_energy_eeb')) > 0) && !(parseFloat(this.getVal('_immo_energy_fgee')) > 0)) {
+					this.showError('_immo_energy_eeb', 'Endenergiebedarf (EEB) ist seit 1.7.2026 Pflicht – bei Altausweis alternativ fGEE.'); valid = false;
+				}
+			}
+		}
 		if (step === 4) {
 			if (entity !== 'project') {
 				var mode = this.getVal('_immo_mode');
@@ -266,10 +277,13 @@
 	WizardManager.prototype.submit = function (asDraft) {
 		var self = this;
 		if (!asDraft) {
-			if (!this.validateStep(1)) { this.goToStep(1); this.validateStep(1); return; }
-			if (!this.validateStep(2)) { this.goToStep(2); this.validateStep(2); return; }
-			if (!this.validateStep(4)) { this.goToStep(4); this.validateStep(4); return; }
-			if (!this.validateStep(this.currentStep)) { return; }
+			this.publishing = true;
+			if (!this.validateStep(1)) { this.goToStep(1); this.validateStep(1); this.publishing = false; return; }
+			if (!this.validateStep(2)) { this.goToStep(2); this.validateStep(2); this.publishing = false; return; }
+			if (!this.validateStep(3)) { this.goToStep(3); this.validateStep(3); this.publishing = false; return; }
+			if (!this.validateStep(4)) { this.goToStep(4); this.validateStep(4); this.publishing = false; return; }
+			if (!this.validateStep(this.currentStep)) { this.publishing = false; return; }
+			this.publishing = false;
 		}
 
 		var btn = asDraft ? this.el.querySelector('.immo-wizard-draft') : this.el.querySelector('.immo-wizard-submit');
@@ -452,7 +466,10 @@
 					{ label: 'Gesamtfläche', val: this.getVal('_immo_area') ? this.getVal('_immo_area') + ' m²' : '' },
 					{ label: 'Zimmer', val: this.getVal('_immo_rooms') },
 					{ label: 'Baujahr', val: this.getVal('_immo_built_year') },
-					{ label: 'Energieklasse', val: this.getVal('_immo_energy_class') },
+					{ label: 'Energieeffizienzklasse', val: this.getVal('_immo_energy_class') },
+					{ label: 'HWB', val: this.getVal('_immo_energy_hwb') ? this.getVal('_immo_energy_hwb') + ' kWh/m²a' : '' },
+					{ label: 'Endenergiebedarf (EEB)', val: this.getVal('_immo_energy_eeb') ? this.getVal('_immo_energy_eeb') + ' kWh/m²a' : '' },
+					{ label: 'fGEE (Altausweis)', val: this.getVal('_immo_energy_fgee') },
 				]
 			},
 			price: {
@@ -554,6 +571,10 @@
 		toggleField('_immo_project_status', isProject);
 		toggleField('_immo_project_start_date', isProject);
 		toggleField('_immo_project_completion', isProject);
+
+		// Project: Stellplatz-Sektion
+		var parkingSection = self.el.querySelector('.immo-project-parking-section');
+		if (parkingSection) { parkingSection.style.display = isProject ? '' : 'none'; }
 
 		// Unit manager sections
 		var unitPlaceholder = self.el.querySelector('.immo-units-integration-placeholder');

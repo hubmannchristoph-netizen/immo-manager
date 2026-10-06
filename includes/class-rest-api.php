@@ -26,6 +26,17 @@ class RestApi {
 	public const NAMESPACE = 'immo-manager/v1';
 
 	/**
+	 * Request-Cache: Projekt-Kurzinfo pro Projekt-ID.
+	 *
+	 * In Listen-Antworten referenzieren oft viele Properties dasselbe
+	 * Bauprojekt. Ohne Cache würde pro Property get_post() + get_post_meta()
+	 * + Units::count_by_status() erneut ausgeführt (N+1).
+	 *
+	 * @var array<int, array<string, mixed>|null>
+	 */
+	private $project_summary_cache = array();
+
+	/**
 	 * Konstruktor.
 	 */
 	public function __construct() {
@@ -66,6 +77,18 @@ class RestApi {
 		register_rest_route( self::NAMESPACE, '/properties/by-slug/(?P<slug>[a-z0-9-]+)', array(
 			'methods'             => \WP_REST_Server::READABLE,
 			'callback'            => array( $this, 'get_property_by_slug' ),
+			'permission_callback' => '__return_true',
+		) );
+
+		register_rest_route( self::NAMESPACE, '/properties/(?P<id>\d+)/units', array(
+			'methods'             => \WP_REST_Server::READABLE,
+			'callback'            => array( $this, 'get_property_units' ),
+			'permission_callback' => '__return_true',
+		) );
+
+		register_rest_route( self::NAMESPACE, '/properties/by-slug/(?P<slug>[a-z0-9-]+)/units', array(
+			'methods'             => \WP_REST_Server::READABLE,
+			'callback'            => array( $this, 'get_property_units_by_slug' ),
 			'permission_callback' => '__return_true',
 		) );
 
@@ -308,7 +331,10 @@ class RestApi {
 	 *
 	 * @return \WP_REST_Response
 	 */
-	public function get_projects( \WP_REST_Request $request ): \WP_REST_Response {
+	public function get_projects( \WP_REST_Request $request ) {
+		if ( ! ProjectsAccess::module_enabled() ) {
+			return self::projects_disabled_error();
+		}
 		$per_page = min( 50, max( 1, (int) ( $request->get_param( 'per_page' ) ?? 12 ) ) );
 		$page     = max( 1, (int) ( $request->get_param( 'page' ) ?? 1 ) );
 
@@ -349,6 +375,9 @@ class RestApi {
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public function get_project( \WP_REST_Request $request ) {
+		if ( ! ProjectsAccess::module_enabled() ) {
+			return self::projects_disabled_error();
+		}
 		$post = get_post( (int) $request->get_param( 'id' ) );
 		if ( ! $post || PostTypes::POST_TYPE_PROJECT !== $post->post_type || 'publish' !== $post->post_status ) {
 			return new \WP_Error( 'not_found', __( 'Bauprojekt nicht gefunden.', 'immo-manager' ), array( 'status' => 404 ) );
@@ -364,6 +393,9 @@ class RestApi {
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public function get_project_by_slug( \WP_REST_Request $request ) {
+		if ( ! ProjectsAccess::module_enabled() ) {
+			return self::projects_disabled_error();
+		}
 		$slug = sanitize_title( (string) $request->get_param( 'slug' ) );
 		if ( '' === $slug ) {
 			return new \WP_Error( 'not_found', __( 'Bauprojekt nicht gefunden.', 'immo-manager' ), array( 'status' => 404 ) );
@@ -392,7 +424,10 @@ class RestApi {
 	 *
 	 * @return \WP_REST_Response
 	 */
-	public function get_project_units( \WP_REST_Request $request ): \WP_REST_Response {
+	public function get_project_units( \WP_REST_Request $request ) {
+		if ( ! ProjectsAccess::module_enabled() ) {
+			return self::projects_disabled_error();
+		}
 		$id = (int) $request->get_param( 'id' );
 		return $this->build_units_response( $id, $request );
 	}
@@ -409,6 +444,9 @@ class RestApi {
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public function get_project_units_by_slug( \WP_REST_Request $request ) {
+		if ( ! ProjectsAccess::module_enabled() ) {
+			return self::projects_disabled_error();
+		}
 		$slug  = sanitize_title( (string) $request->get_param( 'slug' ) );
 		$posts = get_posts( array(
 			'post_type'      => PostTypes::POST_TYPE_PROJECT,
@@ -462,6 +500,87 @@ class RestApi {
 			'applied_status'  => $status_filter,
 			'units'           => array_map( array( $this, 'format_unit' ), $units ),
 			'stats'           => $counts,
+		) );
+	}
+
+	/**
+	 * GET /properties/{id}/units — alle Wohneinheiten dieser Immobilie.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function get_property_units( \WP_REST_Request $request ): \WP_REST_Response {
+		$id = (int) $request->get_param( 'id' );
+		return $this->build_property_units_response( $id, $request );
+	}
+
+	/**
+	 * GET /properties/by-slug/{slug}/units — by-slug-Variante.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function get_property_units_by_slug( \WP_REST_Request $request ) {
+		$slug  = sanitize_title( (string) $request->get_param( 'slug' ) );
+		$posts = get_posts( array(
+			'post_type'      => PostTypes::POST_TYPE_PROPERTY,
+			'name'           => $slug,
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+		) );
+		if ( empty( $posts ) ) {
+			return new \WP_Error( 'not_found', __( 'Immobilie nicht gefunden.', 'immo-manager' ), array( 'status' => 404 ) );
+		}
+		return $this->build_property_units_response( (int) $posts[0]->ID, $request );
+	}
+
+	/**
+	 * Antwort-Konstruktion für Property-Unit-Endpoints.
+	 *
+	 * @param int              $property_id Property-ID.
+	 * @param \WP_REST_Request $request     Request.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	private function build_property_units_response( int $property_id, \WP_REST_Request $request ): \WP_REST_Response {
+		$orderby = sanitize_key( (string) ( $request->get_param( 'orderby' ) ?? 'unit_number' ) );
+		$limit   = max( 0, (int) ( $request->get_param( 'limit' ) ?? 0 ) );
+
+		$status_raw     = (string) ( $request->get_param( 'status' ) ?? '' );
+		$status_request = array_values( array_filter( array_map(
+			static function ( $s ) { return sanitize_key( trim( (string) $s ) ); },
+			explode( ',', $status_raw )
+		) ) );
+		$status_filter = array_values( array_intersect( $status_request, Units::STATUSES ) );
+
+		$units = Units::get_by_property( $property_id, $orderby );
+
+		if ( ! empty( $status_filter ) ) {
+			$units = array_values( array_filter( $units, static function ( $u ) use ( $status_filter ) {
+				return in_array( $u['status'], $status_filter, true );
+			} ) );
+		}
+
+		if ( $limit > 0 ) {
+			$units = array_slice( $units, 0, $limit );
+		}
+
+		// Stats aus dem ungefilterten All-Set ableiten.
+		$all_units = Units::get_by_property( $property_id, $orderby );
+		$counts    = array( 'available' => 0, 'reserved' => 0, 'sold' => 0, 'rented' => 0 );
+		foreach ( $all_units as $u ) {
+			$st = (string) ( $u['status'] ?? '' );
+			if ( isset( $counts[ $st ] ) ) { $counts[ $st ]++; }
+		}
+		$counts['total'] = array_sum( $counts );
+
+		return rest_ensure_response( array(
+			'property_id'    => $property_id,
+			'applied_status' => $status_filter,
+			'units'          => array_map( array( $this, 'format_unit' ), $units ),
+			'stats'          => $counts,
 		) );
 	}
 
@@ -547,15 +666,19 @@ class RestApi {
 	public function create_inquiry( \WP_REST_Request $request ) {
 		// API-Key-Prüfung für schreibende Endpunkte.
 		$api_key_hash = Settings::get( 'api_key_hash', '' );
-		if ( ! empty( $api_key_hash ) ) {
+		$provided_key = (string) $request->get_header( 'x-immo-api-key' );
+
+		// Wurde der Request mit gültigem API-Key authentifiziert? Nur dann dürfen
+		// Client-Overrides (notify_email, skip_notifications) berücksichtigt werden –
+		// sonst könnte jeder anonyme Besucher den Server als Mail-Relay missbrauchen.
+		// wp_check_password ist sicher gegen Timing-Attacken.
+		$via_api_key = ! empty( $api_key_hash ) && '' !== $provided_key && wp_check_password( $provided_key, $api_key_hash );
+
+		if ( ! empty( $api_key_hash ) && ! $via_api_key ) {
 			// Lokale Anfragen aus dem eigenen Frontend via Nonce erlauben.
 			$nonce = $request->get_header( 'x-wp-nonce' );
 			if ( ! $nonce || ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
-				$provided_key = $request->get_header( 'x-immo-api-key' );
-				// wp_check_password ist sicher gegen Timing-Attacken.
-				if ( ! $provided_key || ! wp_check_password( $provided_key, $api_key_hash ) ) {
-					return new \WP_Error( 'rest_unauthorized', __( 'Ungültiger oder fehlender API-Key.', 'immo-manager' ), array( 'status' => 401 ) );
-				}
+				return new \WP_Error( 'rest_unauthorized', __( 'Ungültiger oder fehlender API-Key.', 'immo-manager' ), array( 'status' => 401 ) );
 			}
 		}
 
@@ -596,13 +719,15 @@ class RestApi {
 		}
 
 		// Optionaler Override-Empfänger (vom Client-Plugin gesteuert).
+		// SICHERHEIT: nur für API-Key-authentifizierte Requests – anonyme oder
+		// Nonce-Requests dürfen den Empfänger nicht umbiegen (Spam-Relay-Schutz).
 		$notify_email = '';
-		if ( ! empty( $body['notify_email'] ) && is_email( $body['notify_email'] ) ) {
+		if ( $via_api_key && ! empty( $body['notify_email'] ) && is_email( $body['notify_email'] ) ) {
 			$notify_email = sanitize_email( (string) $body['notify_email'] );
 		}
 
-		// Wenn ein verbundener Client-Site die Mails selbst versendet.
-		$skip_notifications = ! empty( $body['skip_notifications'] );
+		// Wenn ein verbundener Client-Site die Mails selbst versendet (ebenfalls nur mit API-Key).
+		$skip_notifications = $via_api_key && ! empty( $body['skip_notifications'] );
 
 		// Quelle (Client-Site, falls die Anfrage von einem ImmoClient kommt).
 		$source_url = '';
@@ -610,14 +735,15 @@ class RestApi {
 			$source_url = esc_url_raw( (string) $body['source_url'] );
 		}
 
-		// Speichern.
+		// Speichern. Felder werden hier bereits bereinigt, weil $data auch für die
+		// E-Mail-Benachrichtigung (Reply-To-Header!) verwendet wird.
 		$data = array(
 			'property_id'      => absint( $body['property_id'] ),
 			'unit_id'          => isset( $body['unit_id'] ) ? absint( $body['unit_id'] ) : null,
-			'inquirer_name'    => (string) $body['inquirer_name'],
-			'inquirer_email'   => (string) $body['inquirer_email'],
-			'inquirer_phone'   => (string) ( $body['inquirer_phone'] ?? '' ),
-			'inquirer_message' => (string) ( $body['inquirer_message'] ?? '' ),
+			'inquirer_name'    => substr( sanitize_text_field( (string) $body['inquirer_name'] ), 0, 255 ),
+			'inquirer_email'   => sanitize_email( (string) $body['inquirer_email'] ),
+			'inquirer_phone'   => substr( sanitize_text_field( (string) ( $body['inquirer_phone'] ?? '' ) ), 0, 50 ),
+			'inquirer_message' => sanitize_textarea_field( (string) ( $body['inquirer_message'] ?? '' ) ),
 			'status'           => 'new',
 			'ip_address'       => $this->get_client_ip(),
 			'user_agent'       => isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 255 ) : '',
@@ -686,7 +812,7 @@ class RestApi {
 			}
 		}
 
-		header( 'Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS' );
+		header( 'Access-Control-Allow-Methods: GET, POST, OPTIONS' );
 		header( 'Access-Control-Allow-Headers: Content-Type, X-Immo-API-Key, X-WP-Nonce' );
 		header( 'Access-Control-Max-Age: 86400' );
 
@@ -721,6 +847,22 @@ class RestApi {
 			'meta_query'     => array( 'relation' => 'AND' ),
 		);
 
+		// Filter: ID-Liste (komma- oder semikolongetrennt). Reihenfolge wird übernommen,
+		// solange kein expliziter orderby gesetzt ist. Hard-Cap 100 IDs.
+		$ids_raw = (string) ( $request->get_param( 'ids' ) ?? '' );
+		$id_list = array();
+		if ( '' !== $ids_raw ) {
+			$pieces  = preg_split( '/[,;]/', $ids_raw ) ?: array();
+			$id_list = array_values( array_unique( array_filter( array_map( 'absint', $pieces ) ) ) );
+			$id_list = array_slice( $id_list, 0, 100 );
+			if ( ! empty( $id_list ) ) {
+				$args['post__in']      = $id_list;
+				$args['orderby']       = 'post__in';
+				$args['posts_per_page'] = count( $id_list );
+				$args['paged']          = 1;
+			}
+		}
+
 		// Sortierung.
 		$orderby = sanitize_key( (string) ( $request->get_param( 'orderby' ) ?? 'newest' ) );
 		switch ( $orderby ) {
@@ -740,8 +882,11 @@ class RestApi {
 				$args['order']    = 'DESC';
 				break;
 			default: // newest.
-				$args['orderby'] = 'date';
-				$args['order']   = 'DESC';
+				// Bei ids-Liste die ID-Reihenfolge nicht überschreiben.
+				if ( empty( $id_list ) ) {
+					$args['orderby'] = 'date';
+					$args['order']   = 'DESC';
+				}
 		}
 
 		// Filter: Status.
@@ -922,27 +1067,7 @@ class RestApi {
 			}
 		}
 
-		$project_data = null;
-		if ( $project_id > 0 ) {
-			$proj_post = get_post( $project_id );
-			if ( $proj_post && 'publish' === $proj_post->post_status ) {
-				$proj_meta   = get_post_meta( $project_id );
-				$proj_img_id = get_post_thumbnail_id( $project_id );
-				$proj_counts = Units::count_by_status( $project_id );
-				
-				$project_data = array(
-					'id'              => $project_id,
-					'title'           => get_the_title( $proj_post ),
-					'permalink'       => get_permalink( $proj_post ),
-					'image'           => $proj_img_id ? wp_get_attachment_image_url( $proj_img_id, 'medium_large' ) : '',
-					'status'          => $proj_meta['_immo_project_status'][0] ?? '',
-					'completion'      => $proj_meta['_immo_project_completion'][0] ?? '',
-					'description'     => $proj_post->post_content,
-					'total_units'     => array_sum( $proj_counts ),
-					'available_units' => $proj_counts['available'] ?? 0,
-				);
-			}
-		}
+		$project_data = $project_id > 0 ? $this->project_summary( $project_id ) : null;
 
 		$result = array(
 			'id'             => $id,
@@ -976,6 +1101,8 @@ class RestApi {
 				'renovation_year'       => (int)   $m( '_immo_renovation_year', 0 ),
 				'energy_class'          => (string) $m( '_immo_energy_class', '' ),
 				'energy_hwb'            => (float) $m( '_immo_energy_hwb', 0 ),
+				'energy_eeb'            => (float) $m( '_immo_energy_eeb', 0 ),
+				'energy_fgee'           => (float) $m( '_immo_energy_fgee', 0 ),
 				'heating'               => (string) $m( '_immo_heating', '' ),
 				'price'                 => $price,
 				'price_formatted'       => $price > 0 ? $this->format_price( $price ) : null,
@@ -1004,12 +1131,82 @@ class RestApi {
 			'modified_at' => get_the_modified_date( 'c', $post ),
 		);
 
+		$u_counts             = Units::count_by_property( $id );
+		$u_total              = array_sum( $u_counts );
+		$u_min_offer          = $u_total > 0
+			? Units::min_offer_by_property( $id )
+			: array( 'price' => 0.0, 'rent' => 0.0 );
+		$has_priced_units     = $u_min_offer['price'] > 0 || $u_min_offer['rent'] > 0;
+		$result['unit_stats'] = array_merge(
+			$u_counts,
+			array(
+				'total'               => $u_total,
+				'min_price'           => $u_min_offer['price'],
+				'min_rent'            => $u_min_offer['rent'],
+				'min_price_formatted' => $u_min_offer['price'] > 0 ? $this->format_price( $u_min_offer['price'] ) : null,
+				'min_rent_formatted'  => $u_min_offer['rent']  > 0 ? $this->format_price( $u_min_offer['rent'] )  : null,
+			)
+		);
+		// Flag für die Client-Templates: zeigt an, dass mindestens eine Unit
+		// einen Preis hat — Auflistung/Detailseite stellen darauf um (Pricelist /
+		// "ab"-Preis / Unit-Calculator-Dropdown).
+		$result['meta']['has_priced_units'] = $has_priced_units;
+
 		if ( $full ) {
 			$result['description'] = apply_filters( 'the_content', $post->post_content );
 			$result['gallery']     = $this->format_gallery( $id );
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Kurzinfo eines Bauprojekts (für Property-Antworten), pro Request gecached.
+	 *
+	 * @param int $project_id Projekt-ID.
+	 *
+	 * @return array<string, mixed>|null Null, wenn Projekt nicht veröffentlicht.
+	 */
+	/**
+	 * Fehlerantwort, wenn das Bauprojekte-Paket global deaktiviert ist.
+	 *
+	 * @return \WP_Error
+	 */
+	private static function projects_disabled_error(): \WP_Error {
+		return new \WP_Error( 'immo_projects_disabled', __( 'Das Bauprojekte-Modul ist auf dieser Installation deaktiviert.', 'immo-manager' ), array( 'status' => 404 ) );
+	}
+
+	private function project_summary( int $project_id ): ?array {
+		if ( ! ProjectsAccess::module_enabled() ) {
+			return null;
+		}
+		if ( array_key_exists( $project_id, $this->project_summary_cache ) ) {
+			return $this->project_summary_cache[ $project_id ];
+		}
+
+		$project_data = null;
+		$proj_post    = get_post( $project_id );
+		if ( $proj_post && PostTypes::POST_TYPE_PROJECT === $proj_post->post_type && 'publish' === $proj_post->post_status ) {
+			$proj_meta   = get_post_meta( $project_id );
+			$proj_img_id = get_post_thumbnail_id( $project_id );
+			$proj_counts = Units::count_by_status( $project_id );
+
+			$project_data = array(
+				'id'              => $project_id,
+				'title'           => get_the_title( $proj_post ),
+				'permalink'       => get_permalink( $proj_post ),
+				'image'           => $proj_img_id ? wp_get_attachment_image_url( $proj_img_id, 'medium_large' ) : '',
+				'status'          => $proj_meta['_immo_project_status'][0] ?? '',
+				'completion'      => $proj_meta['_immo_project_completion'][0] ?? '',
+				'description'     => $proj_post->post_content,
+				'total_units'     => array_sum( $proj_counts ),
+				'available_units' => $proj_counts['available'] ?? 0,
+			);
+		}
+
+		$this->project_summary_cache[ $project_id ] = $project_data;
+
+		return $project_data;
 	}
 
 	/**
@@ -1087,6 +1284,21 @@ class RestApi {
 				'features'           => $features,
 				'features_detail'    => $features_detail,
 				'custom_features'    => (string) $m( '_immo_custom_features', '' ),
+				'parking'            => array(
+					'garage' => array(
+						'available' => (bool)  $m( '_immo_parking_garage_available', false ),
+						'total'     => (int)   $m( '_immo_parking_garage_total', 0 ),
+						'price'     => (float) $m( '_immo_parking_garage_price', 0 ),
+						'required'  => (bool)  $m( '_immo_parking_garage_required', false ),
+					),
+					'outdoor' => array(
+						'available' => (bool)  $m( '_immo_parking_outdoor_available', false ),
+						'total'     => (int)   $m( '_immo_parking_outdoor_total', 0 ),
+						'price'     => (float) $m( '_immo_parking_outdoor_price', 0 ),
+						'required'  => (bool)  $m( '_immo_parking_outdoor_required', false ),
+					),
+					'notes' => (string) $m( '_immo_parking_notes', '' ),
+				),
 			),
 			'unit_stats'  => array_merge(
 				$counts,
@@ -1159,6 +1371,8 @@ class RestApi {
 					'floor'     => isset( $prop_meta['_immo_floor'][0] ) ? (int) $prop_meta['_immo_floor'][0] : null,
 					'built_year' => (int) ( $prop_meta['_immo_built_year'][0] ?? 0 ),
 					'energy_class'    => (string) ( $prop_meta['_immo_energy_class'][0] ?? '' ),
+					'energy_hwb'      => (float) ( $prop_meta['_immo_energy_hwb'][0] ?? 0 ),
+					'energy_eeb'      => (float) ( $prop_meta['_immo_energy_eeb'][0] ?? 0 ),
 					'commission_free' => '1' === (string) ( $prop_meta['_immo_commission_free'][0] ?? '0' ),
 					'commission_free_label' => (string) Settings::get( 'commission_free_label', __( 'Provisionsfrei', 'immo-manager' ) ),
 				);
@@ -1173,6 +1387,17 @@ class RestApi {
 			'floor'           => (int) $unit['floor'],
 			'area'            => (float) $unit['area'],
 			'usable_area'     => (float) $unit['usable_area'],
+			'balcony_area'    => (float) ( $unit['balcony_area'] ?? 0 ),
+			'loggia_area'     => (float) ( $unit['loggia_area']  ?? 0 ),
+			'terrace_area'    => (float) ( $unit['terrace_area'] ?? 0 ),
+			'garden_area'     => (float) ( $unit['garden_area']  ?? 0 ),
+			'cellar_area'     => (float) ( $unit['cellar_area']  ?? 0 ),
+			'parking'         => array(
+				'garage_count'           => (int)   ( $unit['parking_garage_count']  ?? 0 ),
+				'outdoor_count'          => (int)   ( $unit['parking_outdoor_count'] ?? 0 ),
+				'garage_price_override'  => null === ( $unit['parking_garage_price_override']  ?? null ) ? null : (float) $unit['parking_garage_price_override'],
+				'outdoor_price_override' => null === ( $unit['parking_outdoor_price_override'] ?? null ) ? null : (float) $unit['parking_outdoor_price_override'],
+			),
 			'rooms'           => (int) $unit['rooms'],
 			'bedrooms'        => (int) $unit['bedrooms'],
 			'bathrooms'       => (int) $unit['bathrooms'],
@@ -1300,6 +1525,7 @@ class RestApi {
 			'energy_class'    => array( 'type' => 'string' ),
 			'features'        => array( 'type' => 'string' ),
 			'project_id'      => array( 'type' => 'integer' ),
+			'ids'             => array( 'type' => 'string' ),
 		);
 	}
 

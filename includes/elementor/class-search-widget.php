@@ -73,6 +73,9 @@ class SearchWidget extends Widget_Base {
 		$settings = $this->get_settings_for_display();
 		$res_url  = $settings['results_url']['url'] ?? '';
 
+		// Plugin-Assets sicherstellen (Such-Lightbox + Autocomplete brauchen frontend.js).
+		\ImmoManager\Plugin::instance()->get_shortcodes()->enqueue_assets();
+
 		if ( 'lightbox' === $settings['type'] ) {
 			$this->render_lightbox_trigger();
 		} else {

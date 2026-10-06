@@ -13,6 +13,7 @@ $pre_project  = $prefill['_immo_project_id']      ?? 0;
 	<p class="immo-wizard-step-sub"><?php esc_html_e( 'Adresse, Region und Bauprojekt-Zuordnung.', 'immo-manager' ); ?></p>
 </div>
 
+<?php if ( \ImmoManager\ProjectsAccess::user_has_access() ) : ?>
 <!-- Projekt-Auswahl (sichtbar wenn "Teil eines Projekts") -->
 <div class="immo-wizard-section immo-project-section" hidden>
 	<h3><?php esc_html_e( 'Bauprojekt', 'immo-manager' ); ?></h3>
@@ -25,6 +26,10 @@ $pre_project  = $prefill['_immo_project_id']      ?? 0;
 		<?php endforeach; ?>
 	</select>
 </div>
+<?php else : ?>
+	<?php // Ohne Bauprojekte-Paket: bestehende Zuordnung unveraendert mitsenden. ?>
+	<input type="hidden" name="_immo_project_id" class="immo-wizard-input" value="<?php echo esc_attr( (string) (int) $pre_project ); ?>">
+<?php endif; ?>
 
 <div class="immo-wizard-section">
 	<h3><?php esc_html_e( 'Adresse', 'immo-manager' ); ?></h3>

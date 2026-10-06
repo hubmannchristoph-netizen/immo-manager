@@ -20,6 +20,17 @@ $display_price = $mode === 'rent' && $rent > 0
 	: ( $meta['price_formatted'] ?? '' );
 $price_suffix = $mode === 'rent' ? ' / ' . __( 'Monat', 'immo-manager' ) : '';
 
+// Wohneinheiten-Preise: günstigster verfügbarer Unit-Preis → "ab X €".
+$unit_min_price = (float) ( $property['unit_stats']['min_price'] ?? 0 );
+$unit_min_rent  = (float) ( $property['unit_stats']['min_rent']  ?? 0 );
+$currency_sym   = (string) \ImmoManager\Settings::get( 'currency_symbol', '€' );
+$unit_price_display = '';
+if ( 'rent' === $mode && $unit_min_rent > 0 ) {
+	$unit_price_display = number_format_i18n( $unit_min_rent, 0 ) . ' ' . $currency_sym . ' / ' . __( 'Monat', 'immo-manager' );
+} elseif ( $unit_min_price > 0 ) {
+	$unit_price_display = number_format_i18n( $unit_min_price, 0 ) . ' ' . $currency_sym;
+}
+
 $status_labels = array(
 	'available' => array( 'label' => __( 'Verfügbar', 'immo-manager' ), 'class' => 'available' ),
 	'reserved'  => array( 'label' => __( 'Reserviert', 'immo-manager' ), 'class' => 'reserved' ),
@@ -38,6 +49,10 @@ $display_area = (float) ( $meta['area'] ?? 0 );
 if ( $display_area <= 0 ) {
 	$display_area = (float) ( $meta['usable_area'] ?? 0 );
 }
+
+// Wohneinheiten-Verfügbarkeit (nur wenn der Immobilie Units direkt zugeordnet sind).
+$unit_total = (int) ( $property['unit_stats']['total'] ?? 0 );
+$unit_avail = (int) ( $property['unit_stats']['available'] ?? 0 );
 ?>
 <article class="immo-property-card" role="listitem" data-property-id="<?php echo esc_attr( (string) $property['id'] ); ?>">
 	<a href="<?php echo esc_url( $property['permalink'] ?? '#' ); ?>" class="immo-card-link" tabindex="-1" aria-hidden="true">
@@ -80,7 +95,14 @@ if ( $display_area <= 0 ) {
 			</p>
 		<?php endif; ?>
 
-		<?php if ( $display_price ) : ?>
+		<?php if ( $unit_total > 0 && '' !== $unit_price_display ) : ?>
+			<p class="immo-card-price immo-card-price--from">
+				<strong>
+					<span class="immo-card-price-prefix"><?php esc_html_e( 'ab', 'immo-manager' ); ?></span>
+					<?php echo esc_html( $unit_price_display ); ?>
+				</strong>
+			</p>
+		<?php elseif ( 0 === $unit_total && $display_price ) : ?>
 			<p class="immo-card-price">
 				<strong><?php echo esc_html( $display_price . $price_suffix ); ?></strong>
 			</p>
@@ -94,7 +116,35 @@ if ( $display_area <= 0 ) {
 				<li><span aria-hidden="true">📐</span> <?php echo esc_html( number_format_i18n( $display_area, 0 ) . ' m²' ); ?></li>
 			<?php endif; ?>
 			<?php if ( $meta['energy_class'] ) : ?>
-				<li><span aria-hidden="true">⚡</span> <?php echo esc_html( $meta['energy_class'] ); ?></li>
+				<li title="<?php esc_attr_e( 'Energieeffizienzklasse', 'immo-manager' ); ?>"><span aria-hidden="true">⚡</span> <?php echo esc_html( $meta['energy_class'] ); ?></li>
+			<?php endif; ?>
+			<?php
+			// EAVG § 3: HWB + EEB gehören in jedes Inserat – kompakt auch auf der Card.
+			$energy_bits = array();
+			if ( ! empty( $meta['energy_hwb'] ) ) {
+				$energy_bits[] = 'HWB ' . number_format_i18n( (float) $meta['energy_hwb'], 0 );
+			}
+			if ( ! empty( $meta['energy_eeb'] ) ) {
+				$energy_bits[] = 'EEB ' . number_format_i18n( (float) $meta['energy_eeb'], 0 );
+			} elseif ( ! empty( $meta['energy_fgee'] ) ) {
+				$energy_bits[] = 'fGEE ' . number_format_i18n( (float) $meta['energy_fgee'], 2 );
+			}
+			if ( $energy_bits ) : ?>
+				<li class="immo-card-energy" title="<?php esc_attr_e( 'Energieausweis (kWh/m²a)', 'immo-manager' ); ?>"><span aria-hidden="true">📊</span> <?php echo esc_html( implode( ' · ', $energy_bits ) ); ?></li>
+			<?php endif; ?>
+			<?php if ( $unit_total > 0 ) : ?>
+				<li>
+					<span aria-hidden="true">🏘️</span>
+					<?php
+					if ( $unit_avail > 0 ) {
+						/* translators: 1: Anzahl verfügbarer Wohneinheiten, 2: Gesamtanzahl */
+						echo esc_html( sprintf( __( '%1$d von %2$d verfügbar', 'immo-manager' ), $unit_avail, $unit_total ) );
+					} else {
+						/* translators: %d: Gesamtanzahl der Wohneinheiten */
+						echo esc_html( sprintf( _n( '%d Wohneinheit – ausverkauft', '%d Wohneinheiten – ausverkauft', $unit_total, 'immo-manager' ), $unit_total ) );
+					}
+					?>
+				</li>
 			<?php endif; ?>
 		</ul>
 
