@@ -136,6 +136,25 @@ code=$(fetch "$PROP_URL" $T/psingle.html); [ "$code" = 200 ] && ok "Immobilien-E
 grep -q "Endenergiebedarf (EEB)" $T/psingle.html && ok "Detailseite zeigt Endenergiebedarf" || fail "Detailseite zeigt Endenergiebedarf"
 grep -Eq '"name": *"EEB"' $T/psingle.html && ok "Schema.org enthält EEB" || fail "Schema.org enthält EEB"
 
+echo "== Preisregel: Wohneinheit einer Immobilie zuordnen =="
+UNIT_PROP_ID=$(WP post list --post_type=immo_mgr_property --post_status=publish --field=ID --posts_per_page=1 --orderby=ID --order=ASC 2>/dev/null | tr -d '\r' | head -1)
+UNIT_PROP_SLUG=$(WP post get $UNIT_PROP_ID --field=post_name 2>/dev/null | tr -d '\r')
+FIRST_UNIT=$(WP db query "SELECT MIN(id) FROM wp_immo_units" --skip-column-names 2>/dev/null | tr -d '\r')
+WP db query "UPDATE wp_immo_units SET property_id=$UNIT_PROP_ID, price=0, rent=0 WHERE id=$FIRST_UNIT" >/dev/null 2>&1
+code=$(fetch "http://localhost:$PORT/wp-json/immo-manager/v1/properties/by-slug/$UNIT_PROP_SLUG" $T/unitprop.json)
+python -c "import json,sys; d=json.load(open(sys.argv[1])); m=d['meta']; assert d['unit_stats']['total']>=1, d['unit_stats']; assert m['price_formatted'] is None and m['has_units'] is True and 'Preisliste' in m['price_display'], (m['price_formatted'], m.get('has_units'), m.get('price_display'))" $T/unitprop.json && ok "REST: price_formatted null + has_units + price_display bei zugeordneten Units" || fail "REST Preisregel bei zugeordneten Units"
+code=$(fetch "$(WP post get $UNIT_PROP_ID --field=url 2>/dev/null | tr -d '\r')" $T/unitprop.html); grep -q "siehe Preisliste" $T/unitprop.html && ok "Manager-Detailseite: siehe Preisliste" || fail "Manager-Detailseite: siehe Preisliste (HTTP $code)"
+PROP_PRICE=$(python -c "import json,sys; print(int(json.load(open(sys.argv[1]))['meta']['price']))" $T/unitprop.json)
+code=$(fetch "http://localhost:$PORT/immobilien/" $T/parch2.html); python - "$T/parch2.html" "$UNIT_PROP_ID" <<'PY'
+import re,sys
+html=open(sys.argv[1],encoding='utf-8').read(); pid=sys.argv[2]
+m=re.search(r'data-property-id="%s".*?</article>' % pid, html, re.S)
+card=m.group(0) if m else ''
+ok = bool(card) and 'immo-card-price' not in card
+sys.exit(0 if ok else 1)
+PY
+[ $? = 0 ] && ok "Manager-Card: kein Gesamtpreis bei Units ohne Preis" || fail "Manager-Card: kein Gesamtpreis bei Units ohne Preis"
+
 echo "== REST-API =="
 code=$(fetch "http://localhost:$PORT/wp-json/immo-manager/v1/projects" $T/projects.json); [ "$code" = 200 ] && ok "GET /projects 200" || fail "GET /projects $code"
 python -c "import json,sys; d=json.load(open(sys.argv[1])); assert d['projects'] and 'unit_stats' in d['projects'][0]; print('   projects:',len(d['projects']),'total units stats:',d['projects'][0]['unit_stats'])" $T/projects.json && ok "/projects Struktur" || fail "/projects Struktur"
@@ -262,6 +281,16 @@ if [ -f "$CLIENT_DIR/immo-client.php" ]; then
   PSLUG_PROP=$(WP post list --post_type=immo_mgr_property --post_status=publish --field=post_name --posts_per_page=1 --orderby=ID --order=DESC 2>/dev/null | tr -d '\r' | head -1)
   code=$(curl -s -L -o $T/client-detail.html -w "%{http_code}" "http://localhost:$PORT/immobilie/$PSLUG_PROP/"); [ "$code" = 200 ] && ok "Client: Detailseite /immobilie/{slug} HTTP 200" || fail "Client: Detailseite HTTP $code"
   grep -q "Endenergiebedarf (EEB)\|fGEE (Altausweis)" $T/client-detail.html && ok "Client: Detailseite zeigt Endenergiebedarf" || fail "Client: Detailseite zeigt Endenergiebedarf"
+  code=$(curl -s -L -o $T/client-unitprop.html -w "%{http_code}" "http://localhost:$PORT/immobilie/$UNIT_PROP_SLUG/")
+  grep -q "siehe Preisliste" $T/client-unitprop.html && ! grep -q "immo-price-value\">[0-9]" $T/client-unitprop.html && ok "Client-Detailseite: siehe Preisliste statt Gesamtpreis" || fail "Client-Detailseite: Preisregel (HTTP $code)"
+  python - "$T/client-list.html" "$UNIT_PROP_SLUG" <<'PY'
+import re,sys
+html=open(sys.argv[1],encoding='utf-8').read(); slug=sys.argv[2]
+cards=re.findall(r'<div class="immo-card".*?</div>\s*</div>', html, re.S)
+card=[c for c in cards if slug in c]
+sys.exit(0 if card and 'class="price"' not in card[0] else 1)
+PY
+  [ $? = 0 ] && ok "Client-Card: kein Gesamtpreis bei Units ohne Preis" || fail "Client-Card: kein Gesamtpreis bei Units ohne Preis"
   # Paket im Manager aus -> Client zeigt Hinweis statt "nicht gefunden"
   WP eval '$s = get_option("immo_manager_settings", []); $s["enable_projects"] = 0; update_option("immo_manager_settings", $s);' >/dev/null 2>&1
   WP transient delete --all >/dev/null 2>&1

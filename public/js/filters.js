@@ -215,8 +215,18 @@
 		var statusMap = { available: 'Verfügbar', reserved: 'Reserviert', sold: 'Verkauft', rented: 'Vermietet' };
 		var statusClass = { available: 'available', reserved: 'reserved', sold: 'sold', rented: 'sold' };
 		var mode  = meta.mode || 'sale';
-		var price = mode === 'rent' && meta.rent > 0 ? meta.rent_formatted : meta.price_formatted;
-		var suffix = mode === 'rent' ? ' / Monat' : '';
+		var us    = p.unit_stats || {};
+		var price = '';
+		var suffix = '';
+		if (parseInt(us.total, 10) > 0) {
+			// Wohneinheiten zugeordnet: günstigster Unit-Preis als "ab X", sonst kein Preis
+			// (identisch zu templates/parts/property-card.php – nie den Property-Gesamtpreis zeigen).
+			if (mode === 'rent' && us.min_rent_formatted) { price = 'ab ' + us.min_rent_formatted; suffix = ' / Monat'; }
+			else if (us.min_price_formatted) { price = 'ab ' + us.min_price_formatted; }
+		} else {
+			price  = mode === 'rent' && meta.rent > 0 ? meta.rent_formatted : meta.price_formatted;
+			suffix = mode === 'rent' ? ' / Monat' : '';
+		}
 		var loc   = [meta.postal_code, meta.city].filter(Boolean).join(' ');
 		var topFeat = (meta.features_detail || []).slice(0, 3).map(function (f) {
 			return '<li title="' + escHtml(f.label) + '"><span aria-hidden="true">' + f.icon + '</span></li>';

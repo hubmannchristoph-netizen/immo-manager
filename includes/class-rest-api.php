@@ -1151,6 +1151,29 @@ class RestApi {
 		// einen Preis hat — Auflistung/Detailseite stellen darauf um (Pricelist /
 		// "ab"-Preis / Unit-Calculator-Dropdown).
 		$result['meta']['has_priced_units'] = $has_priced_units;
+		$result['meta']['has_units']        = $u_total > 0;
+
+		// Sind der Immobilie Wohneinheiten zugeordnet, gilt überall "Preis siehe Preisliste"
+		// bzw. "ab <günstigste Einheit>" (so rendert es auch die Detailseite des Managers).
+		// Damit KEIN Konsument (ImmoClient, Embed-Widget, Drittsysteme) versehentlich den
+		// Property-Gesamtpreis anzeigt, werden die formatierten Preise hier geleert. Der
+		// numerische Wert bleibt für Filter/Sortierung erhalten.
+		if ( $u_total > 0 ) {
+			$result['meta']['price_formatted'] = null;
+			$result['meta']['rent_formatted']  = null;
+			$result['meta']['price_display']   = $u_min_offer['price'] > 0
+				? sprintf( /* translators: %s: günstigster Einheitenpreis */ __( 'ab %s', 'immo-manager' ), $this->format_price( $u_min_offer['price'] ) )
+				: ( $u_min_offer['rent'] > 0
+					? sprintf( /* translators: %s: günstigste Einheitenmiete */ __( 'ab %s / Monat', 'immo-manager' ), $this->format_price( $u_min_offer['rent'] ) )
+					: __( 'Preis siehe Preisliste', 'immo-manager' ) );
+		} else {
+			$result['meta']['price_display'] = $price > 0
+				? $result['meta']['price_formatted'] . ( 'rent' === $result['meta']['mode'] && $rent > 0 ? '' : '' )
+				: ( $rent > 0 ? $result['meta']['rent_formatted'] . ' / ' . __( 'Monat', 'immo-manager' ) : '' );
+			if ( 'rent' === $result['meta']['mode'] && $rent > 0 ) {
+				$result['meta']['price_display'] = $result['meta']['rent_formatted'] . ' / ' . __( 'Monat', 'immo-manager' );
+			}
+		}
 
 		if ( $full ) {
 			$result['description'] = apply_filters( 'the_content', $post->post_content );

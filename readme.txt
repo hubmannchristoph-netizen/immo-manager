@@ -58,6 +58,7 @@ Eine WordPress-Installation dient als Datenquelle. Externe Websites laden Immobi
 == Changelog ==
 
 = 1.4.0 =
+* Fix: Immobilien mit zugeordneten Wohneinheiten zeigten in AJAX-Filter-Cards, Embed-Widget und ImmoClient den Property-Gesamtpreis statt „Preis siehe Preisliste"/„ab X €" – REST leert jetzt price_formatted/rent_formatted bei zugeordneten Units und liefert meta.has_units + meta.price_display; AJAX-Cards und Embed folgen der Regel der Detailseite
 * Neu: Bauprojekte als freischaltbares Paket – global abschaltbar (reine Immobilienverwaltung, Daten bleiben erhalten), Freischaltung pro Rolle (Einstellungen → Module) und pro Benutzer (Benutzerprofil); eigene Capabilities edit_immo_projects etc.
 * Neu: Energieausweis-Pflichtangaben laut EAVG-Novelle (1.7.2026): Feld Endenergiebedarf (EEB) in Wizard, Metabox, REST (meta.energy_eeb/energy_fgee), Schema.org, OpenImmo (endenergiebedarf) und allen Ausgaben; fGEE nur noch als Altausweis-Angabe; Veröffentlichen im Wizard erfordert Klasse + HWB + EEB/fGEE (Grundstücke ausgenommen); Hinweis-/Warntexte im Backend
 * Neu: Bedienungsanleitung für Embed-Widgets im Backend (API & Hilfe, Kapitel 12) mit Snippet-Generator + Live-Vorschau, Plattform-Anleitungen für Nicht-WordPress-Seiten und Fehlersuche; eigenständige Anleitungsseite public/embed/anleitung.html mit Live-Demo

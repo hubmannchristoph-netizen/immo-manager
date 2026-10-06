@@ -473,6 +473,10 @@ Seit 1.4.0 liegt unter `public/embed/immo-embed.js` ein eigenständiges Widget-S
 | GET | `/search` | Volltextsuche |
 | POST | `/inquiries` | Anfrage einreichen |
 
+### Preisregel bei zugeordneten Wohneinheiten
+
+Sind einer Immobilie Wohneinheiten direkt zugeordnet (`unit_stats.total > 0`), zeigt der Manager nie den Property-Gesamtpreis, sondern „Preis siehe Preisliste" (Detailseite) bzw. „ab <günstigste Einheit>" (Cards). Damit alle Konsumenten dieselbe Regel anwenden, liefert die REST-API in diesem Fall `meta.price_formatted` und `meta.rent_formatted` als `null`, dazu `meta.has_units = true` und einen fertigen Anzeigetext `meta.price_display` („ab 250.000 €" oder „Preis siehe Preisliste"). Der numerische Wert `meta.price` bleibt für Filter und Sortierung erhalten. `unit_stats.min_price(_formatted)` / `min_rent(_formatted)` enthalten das günstigste verfügbare Angebot.
+
 ### Filterparameter für `/properties`
 
 `per_page`, `page`, `orderby` (`newest`/`price_asc`/`price_desc`/`area_desc`), `status`, `mode`, `type`, `region_state`, `region_district`, `price_min`, `price_max`, `area_min`, `area_max`, `rooms` (Komma-Liste), `project_id`, `search`.

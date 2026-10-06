@@ -299,11 +299,12 @@
 	function propertyPrice(w, p) {
 		var m = p.meta || {};
 		var us = p.unit_stats || {};
-		// 1.3.x: Property mit zugeordneten Wohneinheiten → "ab X" bzw. Preisliste.
-		if (m.has_priced_units || (us && (us.min_price_formatted || us.min_rent_formatted))) {
-			if (us.min_price_formatted) { return w.t('from') + ' ' + us.min_price_formatted; }
-			if (us.min_rent_formatted)  { return w.t('from') + ' ' + us.min_rent_formatted + ' <small>' + esc(w.t('perMonth')) + '</small>'; }
-			return w.t('priceList');
+		// Property mit zugeordneten Wohneinheiten → "ab X" bzw. "Preis siehe Preisliste";
+		// der Property-Gesamtpreis wird dann NIE angezeigt (identisch zum Manager).
+		if (m.has_units || parseInt(us.total, 10) > 0 || m.has_priced_units || us.min_price_formatted || us.min_rent_formatted) {
+			if (us.min_price_formatted) { return esc(w.t('from') + ' ' + us.min_price_formatted); }
+			if (us.min_rent_formatted)  { return esc(w.t('from') + ' ' + us.min_rent_formatted) + ' <small>' + esc(w.t('perMonth')) + '</small>'; }
+			return esc(w.t('priceList'));
 		}
 		if (m.mode === 'rent' && m.rent_formatted) { return esc(m.rent_formatted) + ' <small>' + esc(w.t('perMonth')) + '</small>'; }
 		if (m.price_formatted) { return esc(m.price_formatted); }

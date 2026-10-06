@@ -138,6 +138,27 @@ async function main() {
 		check(Array.from(r.querySelectorAll('a')).every((a) => a.getAttribute('href') === '#'), 'XSS: javascript:-Links neutralisiert');
 	}
 
+	// Preisregel bei zugeordneten Wohneinheiten (Mock): nie Property-Gesamtpreis.
+	{
+		const d4 = new JSDOM('<!doctype html><html><body><div id="p" data-immo-embed="properties" data-api="http://x.invalid"></div></body></html>', { url: 'https://kunde.example/', runScripts: 'outside-only' });
+		const mk = (id, slug, extra) => Object.assign({ id, title: 'Objekt ' + id, slug, permalink: 'https://wp.example/' + slug, featured_image: null, meta: { mode: 'sale', status: 'available', price: 526534, price_formatted: null, rent: 0, rent_formatted: null } }, extra);
+		d4.window.fetch = (url) => Promise.resolve({ ok: true, json: () => Promise.resolve(
+			/settings/.test(url) ? {} : /regions/.test(url) ? { states: [] } : { properties: [
+				mk(1, 'mit-units-ohne-preis', { unit_stats: { total: 6, available: 6, min_price: 0, min_price_formatted: null } }),
+				mk(2, 'mit-units-mit-preis', { unit_stats: { total: 3, available: 2, min_price: 250000, min_price_formatted: '250.000 €' } }),
+				mk(3, 'ohne-units', { meta: { mode: 'sale', status: 'available', price: 526534, price_formatted: '526.534 €', rent: 0 }, unit_stats: { total: 0 } }),
+			], pagination: { total: 3, pages: 1 } }
+		) });
+		d4.window.eval(src);
+		await new Promise((r) => setTimeout(r, 400));
+		const cards = Array.from(d4.window.document.getElementById('p').shadowRoot.querySelectorAll('.ie-card'));
+		const txt = (i) => (cards[i].querySelector('.ie-price') || {}).textContent || '';
+		check(cards.length === 3, 'Preisregel: 3 Mock-Cards gerendert');
+		check(/Preisliste/.test(txt(0)) && !/526/.test(txt(0)), 'Preisregel: Units ohne Preis -> "Preis siehe Preisliste", kein Gesamtpreis');
+		check(/ab 250\.000/.test(txt(1)) && !/526/.test(txt(1)), 'Preisregel: Units mit Preis -> "ab 250.000 €"');
+		check(/526\.534/.test(txt(2)), 'Preisregel: ohne Units -> Property-Preis');
+	}
+
 	console.log(`\nEMBED RESULT: ${pass} passed, ${fail} failed`);
 	process.exit(fail ? 1 : 0);
 }
