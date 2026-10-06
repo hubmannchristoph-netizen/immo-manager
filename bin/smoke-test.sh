@@ -240,6 +240,39 @@ WP eval '$s = get_option("immo_manager_settings", []); $s["enable_projects"] = 1
 code=$(fetch "http://localhost:$PORT/wp-json/immo-manager/v1/projects" $T/p-on.json); [ "$code" = 200 ] && ok "Paket wieder AN: REST /projects 200" || fail "Paket wieder an: HTTP $code"
 code=$(fetch "http://localhost:$PORT/projekte/" $T/arch-on.html); [ "$code" = 200 ] && ok "Paket wieder AN: Archiv 200" || fail "Paket wieder an: Archiv HTTP $code"
 
+echo "== ImmoClient (Schwester-Plugin, falls ../immo-client vorhanden) =="
+CLIENT_DIR="$(dirname "$REPO")/immo-client"
+if [ -f "$CLIENT_DIR/immo-client.php" ]; then
+  docker cp "$CLIENT_DIR" immo-wp:/var/www/html/wp-content/plugins/immo-client >/dev/null 2>&1
+  docker exec immo-wp sh -c 'rm -rf /var/www/html/wp-content/plugins/immo-client/.git; chown -R 33:33 /var/www/html/wp-content/plugins/immo-client'
+  WP plugin activate immo-client 2>&1 | tail -1
+  # Manager ueber den Docker-Netzwerknamen ansprechen – erreichbar aus dem Apache-Container
+  # UND aus dem wp-cli-Container (dort waere "localhost" der CLI-Container selbst).
+  WP option update immo_api_url "http://immo-wp" >/dev/null 2>&1
+  WP option update immo_cache_duration 0 >/dev/null 2>&1
+  WP rewrite flush --hard >/dev/null 2>&1
+  CL_PAGE=$(WP post create --post_type=page --post_status=publish --post_title="Client Test" --post_content="[immo_list limit=\"6\"] [immo_project slug=\"$PSLUG\"] [immo_units project_slug=\"$PSLUG\"]" --porcelain 2>/dev/null | tr -d '\r')
+  CL_URL=$(WP post get $CL_PAGE --field=url 2>/dev/null | tr -d '\r')
+  code=$(fetch "$CL_URL" $T/client.html); [ "$code" = 200 ] && ok "Client: Shortcode-Seite HTTP 200" || fail "Client: Shortcode-Seite HTTP $code"
+  # [immo_list] registrieren Manager UND Client (im Test gewinnt der Manager) -> Client-Liste direkt rendern.
+  WP eval 'echo (new ImmoShortcodes())->render_list_shortcode(["limit" => 6]);' > $T/client-list.html 2>/dev/null
+  grep -q "immo-item-grid" $T/client-list.html && grep -q "immo-card" $T/client-list.html && ok "Client: [immo_list] rendert Cards" || { fail "Client: [immo_list] rendert Cards"; echo "    eval output ($(wc -c < $T/client-list.html) bytes): $(head -c 300 $T/client-list.html)"; }
+  grep -q "immo-card-energy" $T/client-list.html && grep -q "EEB" $T/client-list.html && ok "Client: Listing-Cards zeigen HWB/EEB" || fail "Client: Listing-Cards zeigen HWB/EEB"
+  grep -q "Energieausweis" $T/client.html && ok "Client: Wohneinheiten-Karten zeigen Energieausweis" || fail "Client: Wohneinheiten-Karten zeigen Energieausweis"
+  PSLUG_PROP=$(WP post list --post_type=immo_mgr_property --post_status=publish --field=post_name --posts_per_page=1 --orderby=ID --order=DESC 2>/dev/null | tr -d '\r' | head -1)
+  code=$(curl -s -L -o $T/client-detail.html -w "%{http_code}" "http://localhost:$PORT/immobilie/$PSLUG_PROP/"); [ "$code" = 200 ] && ok "Client: Detailseite /immobilie/{slug} HTTP 200" || fail "Client: Detailseite HTTP $code"
+  grep -q "Endenergiebedarf (EEB)\|fGEE (Altausweis)" $T/client-detail.html && ok "Client: Detailseite zeigt Endenergiebedarf" || fail "Client: Detailseite zeigt Endenergiebedarf"
+  # Paket im Manager aus -> Client zeigt Hinweis statt "nicht gefunden"
+  WP eval '$s = get_option("immo_manager_settings", []); $s["enable_projects"] = 0; update_option("immo_manager_settings", $s);' >/dev/null 2>&1
+  WP transient delete --all >/dev/null 2>&1
+  code=$(fetch "$CL_URL" $T/client-off.html); grep -q "Bauprojekte sind derzeit nicht verfügbar" $T/client-off.html && ok "Client: Hinweis bei deaktiviertem Bauprojekte-Paket" || fail "Client: Hinweis bei deaktiviertem Paket (HTTP $code)"
+  WP eval '$s = get_option("immo_manager_settings", []); $s["enable_projects"] = 1; update_option("immo_manager_settings", $s);' >/dev/null 2>&1
+  WP transient delete --all >/dev/null 2>&1
+  WP plugin deactivate immo-client >/dev/null 2>&1
+else
+  echo "  (uebersprungen: $CLIENT_DIR nicht vorhanden)"
+fi
+
 echo "== Re-Installation (Update per ZIP) erhält Daten =="
 WP plugin install /var/www/html/wp-content/$ZIP --force 2>&1 | tail -1
 check "Plugin nach Re-Install aktiv" bash -c "WP plugin list --status=active --field=name | tr -d '
