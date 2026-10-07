@@ -137,7 +137,7 @@ Statt klassischer Metaboxen leitet das Plugin beim Anlegen/Bearbeiten in einen 7
 | 1. Typ | Immobilientyp, Modus (Miete/Kauf/beides), Status |
 | 2. Lage | Adresse, PLZ, Ort, Bundesland, Bezirk, Geo-Koordinaten |
 | 3. Details | Fläche, Zimmer, Bäder, Etage, Baujahr, Sanierung, Energieausweis (Klasse, HWB, EEB, fGEE), Heizung |
-| 4. Preis | Kaufpreis, Miete, Betriebskosten, Kaution, Provisionsfrei-Toggle, Verfügbarkeit |
+| 4. Preis | Kaufpreis, Miete, Kaution, Provisionsfrei-Toggle, Verfügbarkeit, Betriebsnebenkosten/Monat **brutto** (Betriebskosten, Heizkosten, sonstige Kosten) |
 | 5. Ausstattung | Klickbare Feature-Tags (Innen/Außen/Sicherheit/Sonstiges) + freier Text |
 | 6. Medien | Hauptbild, Galerie, Dokumente (Exposé-PDF), Video |
 | 7. Kontakt | Ansprechpartner-Daten + Foto (für Anfrage-Lightbox) |
@@ -472,6 +472,10 @@ Seit 1.4.0 liegt unter `public/embed/immo-embed.js` ein eigenständiges Widget-S
 | GET | `/settings/public` | Öffentliche Settings (Währung/Farben/Maps) |
 | GET | `/search` | Volltextsuche |
 | POST | `/inquiries` | Anfrage einreichen |
+
+### Betriebsnebenkosten (brutto)
+
+Pro Immobilie gibt es drei monatliche Kostenfelder, alle **brutto inkl. USt**: `_immo_operating_costs` (Betriebskosten), `_immo_heating_costs` (Heizkosten), `_immo_other_costs` (sonstige Kosten). Die REST-API liefert sie als `meta.operating_costs`, `meta.heating_costs`, `meta.other_costs` plus die Summe `meta.ancillary_costs_total` (`…_formatted`), `meta.costs_gross = true` und `meta.costs_note`. Detailseite, Embed-Widget und Immo-Client zeigen die Kosten-Tabelle mit Gesamtsumme identisch; OpenImmo exportiert `nebenkosten`, `heizkosten` und `monatlichekostenbrutto`.
 
 ### Preisregel bei zugeordneten Wohneinheiten
 

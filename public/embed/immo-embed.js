@@ -80,6 +80,7 @@
 			mode: 'Angebot', sale: 'Kaufen', rent: 'Mieten', region: 'Bundesland', priceMax: 'Preis bis', roomsMin: 'Zimmer ab',
 			search: 'Suchen', reset: 'Zurücksetzen', results: 'Ergebnisse', floorPlan: 'Grundriss', description: 'Beschreibung',
 			features: 'Ausstattung', contact: 'Kontakt', priceList: 'Preis siehe Preisliste',
+			costs: 'Betriebsnebenkosten / Monat (brutto)', opCosts: 'Betriebskosten', heatCosts: 'Heizkosten', otherCosts: 'Sonstige Kosten', costsTotal: 'Gesamt',
 			st: { available: 'Verfügbar', reserved: 'Reserviert', sold: 'Verkauft', rented: 'Vermietet' },
 			ps: { planning: 'In Planung', building: 'In Bau', completed: 'Fertiggestellt' }
 		},
@@ -91,6 +92,7 @@
 			mode: 'Offer', sale: 'Buy', rent: 'Rent', region: 'State', priceMax: 'Max. price', roomsMin: 'Rooms from',
 			search: 'Search', reset: 'Reset', results: 'results', floorPlan: 'Floor plan', description: 'Description',
 			features: 'Features', contact: 'Contact', priceList: 'See price list',
+			costs: 'Running costs / month (gross)', opCosts: 'Operating costs', heatCosts: 'Heating costs', otherCosts: 'Other costs', costsTotal: 'Total',
 			st: { available: 'Available', reserved: 'Reserved', sold: 'Sold', rented: 'Rented' },
 			ps: { planning: 'Planned', building: 'Under construction', completed: 'Completed' }
 		}
@@ -221,6 +223,21 @@
 		if (m.energy_eeb) { bits.push('EEB ' + Math.round(m.energy_eeb)); }
 		else if (m.energy_fgee) { bits.push('fGEE ' + Number(m.energy_fgee).toFixed(2)); }
 		return bits.join(' · ');
+	}
+	/**
+	 * Betriebsnebenkosten (brutto, pro Monat) – identisch zur Manager-Detailseite.
+	 */
+	function costsHtml(w, m) {
+		var cur = (m.price_formatted || m.rent_formatted || '').replace(/[0-9.,\s]/g, '') || '€';
+		var fmt = function (v) { return Number(v).toLocaleString('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + cur; };
+		var rows = [];
+		if (m.operating_costs > 0) { rows.push([w.t('opCosts'), fmt(m.operating_costs)]); }
+		if (m.heating_costs > 0)   { rows.push([w.t('heatCosts'), fmt(m.heating_costs)]); }
+		if (m.other_costs > 0)     { rows.push([w.t('otherCosts'), fmt(m.other_costs)]); }
+		if (!rows.length) { return ''; }
+		if (rows.length > 1 && m.ancillary_costs_total > 0) { rows.push(['<strong>' + esc(w.t('costsTotal')) + '</strong>', '<strong>' + esc(fmt(m.ancillary_costs_total)) + '</strong>']); }
+		return '<div class="ie-section"><h4>' + esc(w.t('costs')) + '</h4><ul class="ie-facts" style="flex-direction:column;gap:4px">' +
+			rows.map(function (r) { return '<li>' + (r[0].indexOf('<strong>') === 0 ? r[0] : esc(r[0])) + ': ' + (r[1].indexOf('<strong>') === 0 ? r[1] : esc(r[1])) + '</li>'; }).join('') + '</ul></div>';
 	}
 	function imgUrl(img, size) {
 		if (!img) { return ''; }
@@ -629,6 +646,7 @@
 						(m.energy_eeb ? '<li>🔋 EEB ' + esc(m.energy_eeb) + ' kWh/m²a</li>' : (m.energy_fgee ? '<li>📈 fGEE ' + esc(m.energy_fgee) + '</li>' : '')) +
 						(m.heating ? '<li>🔥 ' + esc(m.heating) + '</li>' : '') +
 					'</ul>' +
+					costsHtml(w, m) +
 					(feats.length ? '<div class="ie-section"><h4>' + esc(w.t('features')) + '</h4><ul class="ie-feats">' + feats.map(function (f) { return '<li>' + esc(f.icon || '') + ' ' + esc(f.label) + '</li>'; }).join('') + '</ul></div>' : '') +
 					(showDesc && (p.description || p.excerpt) ? '<div class="ie-section"><h4>' + esc(w.t('description')) + '</h4><div class="ie-desc">' + (p.description ? sanitizeHtml(p.description) : '<p>' + esc(p.excerpt) + '</p>') + '</div></div>' : '') +
 					(m.contact_name ? '<div class="ie-section"><h4>' + esc(w.t('contact')) + '</h4><div class="ie-contact">' + (m.contact_image ? '<img src="' + esc(imgUrl(m.contact_image, 'thumbnail')) + '" alt="">' : '') + '<div><strong>' + esc(m.contact_name) + '</strong>' + (m.contact_phone ? '<br><a href="tel:' + esc(m.contact_phone) + '">📞 ' + esc(m.contact_phone) + '</a>' : '') + '</div></div></div>' : '') +

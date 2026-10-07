@@ -1108,7 +1108,17 @@ class RestApi {
 				'price_formatted'       => $price > 0 ? $this->format_price( $price ) : null,
 				'rent'                  => $rent,
 				'rent_formatted'        => $rent > 0 ? $this->format_price( $rent ) : null,
+				// Betriebsnebenkosten pro Monat – BRUTTO (inkl. USt). Summe wird mitgeliefert,
+				// damit alle Konsumenten (Client, Embed, Drittsysteme) identisch rechnen.
 				'operating_costs'       => (float) $m( '_immo_operating_costs', 0 ),
+				'heating_costs'         => (float) $m( '_immo_heating_costs', 0 ),
+				'other_costs'           => (float) $m( '_immo_other_costs', 0 ),
+				'ancillary_costs_total' => round( (float) $m( '_immo_operating_costs', 0 ) + (float) $m( '_immo_heating_costs', 0 ) + (float) $m( '_immo_other_costs', 0 ), 2 ),
+				'ancillary_costs_total_formatted' => ( (float) $m( '_immo_operating_costs', 0 ) + (float) $m( '_immo_heating_costs', 0 ) + (float) $m( '_immo_other_costs', 0 ) ) > 0
+					? $this->format_price( (float) $m( '_immo_operating_costs', 0 ) + (float) $m( '_immo_heating_costs', 0 ) + (float) $m( '_immo_other_costs', 0 ) )
+					: null,
+				'costs_gross'           => true,
+				'costs_note'            => __( 'brutto inkl. USt, pro Monat', 'immo-manager' ),
 				'deposit'               => (float) $m( '_immo_deposit', 0 ),
 				'commission'            => (string) $m( '_immo_commission', '' ),
 				'commission_free'       => '1' === (string) $m( '_immo_commission_free', '0' ),

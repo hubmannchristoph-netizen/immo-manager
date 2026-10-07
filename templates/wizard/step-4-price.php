@@ -49,14 +49,33 @@ $p = $prefill;
 			<div class="immo-field-error" data-field="_immo_rent" hidden></div>
 		</div>
 		<div class="immo-field immo-field--third">
-			<label for="wiz_opcosts"><?php esc_html_e( 'Betriebskosten', 'immo-manager' ); ?></label>
-			<input type="number" step="1" min="0" id="wiz_opcosts" name="_immo_operating_costs" class="immo-wizard-input immo-input"
-				value="<?php echo esc_attr( (string) ( $p['_immo_operating_costs'] ?? '' ) ); ?>" placeholder="150">
-		</div>
-		<div class="immo-field immo-field--third">
 			<label for="wiz_deposit"><?php esc_html_e( 'Kaution', 'immo-manager' ); ?></label>
 			<input type="number" step="1" min="0" id="wiz_deposit" name="_immo_deposit" class="immo-wizard-input immo-input"
 				value="<?php echo esc_attr( (string) ( $p['_immo_deposit'] ?? '' ) ); ?>" placeholder="2550">
+		</div>
+	</div>
+</div>
+
+<!-- Betriebsnebenkosten (Kauf UND Miete) – alle Werte brutto inkl. USt, pro Monat -->
+<div class="immo-wizard-section immo-property-only immo-costs-section">
+	<h3>🧾 <?php esc_html_e( 'Betriebsnebenkosten / Monat', 'immo-manager' ); ?></h3>
+	<p class="immo-field-hint"><?php esc_html_e( 'Alle Beträge brutto (inkl. USt) pro Monat. Die Summe wird automatisch als „Nebenkosten gesamt" ausgewiesen – identisch auf Detailseite, Listings, Embed-Widget, Immo-Client und im OpenImmo-Export.', 'immo-manager' ); ?></p>
+	<div class="immo-wizard-fields">
+		<div class="immo-field immo-field--third">
+			<label for="wiz_opcosts"><?php esc_html_e( 'Betriebskosten (brutto)', 'immo-manager' ); ?> <span class="immo-currency-hint"><?php echo esc_html( $currency ); ?></span></label>
+			<input type="number" step="0.01" min="0" id="wiz_opcosts" name="_immo_operating_costs" class="immo-wizard-input immo-input"
+				value="<?php echo esc_attr( (string) ( $p['_immo_operating_costs'] ?? '' ) ); ?>" placeholder="150">
+		</div>
+		<div class="immo-field immo-field--third">
+			<label for="wiz_heatcosts"><?php esc_html_e( 'Heizkosten (brutto)', 'immo-manager' ); ?> <span class="immo-currency-hint"><?php echo esc_html( $currency ); ?></span></label>
+			<input type="number" step="0.01" min="0" id="wiz_heatcosts" name="_immo_heating_costs" class="immo-wizard-input immo-input"
+				value="<?php echo esc_attr( (string) ( $p['_immo_heating_costs'] ?? '' ) ); ?>" placeholder="80">
+		</div>
+		<div class="immo-field immo-field--third">
+			<label for="wiz_othercosts"><?php esc_html_e( 'Sonstige Kosten (brutto)', 'immo-manager' ); ?> <span class="immo-currency-hint"><?php echo esc_html( $currency ); ?></span></label>
+			<input type="number" step="0.01" min="0" id="wiz_othercosts" name="_immo_other_costs" class="immo-wizard-input immo-input"
+				value="<?php echo esc_attr( (string) ( $p['_immo_other_costs'] ?? '' ) ); ?>" placeholder="25">
+			<small class="immo-field-hint"><?php esc_html_e( 'z. B. Rücklage, Lift, Garage', 'immo-manager' ); ?></small>
 		</div>
 	</div>
 </div>

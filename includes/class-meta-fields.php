@@ -72,7 +72,10 @@ class MetaFields {
 			// Preis.
 			'_immo_price'             => array( 'type' => 'number',  'default' => 0 ),
 			'_immo_rent'              => array( 'type' => 'number',  'default' => 0 ),
-			'_immo_operating_costs'   => array( 'type' => 'number',  'default' => 0 ),
+			// Betriebsnebenkosten pro Monat – alle Werte BRUTTO (inkl. USt).
+			'_immo_operating_costs'   => array( 'type' => 'number',  'default' => 0 ), // Betriebskosten
+			'_immo_heating_costs'     => array( 'type' => 'number',  'default' => 0 ), // Heizkosten
+			'_immo_other_costs'       => array( 'type' => 'number',  'default' => 0 ), // Sonstige Kosten
 			'_immo_deposit'           => array( 'type' => 'number',  'default' => 0 ),
 			'_immo_commission'        => array( 'type' => 'string',  'default' => '' ),
 			'_immo_commission_free'   => array( 'type' => 'boolean', 'default' => false ),

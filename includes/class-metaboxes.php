@@ -246,8 +246,19 @@ class Metaboxes {
 				<td><input type="number" step="1" min="0" id="_immo_rent" name="immo_meta[_immo_rent]" value="<?php echo esc_attr( (string) $meta['_immo_rent'] ); ?>" class="regular-text" /> <?php echo esc_html( Settings::get( 'currency_symbol', '€' ) ); ?></td>
 			</tr>
 			<tr>
-				<th><label for="_immo_operating_costs"><?php esc_html_e( 'Betriebskosten (Monat)', 'immo-manager' ); ?></label></th>
-				<td><input type="number" step="1" min="0" id="_immo_operating_costs" name="immo_meta[_immo_operating_costs]" value="<?php echo esc_attr( (string) $meta['_immo_operating_costs'] ); ?>" class="regular-text" /></td>
+				<th><label for="_immo_operating_costs"><?php esc_html_e( 'Betriebskosten / Monat (brutto)', 'immo-manager' ); ?></label></th>
+				<td><input type="number" step="0.01" min="0" id="_immo_operating_costs" name="immo_meta[_immo_operating_costs]" value="<?php echo esc_attr( (string) $meta['_immo_operating_costs'] ); ?>" class="regular-text" /></td>
+			</tr>
+			<tr>
+				<th><label for="_immo_heating_costs"><?php esc_html_e( 'Heizkosten / Monat (brutto)', 'immo-manager' ); ?></label></th>
+				<td><input type="number" step="0.01" min="0" id="_immo_heating_costs" name="immo_meta[_immo_heating_costs]" value="<?php echo esc_attr( (string) $meta['_immo_heating_costs'] ); ?>" class="regular-text" /></td>
+			</tr>
+			<tr>
+				<th><label for="_immo_other_costs"><?php esc_html_e( 'Sonstige Kosten / Monat (brutto)', 'immo-manager' ); ?></label></th>
+				<td>
+					<input type="number" step="0.01" min="0" id="_immo_other_costs" name="immo_meta[_immo_other_costs]" value="<?php echo esc_attr( (string) $meta['_immo_other_costs'] ); ?>" class="regular-text" />
+					<p class="description"><?php esc_html_e( 'Betriebsnebenkosten immer brutto (inkl. USt) angeben. Die Summe „Nebenkosten gesamt" wird automatisch berechnet und in allen Ausgaben (Detailseite, REST, Embed, Immo-Client, OpenImmo) identisch ausgewiesen.', 'immo-manager' ); ?></p>
+				</td>
 			</tr>
 			<tr>
 				<th><label for="_immo_deposit"><?php esc_html_e( 'Kaution', 'immo-manager' ); ?></label></th>

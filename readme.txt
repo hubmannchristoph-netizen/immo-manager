@@ -4,7 +4,7 @@ Tags: immobilien, real-estate, vermietung, verkauf, austria, headless, rest-api
 Requires at least: 5.9
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,9 @@ Eine WordPress-Installation dient als Datenquelle. Externe Websites laden Immobi
 4. Unter Immo Manager > Dashboard Demo-Daten importieren
 
 == Changelog ==
+
+= 1.5.0 =
+* Neu: Betriebsnebenkosten pro Monat als drei Brutto-Felder (inkl. USt): Betriebskosten, Heizkosten, sonstige Kosten – im Wizard (eigener Abschnitt, für Kauf und Miete), in der Metabox, auf der Detailseite (Kosten-Tabelle mit Gesamtsumme, Eckdaten, Preis-Hero-Hinweis), im Embed-Widget, in der REST-API (meta.heating_costs, other_costs, ancillary_costs_total[_formatted], costs_gross, costs_note) und im OpenImmo-Export/-Import (nebenkosten, heizkosten, monatlichekostenbrutto)
 
 = 1.4.0 =
 * Fix: Immobilien mit zugeordneten Wohneinheiten zeigten in AJAX-Filter-Cards, Embed-Widget und ImmoClient den Property-Gesamtpreis statt „Preis siehe Preisliste"/„ab X €" – REST leert jetzt price_formatted/rent_formatted bei zugeordneten Units und liefert meta.has_units + meta.price_display; AJAX-Cards und Embed folgen der Regel der Detailseite

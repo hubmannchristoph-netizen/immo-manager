@@ -161,8 +161,17 @@ class Mapper {
 		if ( in_array( $mode, array( 'rent', 'both' ), true ) && ! empty( $l->meta['_immo_rent'] ) ) {
 			$this->text( $el, 'kaltmiete', $this->float_str( $l->meta['_immo_rent'] ) );
 		}
+		// Betriebsnebenkosten (brutto, pro Monat) – Reihenfolge laut XSD-Sequence:
+		// nebenkosten → heizkosten → … → monatlichekostenbrutto.
 		if ( ! empty( $l->meta['_immo_operating_costs'] ) ) {
 			$this->text( $el, 'nebenkosten', $this->float_str( $l->meta['_immo_operating_costs'] ) );
+		}
+		if ( ! empty( $l->meta['_immo_heating_costs'] ) ) {
+			$this->text( $el, 'heizkosten', $this->float_str( $l->meta['_immo_heating_costs'] ) );
+		}
+		$costs_total = (float) ( $l->meta['_immo_operating_costs'] ?? 0 ) + (float) ( $l->meta['_immo_heating_costs'] ?? 0 ) + (float) ( $l->meta['_immo_other_costs'] ?? 0 );
+		if ( $costs_total > 0 ) {
+			$this->text( $el, 'monatlichekostenbrutto', $this->float_str( $costs_total ) );
 		}
 		if ( ! empty( $l->meta['_immo_deposit'] ) ) {
 			$this->text( $el, 'kaution', $this->float_str( $l->meta['_immo_deposit'] ) );

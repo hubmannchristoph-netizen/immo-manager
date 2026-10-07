@@ -97,7 +97,7 @@ $key_facts = array_filter( array(
 	array( 'icon' => '📊', 'label' => __( 'HWB',         'immo-manager' ), 'value' => ! empty( $meta['energy_hwb'] ) ? number_format_i18n( (float) $meta['energy_hwb'], 1 ) . ' kWh/m²a' : null ),
 	array( 'icon' => '🔋', 'label' => __( 'EEB',         'immo-manager' ), 'value' => ! empty( $meta['energy_eeb'] ) ? number_format_i18n( (float) $meta['energy_eeb'], 1 ) . ' kWh/m²a' : ( ! empty( $meta['energy_fgee'] ) ? 'fGEE ' . number_format_i18n( (float) $meta['energy_fgee'], 2 ) : null ) ),
 	array( 'icon' => '🔥', 'label' => __( 'Heizung',     'immo-manager' ), 'value' => $meta['heating'] ?: null ),
-	array( 'icon' => '💰', 'label' => __( 'BK/Monat',    'immo-manager' ), 'value' => $meta['operating_costs'] ? number_format_i18n( (float) $meta['operating_costs'] ) . ' ' . $currency : null ),
+	array( 'icon' => '💰', 'label' => __( 'Nebenkosten/Monat (brutto)', 'immo-manager' ), 'value' => ! empty( $meta['ancillary_costs_total'] ) ? number_format_i18n( (float) $meta['ancillary_costs_total'], 2 ) . ' ' . $currency : null ),
 	array( 'icon' => '📋', 'label' => __( 'Verfügbar ab', 'immo-manager' ), 'value' => $meta['available_from'] ? date_i18n( 'd.m.Y', strtotime( $meta['available_from'] ) ) : null ),
 ), fn( $f ) => $f['value'] !== null );
 ?>
@@ -207,8 +207,8 @@ $key_facts = array_filter( array(
 				<div class="immo-price-hero immo-price-hero--pricelist">
 					<span class="immo-price-hero-label"><?php esc_html_e( 'Preis', 'immo-manager' ); ?></span>
 					<span class="immo-price-hero-value"><?php esc_html_e( 'siehe Preisliste', 'immo-manager' ); ?></span>
-					<?php if ( $meta['operating_costs'] ) : ?>
-						<span class="immo-price-hero-note">+ <?php echo esc_html( number_format_i18n( (float) $meta['operating_costs'] ) . ' ' . $currency ); ?> <?php esc_html_e( 'BK/Monat', 'immo-manager' ); ?></span>
+					<?php if ( ! empty( $meta['ancillary_costs_total'] ) ) : ?>
+						<span class="immo-price-hero-note">+ <?php echo esc_html( number_format_i18n( (float) $meta['ancillary_costs_total'], 2 ) . ' ' . $currency ); ?> <?php esc_html_e( 'Nebenkosten/Monat (brutto)', 'immo-manager' ); ?></span>
 					<?php endif; ?>
 				</div>
 			<?php elseif ( $show_sale || $show_rent ) : ?>
@@ -226,8 +226,8 @@ $key_facts = array_filter( array(
 							<?php esc_html_e( 'Miete: ', 'immo-manager' ); ?><?php echo esc_html( $meta['rent_formatted'] ); ?></span>
 						<?php endif; ?>
 					<?php endif; ?>
-					<?php if ( $meta['operating_costs'] ) : ?>
-						<span class="immo-price-hero-note">+ <?php echo esc_html( number_format_i18n( (float) $meta['operating_costs'] ) . ' ' . $currency ); ?> <?php esc_html_e( 'BK/Monat', 'immo-manager' ); ?></span>
+					<?php if ( ! empty( $meta['ancillary_costs_total'] ) ) : ?>
+						<span class="immo-price-hero-note">+ <?php echo esc_html( number_format_i18n( (float) $meta['ancillary_costs_total'], 2 ) . ' ' . $currency ); ?> <?php esc_html_e( 'Nebenkosten/Monat (brutto)', 'immo-manager' ); ?></span>
 					<?php endif; ?>
 				</div>
 			<?php endif; ?>
@@ -330,12 +330,16 @@ $key_facts = array_filter( array(
 				</div>
 			<?php endif; ?>
 
-			<?php if ( $meta['operating_costs'] || $meta['deposit'] || $meta['commission'] ) : ?>
+			<?php if ( $meta['operating_costs'] || ! empty( $meta['heating_costs'] ) || ! empty( $meta['other_costs'] ) || $meta['deposit'] || $meta['commission'] ) : ?>
 				<div class="immo-accordion">
 					<button class="immo-accordion-header" aria-expanded="false"><?php esc_html_e( 'Kosten & Konditionen', 'immo-manager' ); ?><span class="immo-accordion-icon" aria-hidden="true"></span></button>
 					<div class="immo-accordion-body" hidden>
 						<table class="immo-costs-table">
-							<?php if ( $meta['operating_costs'] ) : ?><tr><td><?php esc_html_e( 'Betriebskosten/Monat', 'immo-manager' ); ?></td><td><?php echo esc_html( number_format_i18n( (float) $meta['operating_costs'] ) . ' ' . $currency ); ?></td></tr><?php endif; ?>
+							<?php // Betriebsnebenkosten – alle Werte brutto (inkl. USt), pro Monat. ?>
+							<?php if ( $meta['operating_costs'] ) : ?><tr><td><?php esc_html_e( 'Betriebskosten/Monat (brutto)', 'immo-manager' ); ?></td><td><?php echo esc_html( number_format_i18n( (float) $meta['operating_costs'], 2 ) . ' ' . $currency ); ?></td></tr><?php endif; ?>
+							<?php if ( ! empty( $meta['heating_costs'] ) ) : ?><tr><td><?php esc_html_e( 'Heizkosten/Monat (brutto)', 'immo-manager' ); ?></td><td><?php echo esc_html( number_format_i18n( (float) $meta['heating_costs'], 2 ) . ' ' . $currency ); ?></td></tr><?php endif; ?>
+							<?php if ( ! empty( $meta['other_costs'] ) ) : ?><tr><td><?php esc_html_e( 'Sonstige Kosten/Monat (brutto)', 'immo-manager' ); ?></td><td><?php echo esc_html( number_format_i18n( (float) $meta['other_costs'], 2 ) . ' ' . $currency ); ?></td></tr><?php endif; ?>
+							<?php if ( ! empty( $meta['ancillary_costs_total'] ) && ( (int) ! empty( $meta['operating_costs'] ) + (int) ! empty( $meta['heating_costs'] ) + (int) ! empty( $meta['other_costs'] ) ) > 1 ) : ?><tr class="immo-costs-total"><td><strong><?php esc_html_e( 'Nebenkosten gesamt/Monat (brutto)', 'immo-manager' ); ?></strong></td><td><strong><?php echo esc_html( number_format_i18n( (float) $meta['ancillary_costs_total'], 2 ) . ' ' . $currency ); ?></strong></td></tr><?php endif; ?>
 							<?php if ( $meta['deposit'] ) : ?><tr><td><?php esc_html_e( 'Kaution', 'immo-manager' ); ?></td><td><?php echo esc_html( number_format_i18n( (float) $meta['deposit'] ) . ' ' . $currency ); ?></td></tr><?php endif; ?>
 							<?php if ( $meta['commission'] ) : ?><tr><td><?php esc_html_e( 'Provision', 'immo-manager' ); ?></td><td><?php echo esc_html( $meta['commission'] ); ?></td></tr><?php endif; ?>
 							<?php if ( $meta['available_from'] ) : ?><tr><td><?php esc_html_e( 'Verfügbar ab', 'immo-manager' ); ?></td><td><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $meta['available_from'] ) ) ); ?></td></tr><?php endif; ?>

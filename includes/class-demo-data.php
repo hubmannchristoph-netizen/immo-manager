@@ -283,6 +283,8 @@ class DemoData {
 				'_immo_heating'           => 'Gasheizung',
 				'_immo_rent'              => 1150,
 				'_immo_operating_costs'   => 220,
+				'_immo_heating_costs'     => 85,
+				'_immo_other_costs'       => 30,
 				'_immo_deposit'           => 3450,
 				'_immo_available_from'    => date( 'Y-m-d', strtotime( '+30 days' ) ),
 				'_immo_contact_name'      => 'Maria Schneider',

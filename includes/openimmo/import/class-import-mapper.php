@@ -49,6 +49,10 @@ class ImportMapper {
 		$meta['_immo_price']           = (float) $this->read_text( $immobilie, 'kaufpreis' );
 		$meta['_immo_rent']            = (float) $this->read_text( $immobilie, 'kaltmiete' );
 		$meta['_immo_operating_costs'] = (float) $this->read_text( $immobilie, 'nebenkosten' );
+		$meta['_immo_heating_costs']   = (float) $this->read_text( $immobilie, 'heizkosten' );
+		// Sonstige Kosten aus der Brutto-Gesamtsumme ableiten (falls geliefert).
+		$costs_total_import            = (float) $this->read_text( $immobilie, 'monatlichekostenbrutto' );
+		$meta['_immo_other_costs']     = max( 0.0, round( $costs_total_import - $meta['_immo_operating_costs'] - $meta['_immo_heating_costs'], 2 ) );
 		$meta['_immo_deposit']         = (float) $this->read_text( $immobilie, 'kaution' );
 		$meta['_immo_commission']      = $this->read_text( $immobilie, 'aussen_courtage' );
 

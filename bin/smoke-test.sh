@@ -135,6 +135,12 @@ PROP_URL=$(WP post list --post_type=immo_mgr_property --post_status=publish --fi
 code=$(fetch "$PROP_URL" $T/psingle.html); [ "$code" = 200 ] && ok "Immobilien-Einzelseite HTTP 200" || fail "Immobilien-Einzelseite HTTP $code"
 grep -q "Endenergiebedarf (EEB)" $T/psingle.html && ok "Detailseite zeigt Endenergiebedarf" || fail "Detailseite zeigt Endenergiebedarf"
 grep -Eq '"name": *"EEB"' $T/psingle.html && ok "Schema.org enthält EEB" || fail "Schema.org enthält EEB"
+# Betriebsnebenkosten (brutto): Demo-Property mit BK 220 / Heiz 85 / sonst 30 -> Summe 335
+COSTS_SLUG=$(WP post list --post_type=immo_mgr_property --post_status=publish --field=post_name --meta_key=_immo_heating_costs --meta_value=85 2>/dev/null | tr -d '' | head -1)
+code=$(fetch "http://localhost:$PORT/wp-json/immo-manager/v1/properties/by-slug/$COSTS_SLUG" $T/costs.json)
+python -c "import json,sys; m=json.load(open(sys.argv[1]))['meta']; assert m['operating_costs']==220 and m['heating_costs']==85 and m['other_costs']==30 and m['ancillary_costs_total']==335 and m['costs_gross'] is True and m['ancillary_costs_total_formatted'], m" $T/costs.json && ok "REST: Betriebsnebenkosten brutto + Summe 335" || fail "REST: Betriebsnebenkosten"
+code=$(fetch "$(WP post list --post_type=immo_mgr_property --post_status=publish --field=url --meta_key=_immo_heating_costs --meta_value=85 2>/dev/null | tr -d '' | head -1)" $T/costs.html)
+grep -q "Heizkosten/Monat (brutto)" $T/costs.html && grep -q "Nebenkosten gesamt/Monat (brutto)" $T/costs.html && ok "Manager-Detailseite: Kosten-Tabelle mit Heizkosten + Gesamtsumme" || fail "Manager-Detailseite: Kosten-Tabelle (HTTP $code)"
 
 echo "== Preisregel: Wohneinheit einer Immobilie zuordnen =="
 UNIT_PROP_ID=$(WP post list --post_type=immo_mgr_property --post_status=publish --field=ID --posts_per_page=1 --orderby=ID --order=ASC 2>/dev/null | tr -d '\r' | head -1)
@@ -281,6 +287,8 @@ if [ -f "$CLIENT_DIR/immo-client.php" ]; then
   PSLUG_PROP=$(WP post list --post_type=immo_mgr_property --post_status=publish --field=post_name --posts_per_page=1 --orderby=ID --order=DESC 2>/dev/null | tr -d '\r' | head -1)
   code=$(curl -s -L -o $T/client-detail.html -w "%{http_code}" "http://localhost:$PORT/immobilie/$PSLUG_PROP/"); [ "$code" = 200 ] && ok "Client: Detailseite /immobilie/{slug} HTTP 200" || fail "Client: Detailseite HTTP $code"
   grep -q "Endenergiebedarf (EEB)\|fGEE (Altausweis)" $T/client-detail.html && ok "Client: Detailseite zeigt Endenergiebedarf" || fail "Client: Detailseite zeigt Endenergiebedarf"
+  code=$(curl -s -L -o $T/client-costs.html -w "%{http_code}" "http://localhost:$PORT/immobilie/$COSTS_SLUG/")
+  grep -q "Heizkosten / Monat (brutto)" $T/client-costs.html && grep -q "Nebenkosten gesamt / Monat (brutto)" $T/client-costs.html && ok "Client-Detailseite: Betriebsnebenkosten brutto + Summe" || fail "Client-Detailseite: Betriebsnebenkosten (HTTP $code)"
   code=$(curl -s -L -o $T/client-unitprop.html -w "%{http_code}" "http://localhost:$PORT/immobilie/$UNIT_PROP_SLUG/")
   grep -q "siehe Preisliste" $T/client-unitprop.html && ! grep -q "immo-price-value\">[0-9]" $T/client-unitprop.html && ok "Client-Detailseite: siehe Preisliste statt Gesamtpreis" || fail "Client-Detailseite: Preisregel (HTTP $code)"
   python - "$T/client-list.html" "$UNIT_PROP_SLUG" <<'PY'
